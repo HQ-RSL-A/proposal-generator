@@ -78,3 +78,22 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
   inside the fixed footer corrupts layout boxes on long flowing pages. Footer is static
   now; scripts/pdfSmoke.ts is the regression check. All GENERATE_PDF jobs DONE; executed
   PDF (98 KB) in Blob; fully_signed_admin DELIVERED to lalia@rsla.io with attachment.
+
+## 2026-06-13 (cont.) — Executed-PDF redesign per Rahul's first-document review
+
+- Real Logomark.png on cover + certificate (was a styled-text brandmark).
+- Signature modal now requires full name → title → company (company prefilled); stored on
+  Signature (migration 0003) and rendered as "Name / Title, Company" everywhere.
+- "Agreed and Accepted" execution block added after MSA §37 reproducing both signatures
+  (§37 already provides the one-signature-executes-both mechanism).
+- Certificate retitled "E-Signature Certificate" and redesigned to the industry format
+  (researched PandaDoc/DocuSign): bordered frame, reference, sent/viewed/signed timestamps,
+  IP, signature images, completion line, ESIGN statement + SHA-256 integrity line. Dropped
+  user-agent strings + raw event log from the client-facing document.
+- Footer: "{Company} · Proposal & Service Agreement" + rsla.io link.
+- Root-caused the "DomInIque" glyph bug: the earlier OTF→TTF conversion corrupted lowercase
+  "i"; original Satoshi OTFs restored (they were never the crash cause).
+- Initials through the agreement: recommended against (hash + certificate already prove
+  integrity; ESIGN/UETA don't require them; friction on mobile).
+- Demo PDF regeneration queued (email dedupe guard prevents re-sends). Fresh [TEST]
+  Brightline draft seeded for the full rehearsal with the new design.

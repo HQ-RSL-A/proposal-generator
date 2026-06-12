@@ -5,7 +5,8 @@ Agreement, multi-party e-signing (drawn or typed signatures, ESIGN consent, full
 trail), instant Stripe Checkout after the final signature, executed PDF with a signature
 certificate, automated emails (Resend), and Notion CRM sync.
 
-**Live:** `proposals.rsla.io` (Vercel) · **Dev:** `npm run dev` → localhost:1235
+**Live:** [proposals.rsla.io](https://proposals.rsla.io) (Vercel) — running in **Stripe
+test mode** until the live-key swap · **Dev:** `npm run dev` → localhost:1235
 
 Docs: [`CLAUDE.md`](CLAUDE.md) (rules) · [`BRAIN.md`](BRAIN.md) (architecture reference) ·
 [`LOG.md`](LOG.md) (history)

@@ -47,6 +47,9 @@ anywhere, short conversational sentences, no hype or AI-flag words, ranges as "X
 
 ## Status model
 
+- Signers provide title + company in the signature modal (required;
+  `Signature.signerTitle/signerCompany`, migration 0003); shown as "Name / Title, Company"
+  in signature blocks and the certificate. Admin pre-applied = "Managing Member, RSL/A LLC".
 - `status`: DRAFT → SENT → VIEWED → PARTIALLY_SIGNED → SIGNED | DECLINED | EXPIRED | VOIDED
 - `paymentStatus`: NOT_REQUIRED | AWAITING | PROCESSING (ACH in transit) | PAID | FAILED |
   SESSION_EXPIRED
@@ -92,18 +95,40 @@ latest email always has the live link; failed sends retry via job with `needsTok
 | `AUTH_SECRET` / `AUTH_TRUST_HOST` | .env + Vercel | NextAuth |
 | `GOOGLE_CLIENT_ID/SECRET` | .env + Vercel | OAuth client "Proposal Generator" (rsla-2026) |
 | `BLOB_READ_WRITE_TOKEN` | .env + Vercel | Private Blob (signatures, PDFs) |
-| `STRIPE_SECRET_KEY` | .env (test) / Vercel (live) | Restricted key, Checkout W scope |
+| `STRIPE_SECRET_KEY` | .env + Vercel | **Currently TEST mode everywhere** (sandbox key; webhook `we_1ThbkhE1rrZiCLVQEdLERe0Y`). Live swap = new live key + recreate webhook + 2 env values |
 | `STRIPE_WEBHOOK_SECRET` | .env (stripe listen) / Vercel | Webhook signing |
 | `RESEND_API_KEY` / `RESEND_WEBHOOK_SECRET` | .env + Vercel | Email + svix |
-| `RESEND_FROM` | optional | Default `Rahul Lalia, RSL/A <proposals@send.rsla.io>` |
+| `RESEND_FROM` | set | `Rahul Lalia, RSL/A <proposals@rsla.io>` (root domain verified on Resend; tracking off — click tracking would rewrite signing links) |
 | `NOTION_API_KEY` | .env + Vercel | Internal integration `proposalGenerator` |
 | `CRON_SECRET` | Vercel | Cron auth |
 | `NEXT_PUBLIC_APP_URL` | .env + Vercel | Link construction (`https://proposals.rsla.io`) |
 
+## PDF engine constraints (hard-won)
+
+- **Never put a dynamic render-callback Text (page numbers) inside a `fixed` element.**
+  react-pdf corrupts layout boxes ("unsupported number: -9.6e21") when page content flows
+  across many sheets. Footers are static-only; there are no page numbers by design.
+- Flowing text blocks (MSA paragraphs/bullets, narrative paragraphs) render `wrap={false}`
+  so elements relocate whole instead of splitting mid-element.
+- Satoshi registers from the original OTFs (they were never the crash cause; a TTF
+  conversion attempt corrupted the lowercase "i" glyph — don't convert).
+- Verify any PDF change with `npx tsx scripts/pdfSmoke.ts` and Read the output.
+- Signed PDF layout: cover (logomark.png) → narrative → scope/timeline → investment +
+  Acceptance signatures → MSA + "Agreed and Accepted" execution block after §37 →
+  E-Signature Certificate (bordered, industry format: reference, sent/viewed/signed
+  timestamps, IP, signature images, completion line, ESIGN statement + SHA-256). No
+  user-agent strings or raw event logs in the client-facing document.
+
 ## Gotchas
 
-- `fetchPrivateBlob` authorizes with the RW token against private Blob URLs — verify on the
-  first real upload (isolated in `src/lib/blob.ts` if the auth shape needs adjusting).
+- **Blob auth is OIDC** (`BLOB_STORE_ID` + ambient `VERCEL_OIDC_TOKEN`); there is no static
+  RW token. Local dev needs the store connection's Development environment enabled in the
+  Vercel dashboard, plus `vercel env pull` (12h token). `blob.ts` uses the SDK's private
+  `get`/`put`.
+- Supabase pooler host is **aws-1**-us-west-1.pooler.supabase.com (aws-0 returns
+  "tenant not found" and crashes sign-in via the auth allowlist lookup).
+- **Test/seed data must use fake company names.** The Notion paid-sync matches CRM pages by
+  company name; a demo with a real client name overwrote the real Scorpion CRM row once.
 - `outputFileTracingIncludes` ships `public/fonts/**` so @react-pdf can register Satoshi in
   serverless functions; don't remove it.
 - Base UI buttons compose via `render={<Link/>}`, not Radix's `asChild`.

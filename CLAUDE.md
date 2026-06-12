@@ -25,6 +25,12 @@ Deploys to `proposals.rsla.io`. See `BRAIN.md` for architecture and reference.
   transitions are status-guarded (`updateMany where paymentStatus != PAID`).
 - Dev Stripe is **test mode only** (`stripe listen --forward-to localhost:1235/api/webhooks/stripe`).
   Live keys exist only in Vercel env.
+- **PDF rules:** no dynamic render-callback Texts inside `fixed` elements (corrupts layout
+  on long documents); flowing blocks stay `wrap={false}`; Satoshi loads from the original
+  OTFs (never convert). Any PDF change must pass `npx tsx scripts/pdfSmoke.ts` and a visual
+  Read of the output.
+- **Test data uses fake company names only** (e.g. "Brightline Test Co"). The Notion sync
+  matches CRM pages by company name and will write to real prospect rows.
 - Dev port: **1235** (expenseVault owns 1234).
 - Migrations: hand SQL via `npx prisma db execute --file ...` (RLS lives outside Prisma's
   history — same convention as expenseVault). Never `prisma migrate dev` against the shared DB.
