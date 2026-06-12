@@ -10,7 +10,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -88,12 +87,12 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
                 )}
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
+                <div className="px-1.5 py-1.5">
                   <p className="text-sm font-medium">{user.name}</p>
                   <p className="text-xs font-normal text-muted-foreground">
                     {user.email} · {user.role === "ADMIN" ? "Admin" : "Member"}
                   </p>
-                </DropdownMenuLabel>
+                </div>
                 <DropdownMenuSeparator />
                 {user.role === "ADMIN" ? (
                   <DropdownMenuItem render={<Link href="/settings" />}>
