@@ -58,3 +58,23 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
 - Fixes: Base UI `nativeButton={false}` on link-rendered buttons, favicon (app/icon.svg),
   sign-out via next-auth/react. Verified: tsc, lint, 47 tests, build (29 routes), landing
   public + dashboard gated smoke test.
+
+## 2026-06-13 — Launch debugging: deploy, sign-in, PDF engine
+
+- Vercel deploy fixed (lazy Prisma client; env vars pushed via CLI; aws-1 pooler URL after
+  ENOTFOUND tenant error crashed sign-in). Domain proposals.rsla.io live (CNAME at
+  Hostinger). Blob = OIDC auth (BLOB_STORE_ID + VERCEL_OIDC_TOKEN, no static token);
+  blob.ts rewritten to SDK get/put. Stripe test mode fully wired (key validated, webhook
+  endpoint we_1Thbkh… created via API, secrets on Vercel). Resend verified at root rsla.io;
+  sender proposals@rsla.io; tracking off by choice (click tracking would rewrite signing
+  links). Account-menu crash fixed (GroupLabel outside Menu.Group throws in Base UI).
+- First live deal loop proven on the demo proposal: tier select → sign → checkout (4242) →
+  paid. Notion sync wrote to the REAL Scorpion CRM page (demo reused a real company name);
+  restored with Rahul's approval (Monthly 497, Contract Start 2026-03-10, test note
+  deleted). Test/seed data uses fake company names from now on.
+- PDF engine crash ("unsupported number: -9.6e21") root-caused by elimination: not fonts
+  (TTF conversion kept anyway), not page-splitting (atomic blocks kept anyway), not
+  hyphenation (disabled anyway). Actual cause: dynamic render-callback Text (page numbers)
+  inside the fixed footer corrupts layout boxes on long flowing pages. Footer is static
+  now; scripts/pdfSmoke.ts is the regression check. All GENERATE_PDF jobs DONE; executed
+  PDF (98 KB) in Blob; fully_signed_admin DELIVERED to lalia@rsla.io with attachment.
