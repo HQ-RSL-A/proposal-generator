@@ -55,7 +55,7 @@ export async function createProposal(input: {
       },
     });
     await logEvent({ proposalId: proposal.id, eventType: "PROPOSAL_CREATED" });
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     return { ok: true, data: { id: proposal.id } };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
@@ -85,7 +85,7 @@ export async function updateProposal(input: {
       },
     });
     revalidatePath(`/proposals/${input.id}`);
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
@@ -93,14 +93,17 @@ export async function updateProposal(input: {
 }
 
 export async function deleteDraft(id: string): Promise<ActionResult> {
-  await requireAuth();
+  const user = await requireAuth();
   try {
+    if (user.role !== "ADMIN") {
+      return { ok: false, error: "Only admins can delete drafts." };
+    }
     const existing = await prisma.proposal.findUniqueOrThrow({ where: { id } });
     if (existing.status !== "DRAFT") {
       return { ok: false, error: "Only drafts can be deleted. Sent proposals can be voided." };
     }
     await prisma.proposal.delete({ where: { id } });
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
@@ -133,7 +136,7 @@ export async function sendProposal(input: {
 
     // No client party may share the admin email (it has no signing link).
     if (parties.some((p) => p.email === ADMIN_EMAIL)) {
-      return { ok: false, error: `${ADMIN_EMAIL} signs automatically — remove it from signers.` };
+      return { ok: false, error: `${ADMIN_EMAIL} signs automatically. Remove it from the signer list.` };
     }
 
     // The MSA must render clean for these tokens.
@@ -151,7 +154,7 @@ export async function sendProposal(input: {
       return { ok: false, error: `Could not parse "Client.ValidUntil": ${tokens["Client.ValidUntil"]}` };
     }
     if (validUntil.getTime() < Date.now()) {
-      return { ok: false, error: "Client.ValidUntil is in the past — update it before sending." };
+      return { ok: false, error: "Client.ValidUntil is in the past. Update it before sending." };
     }
 
     // Rahul's signature must exist before anything is sent.
@@ -256,7 +259,7 @@ export async function sendProposal(input: {
     }
 
     revalidatePath(`/proposals/${proposal.id}`);
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
@@ -270,8 +273,11 @@ export async function voidProposal(input: {
   reason: string;
   notifyParties: boolean;
 }): Promise<ActionResult> {
-  await requireAuth();
+  const user = await requireAuth();
   try {
+    if (user.role !== "ADMIN") {
+      return { ok: false, error: "Only admins can void proposals." };
+    }
     const proposal = await prisma.proposal.findUniqueOrThrow({
       where: { id: input.id },
       include: { parties: true },
@@ -304,7 +310,7 @@ export async function voidProposal(input: {
       }
     }
     revalidatePath(`/proposals/${input.id}`);
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
@@ -317,7 +323,7 @@ export async function reviseProposal(id: string): Promise<ActionResult<{ id: str
     const old = await prisma.proposal.findUniqueOrThrow({ where: { id } });
     if (old.status === "DRAFT") return { ok: false, error: "Drafts are edited directly." };
     if (old.paymentStatus === "PAID") {
-      return { ok: false, error: "This proposal is paid — start a new proposal instead." };
+      return { ok: false, error: "This proposal is paid. Start a new proposal instead." };
     }
 
     const revision = await prisma.$transaction(async (tx) => {
@@ -349,7 +355,7 @@ export async function reviseProposal(id: string): Promise<ActionResult<{ id: str
       eventType: "PROPOSAL_REVISED",
       metadata: { revisedFrom: old.id, versionNumber: revision.versionNumber },
     });
-    revalidatePath("/");
+    revalidatePath("/dashboard");
     return { ok: true, data: { id: revision.id } };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
@@ -414,7 +420,7 @@ export async function updatePartyEmail(input: {
       where: { id: input.partyId },
       include: { proposal: true },
     });
-    if (party.signedAt) return { ok: false, error: "Already signed — email locked." };
+    if (party.signedAt) return { ok: false, error: "Already signed, so the email is locked." };
     await prisma.party.update({
       where: { id: input.partyId },
       data: {

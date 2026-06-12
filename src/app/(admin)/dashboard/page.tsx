@@ -81,7 +81,7 @@ export default async function DashboardPage() {
                 Import a tokens JSON from the generate-proposal skill or start from scratch.
               </p>
             </div>
-            <Button size="sm" render={<Link href="/proposals/new" />}>
+            <Button size="sm" nativeButton={false} render={<Link href="/proposals/new" />}>
               <Plus className="h-4 w-4" />
               New Proposal
             </Button>

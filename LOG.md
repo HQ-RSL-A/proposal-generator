@@ -43,3 +43,18 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
   artifact, not an app bug.
 - Hardening anyway: the signature modal now restates the selected tier + price at the
   moment of consent ("You're signing for: Growth — $3,000/month").
+
+## 2026-06-12 — SaaS layer + voice DNA pass
+
+- Users + roles: `User` allowlist table (Google-only sign-in, rsla.io lock kept), ADMIN/
+  MEMBER roles, team management in /settings (add, role change, remove access, last-admin
+  guard), profile card with Google avatar. Members can't void/delete/manage settings
+  (enforced in actions, hidden in UI).
+- Routes: public landing page at `/` ("Send it. They sign. You get paid."), dashboard moved
+  to /dashboard, role-gated nav, account dropdown with sign out.
+- Voice DNA pass over every user-facing string (emails, signing pages, toasts, PDF labels):
+  killed all em/en dashes, rewrote subjects and copy conversational per
+  brandGuidelines/voiceDna.md.
+- Fixes: Base UI `nativeButton={false}` on link-rendered buttons, favicon (app/icon.svg),
+  sign-out via next-auth/react. Verified: tsc, lint, 47 tests, build (29 routes), landing
+  public + dashboard gated smoke test.

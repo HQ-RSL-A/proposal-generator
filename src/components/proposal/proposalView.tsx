@@ -97,7 +97,7 @@ export function TierCards({
             <ul className="mt-3 space-y-1.5">
               {tier.includes.map((line, i) => (
                 <li key={i} className="text-xs leading-relaxed text-muted-foreground">
-                  – {line}
+                  - {line}
                 </li>
               ))}
             </ul>

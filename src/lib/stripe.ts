@@ -61,7 +61,7 @@ export async function createCheckoutSession(input: {
         currency: paymentConfig.currency,
         unit_amount: recurring.amountCents,
         recurring: intervalMap[recurring.intervalMonths],
-        product_data: { name: `${recurring.label} — ${input.proposalTitle}` },
+        product_data: { name: `${recurring.label} · ${input.proposalTitle}` },
       },
     });
   }
@@ -72,7 +72,7 @@ export async function createCheckoutSession(input: {
       price_data: {
         currency: paymentConfig.currency,
         unit_amount: oneTime.amountCents,
-        product_data: { name: `${oneTime.label} — ${input.proposalTitle}` },
+        product_data: { name: `${oneTime.label} · ${input.proposalTitle}` },
       },
     });
   }

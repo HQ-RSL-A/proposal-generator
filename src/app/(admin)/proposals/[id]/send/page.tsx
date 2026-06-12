@@ -20,7 +20,7 @@ export default async function SendPage({ params }: { params: Promise<{ id: strin
   const signatureMissing = !settings?.signatureBlobUrl;
 
   const checkoutSummary = (() => {
-    if (isSignOnly(config)) return "Sign-only — no checkout after signing.";
+    if (isSignOnly(config)) return "Sign-only. No checkout after signing.";
     if (config.tiers?.length) {
       return `Client picks one of ${config.tiers.length} tiers on the signing page; checkout charges the selected tier.`;
     }
@@ -41,7 +41,7 @@ export default async function SendPage({ params }: { params: Promise<{ id: strin
         <Alert variant="destructive">
           <AlertTitle>Saved signature missing</AlertTitle>
           <AlertDescription>
-            Your signature auto-applies at send. Save it in Settings first — sending is blocked
+            Your signature auto-applies at send. Save it in Settings first. Sending is blocked
             until then.
           </AlertDescription>
         </Alert>
@@ -59,12 +59,12 @@ export default async function SendPage({ params }: { params: Promise<{ id: strin
           <CardTitle className="text-base">What happens on send</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>• Content is frozen and SHA-256 hashed — the legal record locks here.</p>
+          <p>• Content is frozen and SHA-256 hashed. The legal record locks here.</p>
           <p>• Your signature is applied as RSL/A&apos;s execution of the agreement.</p>
           <p>• {checkoutSummary}</p>
           <p>
             • Valid until <strong className="text-foreground">{tokens["Client.ValidUntil"]}</strong>{" "}
-            — automatic reminders at 3 days and 1 day before expiry.
+            with automatic reminders at 3 days and 1 day before expiry.
           </p>
         </CardContent>
       </Card>

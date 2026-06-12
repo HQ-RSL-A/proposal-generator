@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { requireUser } from "@/lib/authGuard";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { buildProposalSections, sectionsFromFrozen } from "@/lib/proposalContent";
@@ -23,6 +24,7 @@ export default async function ProposalDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const viewer = await requireUser();
   const proposal = await prisma.proposal.findUnique({
     where: { id },
     include: {
@@ -106,6 +108,7 @@ export default async function ProposalDetailPage({
           status={proposal.status}
           paymentStatus={proposal.paymentStatus}
           hasFinalPdf={hasFinalPdf}
+          isAdmin={viewer.role === "ADMIN"}
         />
       </div>
 
@@ -125,7 +128,7 @@ export default async function ProposalDetailPage({
                 className="flex items-center justify-between gap-2 text-sm"
               >
                 <span className="truncate">
-                  {job.jobType} — {job.lastError?.slice(0, 120) ?? "unknown error"}
+                  {job.jobType} · {job.lastError?.slice(0, 120) ?? "unknown error"}
                 </span>
                 <Button size="sm" variant="secondary" type="submit">
                   Retry
@@ -208,7 +211,7 @@ export default async function ProposalDetailPage({
                     <Button
                       size="sm"
                       variant="secondary"
-                      render={<a href={`/api/proposals/${proposal.id}/pdf`} />}
+                      nativeButton={false} render={<a href={`/api/proposals/${proposal.id}/pdf`} />}
                     >
                       Download
                     </Button>

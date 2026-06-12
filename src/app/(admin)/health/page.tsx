@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requireAdmin } from "@/lib/authGuard";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/dates";
 import { retryJob } from "@/actions/proposals";
@@ -9,6 +10,7 @@ import { Button } from "@/components/ui/button";
 export const dynamic = "force-dynamic";
 
 export default async function HealthPage() {
+  await requireAdmin();
   const [deadJobs, pendingJobs, stuckPayments, bounces, cronLogs] = await Promise.all([
     prisma.pendingJob.findMany({
       where: { status: "DEAD" },
@@ -92,7 +94,7 @@ export default async function HealthPage() {
                   <div className="min-w-0">
                     <p className="font-medium">
                       {job.jobType}
-                      {job.proposal ? ` — ${job.proposal.title}` : ""}
+                      {job.proposal ? ` · ${job.proposal.title}` : ""}
                     </p>
                     <p className="truncate text-xs text-muted-foreground">
                       {job.attempts} attempts · {job.lastError?.slice(0, 140) ?? "unknown error"}

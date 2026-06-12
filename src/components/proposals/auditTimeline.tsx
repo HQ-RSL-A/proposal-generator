@@ -3,7 +3,7 @@ import type { AuditEvent, Party } from "@/generated/prisma/client";
 
 const EVENT_META: Record<string, { label: string; icon: string }> = {
   PROPOSAL_CREATED: { label: "Proposal created", icon: "📝" },
-  PROPOSAL_SENT: { label: "Sent — content frozen & hashed", icon: "📤" },
+  PROPOSAL_SENT: { label: "Sent. Content frozen and hashed", icon: "📤" },
   PROPOSAL_REVISED: { label: "Revision created", icon: "🔁" },
   EMAIL_SENT: { label: "Email sent", icon: "✉️" },
   EMAIL_DELIVERED: { label: "Email delivered", icon: "📬" },
@@ -61,7 +61,7 @@ export function AuditTimeline({
             <p className="text-sm font-medium leading-5">{meta.label}</p>
             <p className="text-xs text-muted-foreground">
               {formatDateTime(event.occurredAt)}
-              {detailBits.length > 0 ? ` — ${detailBits.join(" · ")}` : ""}
+              {detailBits.length > 0 ? ` · ${detailBits.join(" · ")}` : ""}
             </p>
           </li>
         );

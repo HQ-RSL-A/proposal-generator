@@ -31,6 +31,20 @@ Resend (+svix webhooks) · Notion API (raw fetch) · Vitest.
    with IP/UA/consent timestamps, content hash, MSA hash, event log) → private Blob →
    executed-copy emails to all parties.
 
+## Users & roles
+
+- `User` table is the sign-in allowlist (rsla.io Google accounts only; no passwords by
+  design). Roles: ADMIN (everything) / MEMBER (create, send, manage; no void/delete,
+  no settings, no team management). Owner seeded: lalia@rsla.io (ADMIN).
+- Avatar + name sync from Google on each sign-in. Add teammates in /settings; no invite
+  email needed.
+- Routes: `/` public landing → `/dashboard` (team) → `/settings` + `/health` (admin).
+
+## Copy rules
+
+All user-facing text follows `myBusiness/brandGuidelines/voiceDna.md`: no em/en dashes
+anywhere, short conversational sentences, no hype or AI-flag words, ranges as "X to Y".
+
 ## Status model
 
 - `status`: DRAFT → SENT → VIEWED → PARTIALLY_SIGNED → SIGNED | DECLINED | EXPIRED | VOIDED

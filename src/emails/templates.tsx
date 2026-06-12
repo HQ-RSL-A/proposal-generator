@@ -25,7 +25,7 @@ export function SigningInviteEmail({
   signingUrl: string;
 }) {
   return (
-    <EmailShell preview={`Your proposal from RSL/A — ${data.proposalTitle}`}>
+    <EmailShell preview={`Your proposal from RSL/A: ${data.proposalTitle}`}>
       <Heading>Your proposal is ready to review</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
@@ -39,8 +39,8 @@ export function SigningInviteEmail({
       </Paragraph>
       <Divider />
       <FinePrint>
-        This signing link is unique to you — please don&apos;t forward it. If anything looks off or
-        you have questions, just reply to this email.
+        This signing link is unique to you, so please don&apos;t forward it. If anything looks off
+        or you have questions, just reply to this email.
       </FinePrint>
     </EmailShell>
   );
@@ -56,13 +56,13 @@ export function SigningReminderEmail({
   daysLeft: number;
 }) {
   return (
-    <EmailShell preview={`Reminder — ${data.proposalTitle} expires soon`}>
+    <EmailShell preview={`Reminder: ${data.proposalTitle} expires soon`}>
       <Heading>
         {daysLeft <= 1 ? "Last day" : `${daysLeft} days left`} on your proposal
       </Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        Quick nudge — the proposal <strong>{data.proposalTitle}</strong> is still waiting for your
+        Quick nudge. The proposal <strong>{data.proposalTitle}</strong> is still waiting for your
         signature and expires on <strong>{data.validUntil}</strong>. Here&apos;s your fresh link:
       </Paragraph>
       <CtaButton href={signingUrl}>Review &amp; Sign</CtaButton>
@@ -83,7 +83,7 @@ export function CoSignerSignedEmail({
   signingUrl: string;
 }) {
   return (
-    <EmailShell preview={`${signedByName} has signed — your signature completes it`}>
+    <EmailShell preview={`${signedByName} has signed. Your signature completes it.`}>
       <Heading>{signedByName} has signed</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
@@ -106,13 +106,13 @@ export function FullySignedClientEmail({
   paymentUrl: string | null;
 }) {
   return (
-    <EmailShell preview={`Fully executed — ${data.proposalTitle}`}>
+    <EmailShell preview={`Fully executed: ${data.proposalTitle}`}>
       <Heading>Your agreement is fully executed</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        All parties have signed <strong>{data.proposalTitle}</strong>. Your executed copy — proposal,
-        Master Services Agreement, and signature certificate — is attached to this email for your
-        records.
+        All parties have signed <strong>{data.proposalTitle}</strong>. Your executed copy is attached
+        to this email: the proposal, the Master Services Agreement, and the signature certificate,
+        all in one PDF for your records.
       </Paragraph>
       {paymentPending && paymentUrl ? (
         <>
@@ -124,7 +124,7 @@ export function FullySignedClientEmail({
         </>
       ) : null}
       <Divider />
-      <FinePrint>Keep this email — the attached PDF is your executed agreement.</FinePrint>
+      <FinePrint>Keep this email. The attached PDF is your executed agreement.</FinePrint>
     </EmailShell>
   );
 }
@@ -160,12 +160,12 @@ export function PaymentLinkEmail({
   paymentUrl: string;
 }) {
   return (
-    <EmailShell preview={`Complete your payment — ${data.proposalTitle}`}>
+    <EmailShell preview={`Complete your payment for ${data.proposalTitle}`}>
       <Heading>Complete your payment</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        Your agreement <strong>{data.proposalTitle}</strong> is signed — the only step left is the
-        first payment. Work begins as soon as it lands.
+        Your agreement <strong>{data.proposalTitle}</strong> is signed. The only step left is the
+        first payment, and work begins as soon as it lands.
       </Paragraph>
       <CtaButton href={paymentUrl}>Pay Securely</CtaButton>
       <FinePrint>Payments are processed by Stripe. Card and bank transfer accepted.</FinePrint>
@@ -183,8 +183,8 @@ export function PaymentReceivedEmail({
   isAdmin: boolean;
 }) {
   return (
-    <EmailShell preview={`Payment received — ${data.proposalTitle}`}>
-      <Heading>{isAdmin ? `💸 ${data.clientCompany} paid` : "Payment received — we're on"}</Heading>
+    <EmailShell preview={`Payment received for ${data.proposalTitle}`}>
+      <Heading>{isAdmin ? `💸 ${data.clientCompany} paid` : "Payment received. We're on."}</Heading>
       {isAdmin ? (
         <>
           <DetailRow label="Proposal" value={data.proposalTitle} />
@@ -215,7 +215,7 @@ export function PaymentFailedEmail({
   isAdmin: boolean;
 }) {
   return (
-    <EmailShell preview={`Payment issue — ${data.proposalTitle}`}>
+    <EmailShell preview={`Payment issue: ${data.proposalTitle}`}>
       <Heading>{isAdmin ? `⚠️ Payment failed: ${data.clientCompany}` : "Your payment didn't go through"}</Heading>
       {isAdmin ? (
         <Paragraph>
@@ -226,7 +226,7 @@ export function PaymentFailedEmail({
         <>
           <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
           <Paragraph>
-            The payment for <strong>{data.proposalTitle}</strong> didn&apos;t process — this happens
+            The payment for <strong>{data.proposalTitle}</strong> didn&apos;t process. This happens
             sometimes with bank verifications. You can retry securely here:
           </Paragraph>
           <CtaButton href={paymentUrl}>Retry Payment</CtaButton>
@@ -238,7 +238,7 @@ export function PaymentFailedEmail({
 
 export function ProposalVoidedEmail({ data }: { data: ProposalEmailData }) {
   return (
-    <EmailShell preview={`Proposal withdrawn — ${data.proposalTitle}`}>
+    <EmailShell preview={`Proposal withdrawn: ${data.proposalTitle}`}>
       <Heading>Proposal withdrawn</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
@@ -258,7 +258,7 @@ export function ExpiredAdminEmail({
   dashboardUrl: string;
 }) {
   return (
-    <EmailShell preview={`Expired without signature — ${data.clientCompany}`}>
+    <EmailShell preview={`Expired without signature: ${data.clientCompany}`}>
       <Heading>Proposal expired</Heading>
       <Paragraph>
         <strong>{data.proposalTitle}</strong> for {data.clientCompany} passed its validity date (
@@ -282,7 +282,7 @@ export function DeclinedAdminEmail({
   dashboardUrl: string;
 }) {
   return (
-    <EmailShell preview={`Declined — ${data.clientCompany}`}>
+    <EmailShell preview={`Declined: ${data.clientCompany}`}>
       <Heading>Proposal declined</Heading>
       <Paragraph>
         <strong>{declinedBy}</strong> declined <strong>{data.proposalTitle}</strong>.

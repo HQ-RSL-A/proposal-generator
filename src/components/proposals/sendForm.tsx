@@ -54,7 +54,7 @@ export function SendForm({
         toast.error(result.error);
         return;
       }
-      toast.success("Proposal sent — signing invites are on the way.");
+      toast.success("Proposal sent. Signing invites are on the way.");
       router.push(`/proposals/${proposalId}`);
       router.refresh();
     } finally {

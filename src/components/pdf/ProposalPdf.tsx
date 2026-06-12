@@ -147,7 +147,7 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
             <View style={{ marginTop: 6 }}>
               {tier.includes.map((line, i) => (
                 <Text key={i} style={{ fontSize: 8.5, marginBottom: 2.5 }}>
-                  – {line}
+                  - {line}
                 </Text>
               ))}
             </View>
@@ -194,7 +194,7 @@ export function ProposalPdf({
   const client = signers.find((p) => p.role === "CLIENT_SIGNER");
   const admin = signers.find((p) => p.role === "ADMIN_SIGNER");
   const clientSigners = signers.filter((p) => p.role === "CLIENT_SIGNER");
-  const footerTitle = `RSL/A — ${sections.cover.title}`;
+  const footerTitle = `RSL/A · ${sections.cover.title}`;
 
   return (
     <Document
@@ -402,7 +402,7 @@ export function ProposalPdf({
             Content hash (SHA-256, frozen at send): <Text style={s.mono}>{certificate.contentHash}</Text>
           </Text>
           <Text style={{ fontSize: 9 }}>
-            Agreement version: {certificate.msaVersionLabel} — MSA SHA-256:{" "}
+            Agreement version: {certificate.msaVersionLabel} · MSA SHA-256:{" "}
             <Text style={s.mono}>{certificate.msaSha256}</Text>
           </Text>
           {certificate.selectedTierLabel ? (
@@ -416,7 +416,7 @@ export function ProposalPdf({
         {signers.map((signer, i) => (
           <View key={i} style={s.certBox} wrap={false}>
             <Text style={s.bold}>
-              {signer.name} — {signer.role === "ADMIN_SIGNER" ? "RSL/A LLC" : "Client"}
+              {signer.name} · {signer.role === "ADMIN_SIGNER" ? "RSL/A LLC" : "Client"}
             </Text>
             <Text style={{ fontSize: 9, marginTop: 3 }}>Email: {signer.email}</Text>
             <Text style={{ fontSize: 9 }}>Signature method: {signer.method}</Text>
@@ -443,7 +443,7 @@ export function ProposalPdf({
           <Text style={s.bold}>Event log</Text>
           {certificate.events.map((event, i) => (
             <Text key={i} style={{ fontSize: 8.5, marginTop: 2 }}>
-              {event.at} — {event.label}
+              {event.at} · {event.label}
             </Text>
           ))}
         </View>

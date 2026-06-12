@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export default async function SignInPage() {
   const session = await auth();
-  if (session?.user?.email?.endsWith("@rsla.io")) redirect("/");
+  if (session?.user?.email?.endsWith("@rsla.io")) redirect("/dashboard");
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface dot-pattern">
@@ -13,13 +13,13 @@ export default async function SignInPage() {
         <Image src="/logomark.svg" alt="RSL/A" width={40} height={40} className="mx-auto" />
         <h1 className="font-heading mt-4 text-xl font-bold">Proposal Generator</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Internal tool — sign in with your rsla.io account.
+          RSL/A team only. Sign in with your rsla.io Google account.
         </p>
         <form
           className="mt-6"
           action={async () => {
             "use server";
-            await signIn("google", { redirectTo: "/" });
+            await signIn("google", { redirectTo: "/dashboard" });
           }}
         >
           <Button type="submit" className="w-full">

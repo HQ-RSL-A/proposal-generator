@@ -36,11 +36,13 @@ export function ProposalActions({
   status,
   paymentStatus,
   hasFinalPdf,
+  isAdmin,
 }: {
   proposalId: string;
   status: ProposalStatus;
   paymentStatus: PaymentStatus;
   hasFinalPdf: boolean;
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const [voidOpen, setVoidOpen] = React.useState(false);
@@ -69,31 +71,35 @@ export function ProposalActions({
     <div className="flex flex-wrap items-center gap-2">
       {status === "DRAFT" ? (
         <>
-          <Button size="sm" render={<Link href={`/proposals/${proposalId}/send`} />}>
+          <Button size="sm" nativeButton={false} render={<Link href={`/proposals/${proposalId}/send`} />}>
             <Send className="h-3.5 w-3.5" /> Send
           </Button>
-          <Button size="sm" variant="secondary" render={<Link href={`/proposals/${proposalId}/edit`} />}>
+          <Button size="sm" variant="secondary" nativeButton={false} render={<Link href={`/proposals/${proposalId}/edit`} />}>
             <FileEdit className="h-3.5 w-3.5" /> Edit
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive"
-            disabled={busy}
-            onClick={() => {
-              if (!confirm("Delete this draft? This can't be undone.")) return;
-              run(() => deleteDraft(proposalId), "Draft deleted").then(() => router.push("/"));
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5" /> Delete
-          </Button>
+          {isAdmin ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-destructive"
+              disabled={busy}
+              onClick={() => {
+                if (!confirm("Delete this draft? This can't be undone.")) return;
+                run(() => deleteDraft(proposalId), "Draft deleted").then(() =>
+                  router.push("/dashboard")
+                );
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </Button>
+          ) : null}
         </>
       ) : null}
 
       {status === "SIGNED" ? (
         <>
           {hasFinalPdf ? (
-            <Button size="sm" render={<a href={`/api/proposals/${proposalId}/pdf`} />}>
+            <Button size="sm" nativeButton={false} render={<a href={`/api/proposals/${proposalId}/pdf`} />}>
               <Download className="h-3.5 w-3.5" /> Executed PDF
             </Button>
           ) : (
@@ -119,7 +125,7 @@ export function ProposalActions({
         </>
       ) : null}
 
-      {inFlight ? (
+      {inFlight && isAdmin ? (
         <Button size="sm" variant="ghost" className="text-destructive" onClick={() => setVoidOpen(true)}>
           <Ban className="h-3.5 w-3.5" /> Void
         </Button>

@@ -115,7 +115,7 @@ export function buildTemplate(
       if (!party || !context.rawToken) throw new Error("invite needs party + token");
       return {
         to: party.email,
-        subject: `${data.clientCompany} × RSL/A — proposal ready for your signature`,
+        subject: `Your RSL/A proposal is ready to sign: ${data.proposalTitle}`,
         react: <SigningInviteEmail data={data} signingUrl={signingUrl(context.rawToken)} />,
       };
     }
@@ -137,7 +137,7 @@ export function buildTemplate(
       if (!party || !context.rawToken) throw new Error("co-signer needs party + token");
       return {
         to: party.email,
-        subject: `${context.signedByName ?? "Your co-signer"} signed — your signature completes it`,
+        subject: `${context.signedByName ?? "Your co-signer"} signed. You're up.`,
         react: (
           <CoSignerSignedEmail
             data={data}
@@ -187,7 +187,7 @@ export function buildTemplate(
       if (!party || !context.rawToken) throw new Error("payment_link needs payer + token");
       return {
         to: party.email,
-        subject: `Complete your payment — ${data.proposalTitle}`,
+        subject: `Complete your payment for ${data.proposalTitle}`,
         react: <PaymentLinkEmail data={data} paymentUrl={paymentUrl(context.rawToken)} />,
       };
     }
@@ -195,7 +195,7 @@ export function buildTemplate(
       if (!party) throw new Error("payment_received_client needs party");
       return {
         to: party.email,
-        subject: `Payment received — ${data.proposalTitle}`,
+        subject: `Payment received for ${data.proposalTitle}`,
         react: (
           <PaymentReceivedEmail
             data={data}
@@ -237,7 +237,7 @@ export function buildTemplate(
       if (!party) throw new Error("proposal_voided needs party");
       return {
         to: party.email,
-        subject: `Proposal withdrawn — ${data.proposalTitle}`,
+        subject: `Proposal withdrawn: ${data.proposalTitle}`,
         react: <ProposalVoidedEmail data={data} />,
       };
     }

@@ -47,7 +47,7 @@ export default async function SigningPage({
     return (
       <OutcomeCard icon="🔗" title="This link isn't valid">
         <p>
-          It may have been replaced by a newer email — check the most recent message from RSL/A, or
+          It may have been replaced by a newer email. Check the most recent message from RSL/A, or
           ask for a fresh link.
         </p>
       </OutcomeCard>
@@ -77,19 +77,19 @@ export default async function SigningPage({
         <p>
           You signed on {formatDateTime(party.signedAt)}.{" "}
           {proposal.status === "SIGNED"
-            ? "All parties have signed — your executed copy was emailed to you."
+            ? "All parties have signed. Your executed copy was emailed to you."
             : "We're waiting on the remaining signatures; you'll get the executed copy by email once everyone has signed."}
         </p>
         {paymentOpen && party.payer ? (
           <div className="pt-3">
-            <Button className="w-full" render={<a href={`/pay/${token}`} />}>
+            <Button className="w-full" nativeButton={false} render={<a href={`/pay/${token}`} />}>
               Complete payment
             </Button>
           </div>
         ) : null}
         {proposal.paymentStatus === "PROCESSING" && party.payer ? (
           <p className="font-medium text-foreground">
-            Your bank transfer is processing — no further action needed.
+            Your bank transfer is processing. No further action needed.
           </p>
         ) : null}
       </OutcomeCard>

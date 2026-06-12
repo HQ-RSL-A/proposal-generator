@@ -11,8 +11,11 @@ export async function saveAdminSignature(input: {
   adoptedName: string;
   type: "DRAWN" | "TYPED";
 }): Promise<ActionResult> {
-  await requireAuth();
+  const user = await requireAuth();
   try {
+    if (user.role !== "ADMIN") {
+      return { ok: false, error: "Only admins can change the company signature." };
+    }
     const match = input.pngDataUrl.match(/^data:image\/png;base64,([A-Za-z0-9+/=]+)$/);
     if (!match) return { ok: false, error: "Signature must be a PNG." };
     const buffer = Buffer.from(match[1], "base64");

@@ -17,8 +17,8 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Everything is admin-only except: auth, public signing/payment pages, their APIs,
-    // webhooks, crons, and static assets.
-    "/((?!api/|sign-in|sign/|pay/|_next/static|_next/image|favicon.ico|icon.svg|logomark.svg|fonts/).*)",
+    // Everything is team-only except: the landing page (exact /), auth, public
+    // signing/payment pages, their APIs, webhooks, crons, and static assets.
+    "/((?!$|api/|sign-in|sign/|pay/|_next/static|_next/image|favicon.ico|icon.svg|logomark.svg|fonts/).*)",
   ],
 };

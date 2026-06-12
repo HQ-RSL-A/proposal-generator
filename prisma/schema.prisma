@@ -108,7 +108,29 @@ enum JobStatus {
   @@schema("proposals")
 }
 
+enum UserRole {
+  ADMIN
+  MEMBER
+
+  @@schema("proposals")
+}
+
 // ---------- Models ----------
+
+// Allowlist: only rows here can sign in (rsla.io Google accounts only).
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  name        String
+  role        UserRole  @default(MEMBER)
+  avatarUrl   String?
+  active      Boolean   @default(true)
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@schema("proposals")
+}
 
 model MsaVersion {
   id           String     @id @default(cuid())

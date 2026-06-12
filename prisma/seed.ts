@@ -31,6 +31,13 @@ async function main() {
   });
   console.log("AdminSettings singleton ready");
 
+  await prisma.user.upsert({
+    where: { email: "lalia@rsla.io" },
+    create: { email: "lalia@rsla.io", name: "Rahul Lalia", role: "ADMIN" },
+    update: { role: "ADMIN", active: true },
+  });
+  console.log("Owner user lalia@rsla.io ready (ADMIN)");
+
   await prisma.$disconnect();
   await pool.end();
 }

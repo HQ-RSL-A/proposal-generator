@@ -152,7 +152,7 @@ export async function noteOnSigned(input: {
               {
                 type: "text",
                 text: {
-                  content: `Proposal signed ${new Date().toLocaleDateString("en-US")} — awaiting payment. ${input.proposalUrl}`,
+                  content: `Proposal signed ${new Date().toLocaleDateString("en-US")}. Awaiting payment. ${input.proposalUrl}`,
                 },
               },
             ],

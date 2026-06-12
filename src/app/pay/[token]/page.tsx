@@ -31,7 +31,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
   if (proposal.paymentStatus === "PAID") {
     return (
       <OutcomeCard icon="✅" title="Already paid">
-        <p>This engagement is paid up — nothing more to do. Your receipt is in your inbox.</p>
+        <p>This engagement is paid up. Nothing more to do. Your receipt is in your inbox.</p>
       </OutcomeCard>
     );
   }
@@ -39,8 +39,8 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
     return (
       <OutcomeCard icon="🏦" title="Payment processing">
         <p>
-          Your bank transfer is in progress — ACH takes 1–2 business days. We&apos;ll email you the
-          moment it clears.
+          Your bank transfer is in progress. ACH takes 1 to 2 business days, and we&apos;ll email you
+          the moment it clears.
         </p>
       </OutcomeCard>
     );
@@ -48,7 +48,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
   if (proposal.status !== "SIGNED" || proposal.paymentStatus === "NOT_REQUIRED") {
     return (
       <OutcomeCard icon="🖊️" title="Signature comes first">
-        <p>This proposal isn&apos;t ready for payment yet — finish signing from your email link.</p>
+        <p>This proposal isn&apos;t ready for payment yet. Finish signing from your email link first.</p>
       </OutcomeCard>
     );
   }

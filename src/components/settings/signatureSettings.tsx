@@ -60,7 +60,7 @@ export function SignatureSettings({
         toast.error(result.error);
         return;
       }
-      toast.success("Signature saved — it will be pre-applied on every send.");
+      toast.success("Signature saved. It gets pre-applied on every send.");
       setCacheBust(Date.now());
       router.refresh();
     } finally {
@@ -76,7 +76,7 @@ export function SignatureSettings({
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Applied automatically as RSL/A&apos;s execution the moment you send a proposal. Sent
-          documents keep the signature they were sent with — updating this only affects future
+          documents keep the signature they were sent with. Updating this only affects future
           sends.
         </p>
         {hasSignature ? (
@@ -93,7 +93,7 @@ export function SignatureSettings({
           </div>
         ) : (
           <p className="rounded-lg border border-dashed border-warning bg-amber-50 p-3 text-sm text-amber-800">
-            No signature saved yet — sending is blocked until you save one.
+            No signature saved yet. Sending is blocked until you save one.
           </p>
         )}
 

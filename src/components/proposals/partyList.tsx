@@ -77,7 +77,7 @@ export function PartyList({
                       const result = await getFreshSigningLink(party.id);
                       if (!result.ok) return void toast.error(result.error);
                       await navigator.clipboard.writeText(result.data!.url);
-                      toast.success("Fresh link copied — earlier emailed links are now invalid.");
+                      toast.success("Fresh link copied. Earlier emailed links are now invalid.");
                     } finally {
                       setBusyId(null);
                     }

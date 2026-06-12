@@ -297,7 +297,7 @@ function MoneyFields({
       ) : null}
       {mismatch ? (
         <p className="col-span-12 text-xs text-destructive">
-          Display says {value.displayString} but {(value.amountCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} will be charged — make them match before sending.
+          Display says {value.displayString} but {(value.amountCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} will be charged. Make them match before sending.
         </p>
       ) : null}
     </div>
@@ -361,7 +361,7 @@ export function ProposalForm({
     }));
     toast.success(
       inferredTiers
-        ? `Imported with ${inferredTiers.length} pricing tiers — review the amounts.`
+        ? `Imported with ${inferredTiers.length} pricing tiers. Review the amounts.`
         : "Imported. Set up pricing below."
     );
   }
@@ -451,7 +451,7 @@ export function ProposalForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Checkout — what the client pays after signing</CardTitle>
+          <CardTitle className="text-base">Checkout: what the client pays after signing</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           <Tabs value={state.pricingMode} onValueChange={(v) => set("pricingMode", v as PricingMode)}>
@@ -614,7 +614,7 @@ export function ProposalForm({
 
           {state.pricingMode === "signOnly" ? (
             <p className="text-sm text-muted-foreground">
-              No checkout after signing — you&apos;ll invoice separately (per-phase deals). The
+              No checkout after signing. You&apos;ll invoice separately (per-phase deals). The
               signing flow ends on a confirmation page.
             </p>
           ) : null}

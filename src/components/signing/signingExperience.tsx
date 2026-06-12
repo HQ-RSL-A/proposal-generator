@@ -64,7 +64,7 @@ export function SigningExperience({
 
   function openSignModal() {
     if (requiresTier && !selectedTierId) {
-      toast.error("Pick a pricing option first — it's part of what you're agreeing to.");
+      toast.error("Pick a pricing option first. It's part of what you're agreeing to.");
       document
         .querySelector("[data-tier-anchor]")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -102,7 +102,7 @@ export function SigningExperience({
         router.push(data.redirectUrl ?? `/sign/${token}/signed`);
       }
     } catch {
-      toast.error("Network hiccup — your signature was not applied. Please try again.");
+      toast.error("Network hiccup. Your signature was not applied, so please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -166,14 +166,14 @@ export function SigningExperience({
         defaultName={partyName}
         submitting={submitting}
         onAdopt={handleAdopt}
-        ctaLabel={willCheckout ? "Adopt & Sign — continue to payment" : "Adopt & Sign"}
+        ctaLabel={willCheckout ? "Adopt & Sign, continue to payment" : "Adopt & Sign"}
         selectedTierSummary={(() => {
           const tier = sections.investment.tiers?.find((t) => t.id === selectedTierId);
           if (!tier) return null;
           const price = [tier.oneTime?.displayString, tier.recurring?.displayString]
             .filter(Boolean)
             .join(" + ");
-          return `${tier.label}${price ? ` — ${price}` : ""}`;
+          return `${tier.label}${price ? ` at ${price}` : ""}`;
         })()}
       />
 
@@ -182,7 +182,7 @@ export function SigningExperience({
           <DialogHeader>
             <DialogTitle className="font-heading">Decline this proposal?</DialogTitle>
             <DialogDescription>
-              Rahul will be notified. You can optionally say why — it helps.
+              Rahul will be notified. You can optionally say why. It helps.
             </DialogDescription>
           </DialogHeader>
           <Textarea

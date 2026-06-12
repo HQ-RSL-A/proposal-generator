@@ -49,7 +49,7 @@ export function SignatureModal({
   submitting: boolean;
   onAdopt: (signature: AdoptedSignature) => void;
   ctaLabel: string;
-  /** e.g. "Growth — $3,000/month"; restated at the moment of consent for tiered deals */
+  /** e.g. "Growth at $3,000/month"; restated at the moment of consent for tiered deals */
   selectedTierSummary?: string | null;
 }) {
   const [tab, setTab] = React.useState<"draw" | "type">("draw");

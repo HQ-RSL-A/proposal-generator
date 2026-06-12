@@ -20,12 +20,12 @@ export default async function SignedPage({ params }: { params: Promise<{ token: 
       <OutcomeCard icon="🎉" title="Signature applied">
         <p>
           {allSigned
-            ? "All parties have signed — the agreement is fully executed. Your copy (with the signature certificate) is on its way to your inbox."
+            ? "All parties have signed and the agreement is fully executed. Your copy, signature certificate included, is on its way to your inbox."
             : "Thanks! We're waiting on the remaining signatures. You'll receive the fully executed copy by email once everyone has signed."}
         </p>
         {paymentOpen && gate.party.payer ? (
           <div className="pt-3">
-            <Button className="w-full" render={<a href={`/pay/${token}`} />}>
+            <Button className="w-full" nativeButton={false} render={<a href={`/pay/${token}`} />}>
               Complete payment
             </Button>
           </div>

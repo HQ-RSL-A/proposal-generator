@@ -22,13 +22,13 @@ export default async function PaidPage({ params }: { params: Promise<{ token: st
     <OutcomeCard icon={processing ? "🏦" : "🎉"} title={processing ? "Payment processing" : "You're all set"}>
       {processing ? (
         <p>
-          Your bank transfer is on its way — ACH payments take 1–2 business days to clear. We&apos;ll
-          confirm by email the moment it lands, and work gets scheduled right away.
+          Your bank transfer is on its way. ACH takes 1 to 2 business days to clear, and we&apos;ll
+          confirm by email the moment it lands. Work gets scheduled right away.
         </p>
       ) : (
         <p>
           Payment received (or finishing up). A confirmation email and your kickoff details are on
-          the way. Welcome aboard — we&apos;re excited to build this.
+          the way. Welcome aboard. We&apos;re excited to build this.
         </p>
       )}
     </OutcomeCard>
