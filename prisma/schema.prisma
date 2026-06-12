@@ -236,6 +236,8 @@ model Signature {
   type           SignatureType
   imageBlobUrl   String
   adoptedName    String
+  signerTitle    String?
+  signerCompany  String?
   fontFamily     String?
   esignConsented Boolean       @default(false)
   consentedAt    DateTime?

@@ -15,18 +15,6 @@ import {
   type SignerCertInfo,
 } from "@/components/pdf/ProposalPdf";
 
-const EVENT_LABELS: Record<string, string> = {
-  PROPOSAL_SENT: "Proposal sent and content frozen",
-  EMAIL_DELIVERED: "Email delivered",
-  PAGE_VIEWED: "Document viewed",
-  TIER_SELECTED: "Pricing option selected",
-  ESIGN_CONSENTED: "E-signature consent given",
-  PARTY_SIGNED: "Signature applied",
-  ALL_SIGNED: "All parties signed",
-  CHECKOUT_CREATED: "Checkout session created",
-  PAYMENT_PAID: "Payment received",
-};
-
 /**
  * Generates the executed PDF (proposal + MSA + signatures + certificate),
  * stores it in Blob, records the GeneratedDocument, and sends the
@@ -47,6 +35,13 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
   const frozen = proposal.frozenContent as unknown as FrozenContent;
   const sections = sectionsFromFrozen(frozen, proposal.msaVersion.bodyMarkdown);
 
+  const firstViewedByParty = new Map<string, Date>();
+  for (const event of proposal.auditEvents) {
+    if (event.eventType === "PAGE_VIEWED" && event.partyId && !firstViewedByParty.has(event.partyId)) {
+      firstViewedByParty.set(event.partyId, event.occurredAt);
+    }
+  }
+
   const signers: SignerCertInfo[] = [];
   for (const party of proposal.parties) {
     const signature = proposal.signatures.find((sig) => sig.partyId === party.id);
@@ -55,6 +50,7 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
       const png = await fetchPrivateBlob(signature.imageBlobUrl);
       dataUri = `data:image/png;base64,${png.toString("base64")}`;
     }
+    const viewedAt = firstViewedByParty.get(party.id);
     signers.push({
       name: party.name,
       email: party.email,
@@ -68,36 +64,29 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
               ? `Typed electronic signature (${signature.fontFamily ?? "handwriting font"})`
               : "Not signed",
       adoptedName: signature?.adoptedName ?? party.name,
-      signedAt: signature ? formatDateTime(signature.signedAt) : "—",
-      consentedAt: signature?.consentedAt ? formatDateTime(signature.consentedAt) : null,
+      signerTitle:
+        signature?.signerTitle ?? (party.role === "ADMIN_SIGNER" ? "Managing Member" : "Signer"),
+      signerCompany:
+        signature?.signerCompany ??
+        (party.role === "ADMIN_SIGNER" ? "RSL/A LLC" : frozen.tokens["Client.Company"]),
+      viewedAt: viewedAt ? formatDateTime(viewedAt) : null,
+      signedAt: signature ? formatDateTime(signature.signedAt) : null,
       ipAddress: signature?.ipAddress ?? null,
-      userAgent: signature?.userAgent ?? null,
       signatureDataUri: dataUri,
     });
   }
 
-  const selectedTier = (frozen.paymentConfig as PaymentConfig).tiers?.find(
-    (tier) => tier.id === proposal.selectedTierId
-  );
-
   const certificate: CertificateInfo = {
-    proposalId: proposal.id,
+    referenceId: proposal.id.toUpperCase(),
     versionNumber: proposal.versionNumber,
-    contentHash: proposal.contentHash ?? "—",
-    msaVersionLabel: proposal.msaVersion.version,
-    msaSha256: proposal.msaVersion.sha256,
-    selectedTierLabel: selectedTier?.label ?? null,
-    generatedAt: formatDateTime(new Date()),
-    events: proposal.auditEvents
-      .filter((event) => EVENT_LABELS[event.eventType])
-      .map((event) => ({
-        label: EVENT_LABELS[event.eventType],
-        at: formatDateTime(event.occurredAt),
-      })),
+    contentHash: proposal.contentHash ?? "",
+    agreementVersion: proposal.msaVersion.version,
+    sentAt: proposal.sentAt ? formatDateTime(proposal.sentAt) : "",
+    completedAt: proposal.completedAt ? formatDateTime(proposal.completedAt) : formatDateTime(new Date()),
   };
 
   const pdfBuffer = await renderToBuffer(
-    React.createElement(ProposalPdf, { sections, signers, certificate }) as Parameters<
+    React.createElement(ProposalPdf, { sections, signers, certificate, selectedTierId: proposal.selectedTierId }) as Parameters<
       typeof renderToBuffer
     >[0]
   );

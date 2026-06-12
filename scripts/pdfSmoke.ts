@@ -11,21 +11,21 @@ import type { PaymentConfig, TokensJson } from "../src/lib/types";
 const msa = fs.readFileSync(path.join(__dirname, "../prisma/content/msaV3.md"), "utf8");
 
 const tokens: TokensJson = {
-  "Client.ProposalTitle": "PDF Engine Smoke Test",
+  "Client.ProposalTitle": "Multi-Channel Marketing System for Brightline",
   "Client.FirstName": "Dominique",
   "Client.LastName": "Norris",
   "Client.Company": "Brightline Test Co",
-  "Client.ProblemTitle": "Fonts That Refuse to Parse",
-  "Client.ProblemText": "The OTF flavor of Satoshi crashed fontkit.\n\nThis render proves the TTF conversion fixed it.",
-  "Client.SolutionTitle": "Converted Outlines",
-  "Client.SolutionText": "CFF curves became quadratic glyf outlines via cu2qu. Same letterforms, parseable tables.",
-  "Client.AtGlanceServices": "One rendered PDF",
-  "Client.AtGlanceInvestment": "$0",
-  "Client.AtGlanceTimeline": "Seconds",
-  "Client.ScopeItems": "• Cover and At a Glance\n• Tier table\n• Acceptance blocks\n• Full 37-section MSA\n• Signature certificate",
-  "Client.TimelineItems": "• Render now",
-  "Client.InvestmentDetails": "Pick the option that fits:",
-  "Client.InvestmentNote": "All weights of Satoshi exercised: regular, medium, bold, black.",
+  "Client.ProblemTitle": "Inconsistent Lead Flow Despite Strong Demand",
+  "Client.ProblemText": "Dominique mentioned it directly: the inquiries arrive in waves.\n\nThis paragraph exists to verify lowercase i renders correctly: initial, invisible, identification, individual.",
+  "Client.SolutionTitle": "A System That Runs Itself",
+  "Client.SolutionText": "Website, ads, and reviews working as one machine.",
+  "Client.AtGlanceServices": "Website rebuild + rotating monthly marketing",
+  "Client.AtGlanceInvestment": "Three options, $1,800 to $4,500/month",
+  "Client.AtGlanceTimeline": "Website live in 2 to 3 weeks",
+  "Client.ScopeItems": "• Complete website rebuild\n• Monthly rotating service\n• Monthly strategy calls",
+  "Client.TimelineItems": "• Website live in 2 to 3 weeks\n• Marketing starts right after",
+  "Client.InvestmentDetails": "Pick the option that fits where you are right now:",
+  "Client.InvestmentNote": "Monthly fees are billed in advance at the start of each cycle.",
   "Document.CreatedDate": "June 13, 2026",
   "Client.ValidUntil": "July 13, 2026",
 };
@@ -37,29 +37,57 @@ const paymentConfig: PaymentConfig = {
   oneTime: null,
   recurring: null,
   tiers: [
-    { id: "a", label: "Foundation", recommended: false, includes: ["Item one", "Item two"], oneTime: null, recurring: { amountCents: 180000, displayString: "$1,800/month", label: "Retainer", intervalMonths: 1 } },
-    { id: "b", label: "Growth", recommended: true, includes: ["Everything in Foundation", "More"], oneTime: null, recurring: { amountCents: 300000, displayString: "$3,000/month", label: "Retainer", intervalMonths: 1 } },
+    { id: "tier-foundation", label: "Foundation", recommended: false, includes: ["Website rebuild included", "One rotating service per quarter"], oneTime: null, recurring: { amountCents: 180000, displayString: "$1,800/month", label: "Retainer", intervalMonths: 1 } },
+    { id: "tier-growth", label: "Growth", recommended: true, includes: ["Website rebuild included", "One rotating service per month"], oneTime: null, recurring: { amountCents: 300000, displayString: "$3,000/month", label: "Retainer", intervalMonths: 1 } },
   ],
 };
+
+// A valid 1x1 PNG: enough for layout verification (real signatures come from the app).
+function fakeSignaturePng(): string {
+  return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+}
 
 async function main() {
   const sections = buildProposalSections({ tokens, paymentConfig, msaBodyMarkdown: msa });
   const buffer = await renderToBuffer(
     React.createElement(ProposalPdf, {
       sections,
+      selectedTierId: "tier-growth",
       signers: [
-        { name: "Dominique Norris", email: "test@example.com", role: "CLIENT_SIGNER", method: "Typed electronic signature (Caveat)", adoptedName: "Dominique Norris", signedAt: "Jun 13, 2026, 9:00 AM EDT", consentedAt: "Jun 13, 2026, 9:00 AM EDT", ipAddress: "203.0.113.7", userAgent: "Mozilla/5.0 smoke", signatureDataUri: null },
-        { name: "Rahul Lalia", email: "lalia@rsla.io", role: "ADMIN_SIGNER", method: "Pre-applied by sender at send time", adoptedName: "Rahul Lalia", signedAt: "Jun 13, 2026, 8:00 AM EDT", consentedAt: "Jun 13, 2026, 8:00 AM EDT", ipAddress: null, userAgent: null, signatureDataUri: null },
+        {
+          name: "Dominique Norris",
+          email: "dominique@brightline.example",
+          role: "CLIENT_SIGNER",
+          method: "Typed electronic signature (Caveat)",
+          adoptedName: "Dominique Norris",
+          signerTitle: "Owner",
+          signerCompany: "Brightline Test Co",
+          viewedAt: "Jun 13, 2026, 8:51 AM EDT",
+          signedAt: "Jun 13, 2026, 9:06 AM EDT",
+          ipAddress: "203.0.113.7",
+          signatureDataUri: fakeSignaturePng(),
+        },
+        {
+          name: "Rahul Lalia",
+          email: "lalia@rsla.io",
+          role: "ADMIN_SIGNER",
+          method: "Pre-applied by sender at send time",
+          adoptedName: "Rahul Lalia",
+          signerTitle: "Managing Member",
+          signerCompany: "RSL/A LLC",
+          viewedAt: null,
+          signedAt: "Jun 13, 2026, 8:00 AM EDT",
+          ipAddress: null,
+          signatureDataUri: fakeSignaturePng(),
+        },
       ],
       certificate: {
-        proposalId: "smoke-test",
+        referenceId: "CMQAKLJWC0000RRRMPHYQ4EBX",
         versionNumber: 1,
-        contentHash: "a".repeat(64),
-        msaVersionLabel: "v3",
-        msaSha256: "b".repeat(64),
-        selectedTierLabel: "Growth",
-        generatedAt: "Jun 13, 2026, 9:01 AM EDT",
-        events: [{ label: "Proposal sent and content frozen", at: "Jun 13, 2026" }],
+        contentHash: "7eeaad51d07af9319ea38c7fc293c514aabbccddeeff00112233445566778899",
+        agreementVersion: "v3",
+        sentAt: "Jun 13, 2026, 8:00 AM EDT",
+        completedAt: "Jun 13, 2026, 9:06 AM EDT",
       },
     }) as Parameters<typeof renderToBuffer>[0]
   );
@@ -69,6 +97,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("PDF SMOKE FAILED:", error.stack);
+  console.error("PDF SMOKE FAILED:", error.stack?.split("\n")[0]);
   process.exit(1);
 });

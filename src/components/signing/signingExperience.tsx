@@ -83,6 +83,8 @@ export function SigningExperience({
           signatureType: signature.type,
           signaturePngDataUrl: signature.pngDataUrl,
           adoptedName: signature.adoptedName,
+          signerTitle: signature.signerTitle,
+          signerCompany: signature.signerCompany,
           fontFamily: signature.fontFamily,
           esignConsent: true,
           selectedTierId,
@@ -164,6 +166,7 @@ export function SigningExperience({
         open={modalOpen}
         onOpenChange={setModalOpen}
         defaultName={partyName}
+        defaultCompany={sections.acceptance.clientCompany}
         submitting={submitting}
         onAdopt={handleAdopt}
         ctaLabel={willCheckout ? "Adopt & Sign, continue to payment" : "Adopt & Sign"}

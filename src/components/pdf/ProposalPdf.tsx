@@ -14,21 +14,19 @@ import type { ProposalSections } from "@/lib/proposalContent";
 import type { TierConfig } from "@/lib/types";
 
 const fontsDir = path.join(process.cwd(), "public", "fonts");
+const logoPath = path.join(process.cwd(), "public", "logomark.png");
 
-// TTF only: react-pdf's font parser rejects Satoshi's CFF-flavored OTFs
-// ("unsupported number" at render). The .ttf files are converted copies.
 Font.register({
   family: "Satoshi",
   fonts: [
-    { src: path.join(fontsDir, "Satoshi-Regular.ttf"), fontWeight: 400 },
-    { src: path.join(fontsDir, "Satoshi-Medium.ttf"), fontWeight: 500 },
-    { src: path.join(fontsDir, "Satoshi-Bold.ttf"), fontWeight: 700 },
-    { src: path.join(fontsDir, "Satoshi-Black.ttf"), fontWeight: 900 },
+    { src: path.join(fontsDir, "Satoshi-Regular.otf"), fontWeight: 400 },
+    { src: path.join(fontsDir, "Satoshi-Medium.otf"), fontWeight: 500 },
+    { src: path.join(fontsDir, "Satoshi-Bold.otf"), fontWeight: 700 },
+    { src: path.join(fontsDir, "Satoshi-Black.otf"), fontWeight: 900 },
   ],
 });
 
-// No hyphenation: react-pdf's hyphenator interacts badly with page splits on
-// long flowing text (glyph-position corruption -> "unsupported number").
+// No hyphenation: cleaner line breaks for legal text.
 Font.registerHyphenationCallback((word) => [word]);
 
 const BLUE = "#0070F3";
@@ -48,7 +46,7 @@ const s = StyleSheet.create({
     color: SLATE,
     lineHeight: 1.55,
   },
-  brandmark: { fontFamily: "Satoshi", fontWeight: 900, fontSize: 12, letterSpacing: 1 },
+  logo: { width: 30, height: 30 },
   footer: {
     position: "absolute",
     bottom: 28,
@@ -84,16 +82,53 @@ const s = StyleSheet.create({
   tableValue: { width: "68%", padding: 8, fontSize: 9.5 },
   sigGrid: { flexDirection: "row", marginTop: 16 },
   sigCol: { flex: 1, borderTopWidth: 1, borderTopColor: BORDER, paddingTop: 10, marginRight: 18 },
-  sigImage: { height: 46, width: 150, objectFit: "contain", objectPosition: "left" },
+  sigImage: { height: 44, width: 150, objectFit: "contain", objectPosition: "left" },
   sigLine: { fontSize: 9, color: MUTED, marginTop: 2 },
-  certBox: {
+  // E-signature certificate
+  certFrame: {
+    borderWidth: 2,
+    borderColor: BLUE,
+    borderRadius: 8,
+    padding: 22,
+    flexGrow: 1,
+  },
+  certHeading: { fontFamily: "Satoshi", fontWeight: 900, fontSize: 22, lineHeight: 1.15, marginBottom: 6 },
+  certMeta: { fontSize: 9, color: MUTED },
+  certHeadRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1.5,
+    borderBottomColor: SLATE,
+    paddingBottom: 6,
+    marginTop: 18,
+    marginBottom: 4,
+  },
+  certSignerRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: BORDER,
+    paddingVertical: 12,
+  },
+  certColLeft: { width: "52%", paddingRight: 12 },
+  certColRight: { width: "48%" },
+  certLabel: {
+    fontFamily: "Satoshi",
+    fontWeight: 700,
+    fontSize: 9,
+    color: MUTED,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  certName: { fontFamily: "Helvetica-Bold", fontSize: 11 },
+  certDetail: { fontSize: 8.5, color: MUTED, marginTop: 1.5 },
+  certSigBox: {
     borderWidth: 1,
     borderColor: BORDER,
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 12,
+    borderRadius: 4,
+    padding: 8,
+    height: 56,
+    justifyContent: "center",
   },
-  mono: { fontFamily: "Courier", fontSize: 8 },
+  mono: { fontFamily: "Courier", fontSize: 7.5 },
 });
 
 function Bullets({ items }: { items: readonly string[] }) {
@@ -112,11 +147,13 @@ function Bullets({ items }: { items: readonly string[] }) {
 // Static content only: react-pdf corrupts layout boxes ("unsupported number")
 // when a fixed element contains a dynamic render-callback Text and the page's
 // content flows across many sheets. No page numbers, by hard-won design.
-function PageFooter({ title }: { title: string }) {
+function PageFooter({ left }: { left: string }) {
   return (
     <View style={s.footer} fixed>
-      <Text>{title}</Text>
-      <Text>rsla.io</Text>
+      <Text>{left}</Text>
+      <Link src="https://rsla.io" style={{ color: MUTED, textDecoration: "none" }}>
+        rsla.io
+      </Link>
     </View>
   );
 }
@@ -174,38 +211,66 @@ export interface SignerCertInfo {
   role: string;
   method: string;
   adoptedName: string;
-  signedAt: string;
-  consentedAt: string | null;
+  signerTitle: string;
+  signerCompany: string;
+  viewedAt: string | null;
+  signedAt: string | null;
   ipAddress: string | null;
-  userAgent: string | null;
   signatureDataUri: string | null;
 }
 
 export interface CertificateInfo {
-  proposalId: string;
+  referenceId: string;
   versionNumber: number;
   contentHash: string;
-  msaVersionLabel: string;
-  msaSha256: string;
-  selectedTierLabel: string | null;
-  generatedAt: string;
-  events: { label: string; at: string }[];
+  agreementVersion: string;
+  sentAt: string;
+  completedAt: string;
+}
+
+/** Signature block used on the Acceptance page and the MSA execution page. */
+function SignatureBlock({
+  signer,
+  fallbackName,
+  fallbackDetail,
+}: {
+  signer: SignerCertInfo | undefined;
+  fallbackName: string;
+  fallbackDetail: string;
+}) {
+  return (
+    <View style={s.sigCol} wrap={false}>
+      <Text style={s.bold}>{signer?.name ?? fallbackName}</Text>
+      <Text style={s.sigLine}>
+        {signer ? `${signer.signerTitle}, ${signer.signerCompany}` : fallbackDetail}
+      </Text>
+      {signer?.signatureDataUri ? (
+        <Image src={signer.signatureDataUri} style={[s.sigImage, { marginTop: 8 }]} />
+      ) : (
+        <Text style={[s.sigLine, { marginTop: 26 }]}>Signature: ____________________</Text>
+      )}
+      <Text style={s.sigLine}>
+        {signer?.signedAt ? `Signed ${signer.signedAt}` : "Date: ____________________"}
+      </Text>
+    </View>
+  );
 }
 
 export function ProposalPdf({
   sections,
   signers,
   certificate,
+  selectedTierId,
 }: {
   sections: ProposalSections;
   signers: SignerCertInfo[];
   certificate: CertificateInfo;
+  selectedTierId: string | null;
 }) {
-  const client = signers.find((p) => p.role === "CLIENT_SIGNER");
   const admin = signers.find((p) => p.role === "ADMIN_SIGNER");
   const clientSigners = signers.filter((p) => p.role === "CLIENT_SIGNER");
-  const footerTitle = `RSL/A · ${sections.cover.title}`;
-
+  const firstClient = clientSigners[0];
+  const footerLeft = `${sections.acceptance.clientCompany} · Proposal & Service Agreement`;
 
   return (
     <Document
@@ -215,9 +280,7 @@ export function ProposalPdf({
     >
       {/* Cover + At a Glance */}
       <Page size="LETTER" style={s.page}>
-        <Text style={[s.brandmark, { marginBottom: 60 }]}>
-          RSL/<Text style={{ color: BLUE }}>A</Text>
-        </Text>
+        <Image src={logoPath} style={[s.logo, { marginBottom: 54 }]} />
         <Text style={s.h1}>{sections.cover.title}</Text>
         <Text style={[s.para, { color: MUTED }]}>{sections.cover.subtitle}</Text>
 
@@ -231,14 +294,15 @@ export function ProposalPdf({
             </View>
           ))}
         </View>
-        <PageFooter title={footerTitle} />
+        <PageFooter left={footerLeft} />
       </Page>
 
+      {/* Narrative */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h2}>{sections.problem.title}</Text>
         <Text style={s.para}>{sections.problem.greeting}</Text>
         {sections.problem.paragraphs.map((p, i) => (
-          <Text key={i} style={s.para}>
+          <Text key={i} style={s.para} wrap={false}>
             {p}
           </Text>
         ))}
@@ -252,7 +316,7 @@ export function ProposalPdf({
         <Text style={s.h2}>{sections.solution.title}</Text>
         <Text style={[s.para, { color: MUTED }]}>{sections.solution.intro}</Text>
         {sections.solution.paragraphs.map((p, i) => (
-          <Text key={i} style={s.para}>
+          <Text key={i} style={s.para} wrap={false}>
             {p}
           </Text>
         ))}
@@ -261,7 +325,7 @@ export function ProposalPdf({
         <Text style={s.h2}>{sections.trackRecord.heading}</Text>
         <Text style={s.para}>{sections.trackRecord.intro}</Text>
         {sections.trackRecord.caseStudies.map((cs, i) => (
-          <View key={i} style={s.bulletRow}>
+          <View key={i} style={s.bulletRow} wrap={false}>
             <Text style={s.bulletDot}>•</Text>
             <Link src={cs.href} style={{ flex: 1, color: SLATE, textDecoration: "underline" }}>
               {cs.text}
@@ -269,9 +333,10 @@ export function ProposalPdf({
           </View>
         ))}
         <Text style={s.fine}>{sections.trackRecord.disclaimer}</Text>
-        <PageFooter title={footerTitle} />
+        <PageFooter left={footerLeft} />
       </Page>
 
+      {/* Scope + Timeline */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h2}>{sections.scope.heading}</Text>
         <Text style={s.para}>{sections.scope.intro}</Text>
@@ -284,9 +349,10 @@ export function ProposalPdf({
         <Bullets items={sections.timeline.items} />
         <Text style={[s.para, { marginTop: 6 }]}>{sections.timeline.outro}</Text>
         <Text style={s.fine}>{sections.timeline.footnote}</Text>
-        <PageFooter title={footerTitle} />
+        <PageFooter left={footerLeft} />
       </Page>
 
+      {/* Investment + How to Proceed + Acceptance */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h2}>{sections.investment.heading}</Text>
         <Text style={s.para}>{sections.investment.note}</Text>
@@ -299,14 +365,14 @@ export function ProposalPdf({
             </Text>
           ))}
         {sections.investment.tiers ? (
-          <TierTable tiers={sections.investment.tiers} selectedTierId={certificate.selectedTierLabel ? sections.investment.tiers.find((t) => t.label === certificate.selectedTierLabel)?.id ?? null : null} />
+          <TierTable tiers={sections.investment.tiers} selectedTierId={selectedTierId} />
         ) : null}
         <Text style={s.fine}>{sections.investment.footnote}</Text>
 
         <Text style={s.h2}>{sections.howToProceed.heading}</Text>
         <Text style={s.para}>{sections.howToProceed.intro}</Text>
         {sections.howToProceed.steps.map((step, i) => (
-          <View key={i} style={s.bulletRow}>
+          <View key={i} style={s.bulletRow} wrap={false}>
             <Text style={[s.bulletDot, { width: 18 }]}>{i + 1}.</Text>
             <Text style={{ flex: 1 }}>{step}</Text>
           </View>
@@ -315,47 +381,33 @@ export function ProposalPdf({
         <Text style={s.h2}>{sections.acceptance.heading}</Text>
         <Text style={s.para}>{sections.acceptance.text}</Text>
         <View style={s.sigGrid} wrap={false}>
-          <View style={s.sigCol}>
-            <Text style={s.bold}>{sections.acceptance.clientName}</Text>
-            <Text style={s.sigLine}>{sections.acceptance.clientCompany}</Text>
-            {client?.signatureDataUri ? (
-              <Image src={client.signatureDataUri} style={[s.sigImage, { marginTop: 8 }]} />
-            ) : (
-              <Text style={[s.sigLine, { marginTop: 24 }]}>Signature: ____________________</Text>
-            )}
-            <Text style={s.sigLine}>
-              {client ? `Signed: ${client.signedAt}` : "Date: ____________________"}
-            </Text>
-          </View>
-          <View style={s.sigCol}>
-            <Text style={s.bold}>{sections.acceptance.rslaName}</Text>
-            <Text style={s.sigLine}>{sections.acceptance.rslaTitle}</Text>
-            {admin?.signatureDataUri ? (
-              <Image src={admin.signatureDataUri} style={[s.sigImage, { marginTop: 8 }]} />
-            ) : (
-              <Text style={[s.sigLine, { marginTop: 24 }]}>Signature: ____________________</Text>
-            )}
-            <Text style={s.sigLine}>
-              {admin ? `Signed: ${admin.signedAt}` : "Date: ____________________"}
-            </Text>
-          </View>
+          <SignatureBlock
+            signer={firstClient}
+            fallbackName={sections.acceptance.clientName}
+            fallbackDetail={sections.acceptance.clientCompany}
+          />
+          <SignatureBlock
+            signer={admin}
+            fallbackName={sections.acceptance.rslaName}
+            fallbackDetail={sections.acceptance.rslaTitle}
+          />
         </View>
         {clientSigners.length > 1 ? (
-          <View style={{ marginTop: 14 }}>
+          <View style={[s.sigGrid, { marginTop: 10 }]} wrap={false}>
             {clientSigners.slice(1).map((signer, i) => (
-              <View key={i} style={[s.sigCol, { marginTop: 10 }]} wrap={false}>
-                <Text style={s.bold}>{signer.name}</Text>
-                {signer.signatureDataUri ? (
-                  <Image src={signer.signatureDataUri} style={[s.sigImage, { marginTop: 8 }]} />
-                ) : null}
-                <Text style={s.sigLine}>Signed: {signer.signedAt}</Text>
-              </View>
+              <SignatureBlock
+                key={i}
+                signer={signer}
+                fallbackName={signer.name}
+                fallbackDetail={signer.signerCompany}
+              />
             ))}
           </View>
         ) : null}
-        <PageFooter title={footerTitle} />
+        <PageFooter left={footerLeft} />
       </Page>
 
+      {/* MSA */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h1}>{sections.msa.heading}</Text>
         <Text style={s.para}>
@@ -375,8 +427,6 @@ export function ProposalPdf({
             </Text>
           ));
           if (block.type === "bullet") {
-            // wrap={false}: react-pdf corrupts glyph positions when a flexed
-            // bullet row splits across a page break ("unsupported number").
             return (
               <View key={i} style={s.bulletRow} wrap={false}>
                 <Text style={s.bulletDot}>•</Text>
@@ -384,88 +434,110 @@ export function ProposalPdf({
               </View>
             );
           }
-          // wrap={false} on every flowing block: react-pdf corrupts glyph
-          // positions when an element splits across a page boundary at certain
-          // geometries ("unsupported number"). Atomic blocks sidestep the
-          // splitter entirely; MSA paragraphs are all far shorter than a page.
           return (
             <Text key={i} style={s.para} wrap={false}>
               {runs}
             </Text>
           );
         })}
-        <PageFooter title={footerTitle} />
+
+        {/* Execution of the agreement itself, mirroring the Acceptance page
+            (Section 37: the Acceptance signature executes both documents). */}
+        <View
+          wrap={false}
+          style={{ marginTop: 26, borderTopWidth: 2, borderTopColor: SLATE, paddingTop: 14 }}
+        >
+          <Text style={[s.bold, { fontSize: 12 }]}>Agreed and Accepted</Text>
+          <Text style={[s.para, { marginTop: 4 }]}>
+            Executed by electronic signature. Pursuant to Section 37, the signature on the
+            Acceptance page of the Proposal executes this Agreement, and is reproduced here as the
+            execution of record for both Parties.
+          </Text>
+          <View style={s.sigGrid}>
+            <SignatureBlock
+              signer={firstClient}
+              fallbackName={sections.acceptance.clientName}
+              fallbackDetail={sections.acceptance.clientCompany}
+            />
+            <SignatureBlock
+              signer={admin}
+              fallbackName={sections.acceptance.rslaName}
+              fallbackDetail={sections.acceptance.rslaTitle}
+            />
+          </View>
+        </View>
+        <PageFooter left={footerLeft} />
       </Page>
 
-      <Page size="LETTER" style={s.page}>
-        <Text style={s.h1}>Signature Certificate</Text>
-        <Text style={[s.para, { color: MUTED }]}>
-          This certificate documents the electronic execution of the preceding Proposal and Master
-          Services Agreement under the federal E-SIGN Act, the New York Electronic Signatures and
-          Records Act (ESRA), and the Uniform Electronic Transactions Act (UETA).
-        </Text>
-
-        <View style={s.certBox}>
-          <Text style={s.bold}>Document</Text>
-          <Text style={{ fontSize: 9, marginTop: 4 }}>
-            Reference: {certificate.proposalId} (v{certificate.versionNumber})
-          </Text>
-          <Text style={{ fontSize: 9 }}>
-            Content hash (SHA-256, frozen at send): <Text style={s.mono}>{certificate.contentHash}</Text>
-          </Text>
-          <Text style={{ fontSize: 9 }}>
-            Agreement version: {certificate.msaVersionLabel} · MSA SHA-256:{" "}
-            <Text style={s.mono}>{certificate.msaSha256}</Text>
-          </Text>
-          {certificate.selectedTierLabel ? (
-            <Text style={{ fontSize: 9 }}>
-              Pricing option selected by client: {certificate.selectedTierLabel}
-            </Text>
-          ) : null}
-          <Text style={{ fontSize: 9 }}>Certificate generated: {certificate.generatedAt}</Text>
-        </View>
-
-        {signers.map((signer, i) => (
-          <View key={i} style={s.certBox} wrap={false}>
-            <Text style={s.bold}>
-              {signer.name} · {signer.role === "ADMIN_SIGNER" ? "RSL/A LLC" : "Client"}
-            </Text>
-            <Text style={{ fontSize: 9, marginTop: 3 }}>Email: {signer.email}</Text>
-            <Text style={{ fontSize: 9 }}>Signature method: {signer.method}</Text>
-            <Text style={{ fontSize: 9 }}>Adopted name: {signer.adoptedName}</Text>
-            <Text style={{ fontSize: 9 }}>Signed at: {signer.signedAt}</Text>
-            {signer.consentedAt ? (
-              <Text style={{ fontSize: 9 }}>
-                E-signature consent recorded: {signer.consentedAt}
-              </Text>
-            ) : null}
-            {signer.ipAddress ? (
-              <Text style={{ fontSize: 9 }}>IP address: {signer.ipAddress}</Text>
-            ) : null}
-            {signer.userAgent ? (
-              <Text style={{ fontSize: 8, color: MUTED }}>Device: {signer.userAgent}</Text>
-            ) : null}
-            {signer.signatureDataUri ? (
-              <Image src={signer.signatureDataUri} style={[s.sigImage, { marginTop: 6 }]} />
-            ) : null}
+      {/* E-Signature Certificate */}
+      <Page size="LETTER" style={[s.page, { paddingTop: 40, paddingBottom: 40 }]}>
+        <View style={s.certFrame}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <View>
+              <Text style={s.certHeading}>E-Signature Certificate</Text>
+              <Text style={s.certMeta}>Reference: {certificate.referenceId}</Text>
+            </View>
+            <Image src={logoPath} style={{ width: 26, height: 26 }} />
           </View>
-        ))}
+          <Text style={[s.certMeta, { marginTop: 2 }]}>Sent on {certificate.sentAt}</Text>
 
-        <View style={s.certBox}>
-          <Text style={s.bold}>Event log</Text>
-          {certificate.events.map((event, i) => (
-            <Text key={i} style={{ fontSize: 8.5, marginTop: 2 }}>
-              {event.at} · {event.label}
-            </Text>
+          <View style={s.certHeadRow}>
+            <Text style={[s.certLabel, { width: "52%" }]}>Signed by</Text>
+            <Text style={[s.certLabel, { width: "48%" }]}>Signature</Text>
+          </View>
+
+          {signers.map((signer, i) => (
+            <View key={i} style={s.certSignerRow} wrap={false}>
+              <View style={s.certColLeft}>
+                <Text style={s.certName}>{signer.name}</Text>
+                <Text style={s.certDetail}>
+                  {signer.signerTitle}, {signer.signerCompany}
+                </Text>
+                <Text style={s.certDetail}>{signer.email}</Text>
+                {signer.viewedAt ? (
+                  <Text style={[s.certDetail, { marginTop: 5 }]}>Viewed: {signer.viewedAt}</Text>
+                ) : null}
+                {signer.signedAt ? (
+                  <Text style={s.certDetail}>Signed: {signer.signedAt}</Text>
+                ) : null}
+              </View>
+              <View style={s.certColRight}>
+                <View style={s.certSigBox}>
+                  {signer.signatureDataUri ? (
+                    <Image
+                      src={signer.signatureDataUri}
+                      style={{ height: 38, objectFit: "contain" }}
+                    />
+                  ) : (
+                    <Text style={s.certDetail}>Pre-applied by sender</Text>
+                  )}
+                </View>
+                <Text style={[s.certDetail, { marginTop: 4 }]}>{signer.method}</Text>
+                {signer.ipAddress ? (
+                  <Text style={s.certDetail}>IP address: {signer.ipAddress}</Text>
+                ) : null}
+              </View>
+            </View>
           ))}
-        </View>
 
-        <Text style={s.fine}>
-          The digital audit trail, including the SHA-256 hash of this PDF, is maintained by RSL/A
-          LLC. Document integrity can be verified by recomputing the content hash against the frozen
-          document record.
-        </Text>
-        <PageFooter title={footerTitle} />
+          <Text style={[s.para, { marginTop: 16, fontSize: 9.5 }]}>
+            Document completed by all parties on{" "}
+            <Text style={s.bold}>{certificate.completedAt}</Text>
+          </Text>
+
+          <View style={{ marginTop: "auto" }}>
+            <Text style={[s.certDetail, { marginTop: 14 }]}>
+              Executed electronically under the federal E-SIGN Act, the New York Electronic
+              Signatures and Records Act (ESRA), and the Uniform Electronic Transactions Act
+              (UETA). Agreement version {certificate.agreementVersion} (document v
+              {certificate.versionNumber}).
+            </Text>
+            <Text style={[s.certDetail, { marginTop: 4 }]}>
+              Document integrity — SHA-256 fingerprint of the content frozen at send:
+            </Text>
+            <Text style={s.mono}>{certificate.contentHash}</Text>
+          </View>
+        </View>
       </Page>
     </Document>
   );

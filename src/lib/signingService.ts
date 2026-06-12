@@ -29,6 +29,8 @@ export interface SignSubmission {
   /** data:image/png;base64,... produced client-side (canvas) */
   signaturePngDataUrl: string;
   adoptedName: string;
+  signerTitle: string;
+  signerCompany: string;
   fontFamily: string | null;
   esignConsent: boolean;
   selectedTierId: string | null;
@@ -80,6 +82,9 @@ export async function submitSignature(submission: SignSubmission): Promise<SignR
   if (!submission.adoptedName.trim()) {
     throw new SigningError("bad_signature", "Adopted name is required");
   }
+  if (!submission.signerTitle.trim() || !submission.signerCompany.trim()) {
+    throw new SigningError("bad_signature", "Title and company are required");
+  }
 
   const config = frozenPaymentConfig(proposal);
   const tiered = Boolean(config.tiers && config.tiers.length > 0);
@@ -121,6 +126,8 @@ export async function submitSignature(submission: SignSubmission): Promise<SignR
           type: submission.signatureType as SignatureType,
           imageBlobUrl,
           adoptedName: submission.adoptedName.trim(),
+          signerTitle: submission.signerTitle.trim(),
+          signerCompany: submission.signerCompany.trim(),
           fontFamily: submission.fontFamily,
           esignConsented: true,
           consentedAt: now,

@@ -31,6 +31,8 @@ export interface AdoptedSignature {
   type: "DRAWN" | "TYPED";
   pngDataUrl: string;
   adoptedName: string;
+  signerTitle: string;
+  signerCompany: string;
   fontFamily: string | null;
 }
 
@@ -38,6 +40,7 @@ export function SignatureModal({
   open,
   onOpenChange,
   defaultName,
+  defaultCompany,
   submitting,
   onAdopt,
   ctaLabel,
@@ -46,6 +49,7 @@ export function SignatureModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultName: string;
+  defaultCompany: string;
   submitting: boolean;
   onAdopt: (signature: AdoptedSignature) => void;
   ctaLabel: string;
@@ -54,6 +58,8 @@ export function SignatureModal({
 }) {
   const [tab, setTab] = React.useState<"draw" | "type">("draw");
   const [name, setName] = React.useState(defaultName);
+  const [title, setTitle] = React.useState("");
+  const [company, setCompany] = React.useState(defaultCompany);
   const [font, setFont] = React.useState<SignatureFont>(SIGNATURE_FONTS[0]);
   const [consented, setConsented] = React.useState(false);
   const [hasDrawn, setHasDrawn] = React.useState(false);
@@ -62,6 +68,8 @@ export function SignatureModal({
   const canAdopt =
     consented &&
     name.trim().length > 0 &&
+    title.trim().length > 0 &&
+    company.trim().length > 0 &&
     !submitting &&
     (tab === "type" || hasDrawn);
 
@@ -74,6 +82,8 @@ export function SignatureModal({
         type: "DRAWN",
         pngDataUrl: pad.toPngDataUrl(),
         adoptedName: name.trim(),
+        signerTitle: title.trim(),
+        signerCompany: company.trim(),
         fontFamily: null,
       });
     } else {
@@ -82,6 +92,8 @@ export function SignatureModal({
         type: "TYPED",
         pngDataUrl,
         adoptedName: name.trim(),
+        signerTitle: title.trim(),
+        signerCompany: company.trim(),
         fontFamily: font.id,
       });
     }
@@ -107,6 +119,20 @@ export function SignatureModal({
           <div className="space-y-1.5">
             <Label className="text-xs">Full legal name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Your title</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Owner"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Company</Label>
+              <Input value={company} onChange={(e) => setCompany(e.target.value)} />
+            </div>
           </div>
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as "draw" | "type")}>

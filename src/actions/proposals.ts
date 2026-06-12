@@ -218,6 +218,8 @@ export async function sendProposal(input: {
           type: "PRE_APPLIED",
           imageBlobUrl: adminSigUrl,
           adoptedName: settings.signatureAdoptedName ?? "Rahul Lalia",
+          signerTitle: "Managing Member",
+          signerCompany: "RSL/A LLC",
           fontFamily: null,
           esignConsented: true,
           consentedAt: now,
