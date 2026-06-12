@@ -167,6 +167,14 @@ export function SigningExperience({
         submitting={submitting}
         onAdopt={handleAdopt}
         ctaLabel={willCheckout ? "Adopt & Sign — continue to payment" : "Adopt & Sign"}
+        selectedTierSummary={(() => {
+          const tier = sections.investment.tiers?.find((t) => t.id === selectedTierId);
+          if (!tier) return null;
+          const price = [tier.oneTime?.displayString, tier.recurring?.displayString]
+            .filter(Boolean)
+            .join(" + ");
+          return `${tier.label}${price ? ` — ${price}` : ""}`;
+        })()}
       />
 
       <Dialog open={declineOpen} onOpenChange={setDeclineOpen}>

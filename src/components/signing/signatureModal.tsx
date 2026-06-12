@@ -41,6 +41,7 @@ export function SignatureModal({
   submitting,
   onAdopt,
   ctaLabel,
+  selectedTierSummary,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -48,6 +49,8 @@ export function SignatureModal({
   submitting: boolean;
   onAdopt: (signature: AdoptedSignature) => void;
   ctaLabel: string;
+  /** e.g. "Growth — $3,000/month"; restated at the moment of consent for tiered deals */
+  selectedTierSummary?: string | null;
 }) {
   const [tab, setTab] = React.useState<"draw" | "type">("draw");
   const [name, setName] = React.useState(defaultName);
@@ -95,6 +98,12 @@ export function SignatureModal({
         </DialogHeader>
 
         <div className="space-y-4">
+          {selectedTierSummary ? (
+            <div className="rounded-lg border border-primary/30 bg-accent px-3 py-2 text-sm">
+              <span className="text-muted-foreground">You&apos;re signing for: </span>
+              <span className="font-semibold text-foreground">{selectedTierSummary}</span>
+            </div>
+          ) : null}
           <div className="space-y-1.5">
             <Label className="text-xs">Full legal name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
