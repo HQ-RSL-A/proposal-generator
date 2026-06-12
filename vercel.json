@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/process-jobs", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/reconcile-payments", "schedule": "0 */4 * * *" },
+    { "path": "/api/cron/daily", "schedule": "0 13 * * *" }
+  ]
+}
