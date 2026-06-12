@@ -1,8 +1,9 @@
-import { put } from "@vercel/blob";
+import { get, put } from "@vercel/blob";
 
 /**
- * All stored artifacts (signature PNGs, signed PDFs) are private. Reads go
- * through server routes; private blob URLs are fetched with the RW token.
+ * All stored artifacts (signature PNGs, signed PDFs) live in a PRIVATE Blob
+ * store. Auth is OIDC-based (BLOB_STORE_ID + VERCEL_OIDC_TOKEN): ambient on
+ * Vercel, pulled locally via `vercel env pull`. No static RW token exists.
  */
 export async function putPrivate(
   pathname: string,
@@ -18,16 +19,12 @@ export async function putPrivate(
   return { url: result.url, pathname: result.pathname };
 }
 
-export async function fetchPrivateBlob(url: string): Promise<Buffer> {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) throw new Error("BLOB_READ_WRITE_TOKEN is not set");
-  const response = await fetch(url, {
-    headers: { authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    throw new Error(`Blob fetch failed (${response.status}) for ${url}`);
+export async function fetchPrivateBlob(urlOrPathname: string): Promise<Buffer> {
+  const result = await get(urlOrPathname, { access: "private" });
+  if (!result || result.statusCode !== 200 || !result.stream) {
+    throw new Error(`Blob fetch failed for ${urlOrPathname}`);
   }
-  return Buffer.from(await response.arrayBuffer());
+  return Buffer.from(await new Response(result.stream).arrayBuffer());
 }
 
 export const blobPaths = {
