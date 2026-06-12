@@ -30,3 +30,16 @@ Planned and built the PandaDoc-replacement e-signing tool end-to-end in one sess
 **Open**: DB placement confirmation (migration ready to run), then Rahul's manual setup:
 Stripe keys/webhooks/ACH, Resend account + send.rsla.io DNS, Google OAuth client, Notion
 integration + DB connect, Vercel project + domain + env. See README checklist.
+
+## 2026-06-12 — Visual demo + signing-consent hardening
+
+- Seeded a demo proposal (`scripts/demoSeed.ts` — runs without Blob/Resend/Stripe) and
+  walked the signing experience in Chrome: full document render (37 MSA sections, merged
+  data), tier selection, signature modal (draw + 4 typed fonts), ESIGN consent. Screenshots
+  in `docs/screenshots/`.
+- Investigated phantom TIER_SELECTED audit events: DOM-order sweep of tier buttons ~500ms
+  apart, only under the chrome-devtools MCP browser, never reproduced with a click listener
+  armed, never persisted to DB (provably client-state only). Concluded automation-environment
+  artifact, not an app bug.
+- Hardening anyway: the signature modal now restates the selected tier + price at the
+  moment of consent ("You're signing for: Growth — $3,000/month").
