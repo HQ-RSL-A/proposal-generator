@@ -15,15 +15,21 @@ import type { TierConfig } from "@/lib/types";
 
 const fontsDir = path.join(process.cwd(), "public", "fonts");
 
+// TTF only: react-pdf's font parser rejects Satoshi's CFF-flavored OTFs
+// ("unsupported number" at render). The .ttf files are converted copies.
 Font.register({
   family: "Satoshi",
   fonts: [
-    { src: path.join(fontsDir, "Satoshi-Regular.otf"), fontWeight: 400 },
-    { src: path.join(fontsDir, "Satoshi-Medium.otf"), fontWeight: 500 },
-    { src: path.join(fontsDir, "Satoshi-Bold.otf"), fontWeight: 700 },
-    { src: path.join(fontsDir, "Satoshi-Black.otf"), fontWeight: 900 },
+    { src: path.join(fontsDir, "Satoshi-Regular.ttf"), fontWeight: 400 },
+    { src: path.join(fontsDir, "Satoshi-Medium.ttf"), fontWeight: 500 },
+    { src: path.join(fontsDir, "Satoshi-Bold.ttf"), fontWeight: 700 },
+    { src: path.join(fontsDir, "Satoshi-Black.ttf"), fontWeight: 900 },
   ],
 });
+
+// No hyphenation: react-pdf's hyphenator interacts badly with page splits on
+// long flowing text (glyph-position corruption -> "unsupported number").
+Font.registerHyphenationCallback((word) => [word]);
 
 const BLUE = "#0070F3";
 const SLATE = "#111827";
@@ -76,8 +82,8 @@ const s = StyleSheet.create({
     fontSize: 9.5,
   },
   tableValue: { width: "68%", padding: 8, fontSize: 9.5 },
-  sigGrid: { flexDirection: "row", gap: 18, marginTop: 16 },
-  sigCol: { flex: 1, borderTopWidth: 1, borderTopColor: BORDER, paddingTop: 10 },
+  sigGrid: { flexDirection: "row", marginTop: 16 },
+  sigCol: { flex: 1, borderTopWidth: 1, borderTopColor: BORDER, paddingTop: 10, marginRight: 18 },
   sigImage: { height: 46, width: 150, objectFit: "contain", objectPosition: "left" },
   sigLine: { fontSize: 9, color: MUTED, marginTop: 2 },
   certBox: {
@@ -103,18 +109,21 @@ function Bullets({ items }: { items: readonly string[] }) {
   );
 }
 
+// Static content only: react-pdf corrupts layout boxes ("unsupported number")
+// when a fixed element contains a dynamic render-callback Text and the page's
+// content flows across many sheets. No page numbers, by hard-won design.
 function PageFooter({ title }: { title: string }) {
   return (
     <View style={s.footer} fixed>
       <Text>{title}</Text>
-      <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
+      <Text>rsla.io</Text>
     </View>
   );
 }
 
 function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTierId: string | null }) {
   return (
-    <View style={{ flexDirection: "row", gap: 8, marginTop: 12 }}>
+    <View style={{ flexDirection: "row", marginTop: 12 }}>
       {tiers.map((tier) => {
         const isSelected = tier.id === selectedTierId;
         const highlight = isSelected || (!selectedTierId && tier.recommended);
@@ -127,6 +136,7 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
               borderColor: highlight ? BLUE : BORDER,
               borderRadius: 6,
               padding: 10,
+              marginRight: 8,
               backgroundColor: highlight ? HIGHLIGHT : "#FFFFFF",
             }}
           >
@@ -196,6 +206,7 @@ export function ProposalPdf({
   const clientSigners = signers.filter((p) => p.role === "CLIENT_SIGNER");
   const footerTitle = `RSL/A · ${sections.cover.title}`;
 
+
   return (
     <Document
       title={sections.cover.title}
@@ -223,7 +234,6 @@ export function ProposalPdf({
         <PageFooter title={footerTitle} />
       </Page>
 
-      {/* Narrative */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h2}>{sections.problem.title}</Text>
         <Text style={s.para}>{sections.problem.greeting}</Text>
@@ -262,7 +272,6 @@ export function ProposalPdf({
         <PageFooter title={footerTitle} />
       </Page>
 
-      {/* Scope + Timeline */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h2}>{sections.scope.heading}</Text>
         <Text style={s.para}>{sections.scope.intro}</Text>
@@ -278,7 +287,6 @@ export function ProposalPdf({
         <PageFooter title={footerTitle} />
       </Page>
 
-      {/* Investment + How to Proceed + Acceptance */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h2}>{sections.investment.heading}</Text>
         <Text style={s.para}>{sections.investment.note}</Text>
@@ -348,7 +356,6 @@ export function ProposalPdf({
         <PageFooter title={footerTitle} />
       </Page>
 
-      {/* MSA */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h1}>{sections.msa.heading}</Text>
         <Text style={s.para}>
@@ -357,7 +364,7 @@ export function ProposalPdf({
         {sections.msa.blocks.map((block, i) => {
           if (block.type === "heading") {
             return (
-              <Text key={i} style={s.h2} minPresenceAhead={40}>
+              <Text key={i} style={s.h2}>
                 {block.text}
               </Text>
             );
@@ -368,15 +375,21 @@ export function ProposalPdf({
             </Text>
           ));
           if (block.type === "bullet") {
+            // wrap={false}: react-pdf corrupts glyph positions when a flexed
+            // bullet row splits across a page break ("unsupported number").
             return (
-              <View key={i} style={s.bulletRow}>
+              <View key={i} style={s.bulletRow} wrap={false}>
                 <Text style={s.bulletDot}>•</Text>
                 <Text style={{ flex: 1 }}>{runs}</Text>
               </View>
             );
           }
+          // wrap={false} on every flowing block: react-pdf corrupts glyph
+          // positions when an element splits across a page boundary at certain
+          // geometries ("unsupported number"). Atomic blocks sidestep the
+          // splitter entirely; MSA paragraphs are all far shorter than a page.
           return (
-            <Text key={i} style={s.para}>
+            <Text key={i} style={s.para} wrap={false}>
               {runs}
             </Text>
           );
@@ -384,7 +397,6 @@ export function ProposalPdf({
         <PageFooter title={footerTitle} />
       </Page>
 
-      {/* Signature certificate */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h1}>Signature Certificate</Text>
         <Text style={[s.para, { color: MUTED }]}>
