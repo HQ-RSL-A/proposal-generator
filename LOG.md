@@ -47,9 +47,17 @@ Big batch from Rahul's review of the first executed document:
 - Verified: tsc, lint, 47 tests, production build, pdfSmoke + visual read, Chrome
   walkthrough of the full ceremony, zero console errors.
 
-**Open**: Rahul's [TEST] Brightline rehearsal (covers the new submit path + new emails in
-prod), then live-key swap. team@rsla.io group exists (confirmed). Changes uncommitted,
-awaiting Rahul's look.
+**Shipped same day**: committed (78369d6) and deployed to proposals.rsla.io via
+`vercel deploy --prod` (the Vercel project is CLI-deployed, NOT git-linked — a push alone
+does not deploy). Post-deploy hotfix 0a13c06: the middleware matcher excluded static assets
+by exact filename (icon.svg/logomark.svg), so the renamed .png logo + favicon 307'd to
+sign-in on prod while dev looked fine (Vercel runs middleware before public/ assets; next
+dev serves public/ first). Matcher now excludes by extension. Verified on prod: assets 200,
+landing/sign-in render, dashboard still auth-gated, screenshots in .tmp/shots.
+
+**Open**: Rahul's [TEST] Brightline rehearsal on the new build (draft
+"[TEST] Full Rehearsal: Brightline Test Co" is seeded and ready to send), then live-key
+swap. team@rsla.io group exists (confirmed).
 
 ## 2026-06-11 — Initial build (full V1 codebase)
 

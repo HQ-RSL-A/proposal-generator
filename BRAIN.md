@@ -141,6 +141,12 @@ latest email always has the live link; failed sends retry via job with `needsTok
 
 ## Gotchas
 
+- **Vercel project is CLI-deployed, not git-linked**: pushing to GitHub does NOT deploy.
+  Ship with `vercel deploy --prod --yes` from the project root.
+- **Middleware runs before `public/` assets on Vercel** (next dev serves them first), so
+  the auth matcher excludes static assets by extension. Never re-add filename-specific
+  exclusions; renamed assets will 307 to sign-in on prod only.
+
 - **Blob auth is OIDC** (`BLOB_STORE_ID` + ambient `VERCEL_OIDC_TOKEN`); there is no static
   RW token. Local dev needs the store connection's Development environment enabled in the
   Vercel dashboard, plus `vercel env pull` (12h token). `blob.ts` uses the SDK's private
