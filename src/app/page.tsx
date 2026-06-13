@@ -32,9 +32,8 @@ export default async function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-surface">
       <header className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-5">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center">
           <Image src="/logomark.png" alt="RSL/A" width={28} height={28} className="rounded-md" />
-          <span className="font-heading text-base font-bold tracking-tight">RSL/A Proposals</span>
         </div>
         <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/sign-in" />}>
           Sign in

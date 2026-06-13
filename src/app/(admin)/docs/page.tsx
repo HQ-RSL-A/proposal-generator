@@ -1,0 +1,337 @@
+import { TOKEN_KEYS, type TokensJson } from "@/lib/types";
+import { Card } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+export const metadata = { title: "Import schema" };
+
+type FieldMeta = { required: boolean; description: string; example: string };
+
+// Typed against keyof TokensJson so this object cannot drift from src/lib/types.ts:
+// add or remove a token key there and the build fails until this map is updated.
+const FIELD_META: Record<keyof TokensJson, FieldMeta> = {
+  "Client.ProposalTitle": {
+    required: true,
+    description: "Headline of the proposal. Becomes the page title and the PDF cover heading.",
+    example: "Growth Marketing System for Acme Corp",
+  },
+  "Client.FirstName": {
+    required: true,
+    description: "Primary signer first name. Used in the greeting.",
+    example: "Jordan",
+  },
+  "Client.LastName": {
+    required: true,
+    description: "Primary signer last name.",
+    example: "Avery",
+  },
+  "Client.Company": {
+    required: true,
+    description:
+      "Client company name. Appears in At a Glance, the acceptance block, the agreement, and the PDF filename.",
+    example: "Acme Corp",
+  },
+  "Client.ProblemTitle": {
+    required: true,
+    description: "Heading for the problem section.",
+    example: "Inconsistent lead flow despite strong demand",
+  },
+  "Client.ProblemText": {
+    required: true,
+    description: "Problem narrative. Blank lines split it into separate paragraphs.",
+    example: "First paragraph of the problem.\\n\\nSecond paragraph.",
+  },
+  "Client.SolutionTitle": {
+    required: true,
+    description: "Heading for the solution section.",
+    example: "A system that runs itself",
+  },
+  "Client.SolutionText": {
+    required: true,
+    description: "Solution narrative. Blank lines split it into separate paragraphs.",
+    example: "First paragraph of the solution.\\n\\nSecond paragraph.",
+  },
+  "Client.AtGlanceServices": {
+    required: true,
+    description: "One line summarizing what you are building.",
+    example: "Website rebuild plus rotating monthly marketing",
+  },
+  "Client.AtGlanceInvestment": {
+    required: true,
+    description: "One line, human readable. Not parsed for amounts (pricing is set separately).",
+    example: "Three options, $1,800 to $4,500 per month",
+  },
+  "Client.AtGlanceTimeline": {
+    required: true,
+    description: "One line timeline summary.",
+    example: "Website live in 2 to 3 weeks",
+  },
+  "Client.ScopeItems": {
+    required: true,
+    description: "What is included. One item per line. A leading bullet, dash, or long dash is removed.",
+    example: "Discovery and strategy\\nWebsite rebuild\\nMonthly campaigns",
+  },
+  "Client.TimelineItems": {
+    required: true,
+    description: "Timeline steps. One per line, same bullet stripping as scope items.",
+    example: "Week 1: Discovery\\nWeek 2: Build\\nWeek 3: Launch",
+  },
+  "Client.InvestmentDetails": {
+    required: true,
+    description: "Lead-in text shown above the pricing. Use it to introduce a tier table.",
+    example: "Pick the option that fits where you are.",
+  },
+  "Client.InvestmentNote": {
+    required: true,
+    description: "Note shown below the pricing. Payment terms or ROI framing.",
+    example: "Monthly fees are billed in advance each cycle.",
+  },
+  "Document.CreatedDate": {
+    required: false,
+    description: "Date shown on the document. Defaults to today if you leave it out.",
+    example: "June 13, 2026",
+  },
+  "Client.ValidUntil": {
+    required: false,
+    description: "Offer expiry. Defaults to today plus 30 days if you leave it out.",
+    example: "July 13, 2026",
+  },
+};
+
+const TOKENS_EXAMPLE = `{
+  "Client.ProposalTitle": "Growth Marketing System for Acme Corp",
+  "Client.FirstName": "Jordan",
+  "Client.LastName": "Avery",
+  "Client.Company": "Acme Corp",
+  "Client.ProblemTitle": "Inconsistent lead flow despite strong demand",
+  "Client.ProblemText": "Demand is strong but the pipeline is unpredictable.\\n\\nMost months start from zero with no system feeding it.",
+  "Client.SolutionTitle": "A system that runs itself",
+  "Client.SolutionText": "A rebuilt site plus a monthly engine that keeps leads coming.\\n\\nYou get the same motion every month, not a scramble.",
+  "Client.AtGlanceServices": "Website rebuild plus rotating monthly marketing",
+  "Client.AtGlanceInvestment": "Three options, $1,800 to $4,500 per month",
+  "Client.AtGlanceTimeline": "Website live in 2 to 3 weeks",
+  "Client.ScopeItems": "Discovery and strategy\\nWebsite rebuild\\nMonthly campaigns",
+  "Client.TimelineItems": "Week 1: Discovery and setup\\nWeek 2: Build\\nWeek 3: Launch",
+  "Client.InvestmentDetails": "Pick the option that fits where you are.",
+  "Client.InvestmentNote": "Monthly fees are billed in advance each cycle.",
+  "Document.CreatedDate": "June 13, 2026",
+  "Client.ValidUntil": "July 13, 2026"
+}`;
+
+const PAYMENT_ONETIME = `{
+  "currency": "usd",
+  "paymentMethods": ["card"],
+  "preferAch": false,
+  "oneTime": { "amountCents": 250000, "displayString": "$2,500", "label": "Project fee" },
+  "recurring": null,
+  "tiers": null
+}`;
+
+const PAYMENT_RECURRING = `{
+  "currency": "usd",
+  "paymentMethods": ["card", "us_bank_account"],
+  "preferAch": false,
+  "oneTime": null,
+  "recurring": { "amountCents": 300000, "displayString": "$3,000", "label": "Monthly retainer", "intervalMonths": 1 },
+  "tiers": null
+}`;
+
+const PAYMENT_COMBO = `{
+  "currency": "usd",
+  "paymentMethods": ["card"],
+  "preferAch": false,
+  "oneTime": { "amountCents": 150000, "displayString": "$1,500", "label": "Setup fee" },
+  "recurring": { "amountCents": 200000, "displayString": "$2,000", "label": "Monthly retainer", "intervalMonths": 1 },
+  "tiers": null
+}`;
+
+const PAYMENT_TIERED = `{
+  "currency": "usd",
+  "paymentMethods": ["card", "us_bank_account"],
+  "preferAch": false,
+  "oneTime": null,
+  "recurring": null,
+  "tiers": [
+    {
+      "id": "tier-starter",
+      "label": "Starter",
+      "recommended": false,
+      "includes": ["Foundational website", "Monthly reporting"],
+      "oneTime": null,
+      "recurring": { "amountCents": 180000, "displayString": "$1,800", "label": "Starter monthly", "intervalMonths": 1 }
+    },
+    {
+      "id": "tier-growth",
+      "label": "Growth",
+      "recommended": true,
+      "includes": ["Everything in Starter", "Paid ads management", "Conversion tracking"],
+      "oneTime": null,
+      "recurring": { "amountCents": 300000, "displayString": "$3,000", "label": "Growth monthly", "intervalMonths": 1 }
+    }
+  ]
+}`;
+
+const PAYMENT_SIGNONLY = `{
+  "currency": "usd",
+  "paymentMethods": ["card"],
+  "preferAch": false,
+  "oneTime": null,
+  "recurring": null,
+  "tiers": null
+}`;
+
+const INVESTMENT_STRUCTURE = `{
+  "Investment.Structure": {
+    "type": "tiers",
+    "tiers": [
+      { "name": "Starter", "price": "$1,800/month", "includes": ["Foundational website", "Monthly reporting"], "recommended": false },
+      { "name": "Growth", "price": "$3,000/month", "includes": ["Everything in Starter", "Paid ads management"], "recommended": true }
+    ]
+  }
+}`;
+
+function CodeBlock({ children }: { children: string }) {
+  return (
+    <pre className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs leading-relaxed">
+      <code>{children}</code>
+    </pre>
+  );
+}
+
+export default function DocsPage() {
+  return (
+    <div className="space-y-10">
+      <header>
+        <h1 className="font-heading text-2xl font-bold">Proposal import schema</h1>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          The JSON the import box on New Proposal accepts. An agent or a teammate can build a valid
+          payload from this page alone. Pasting JSON is optional. It only pre-fills the form, and
+          every field stays editable afterward.
+        </p>
+      </header>
+
+      <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">How import works</h2>
+        <ol className="ml-4 list-decimal space-y-1 text-sm text-muted-foreground">
+          <li>Paste a tokens JSON into the import box on New Proposal.</li>
+          <li>The token fields pre-fill the form.</li>
+          <li>An optional Investment.Structure block pre-fills the pricing tiers.</li>
+          <li>Set or adjust anything in the form, then send.</li>
+        </ol>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">Token fields</h2>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Seventeen string keys. Fifteen are required. The two date fields fill themselves if you
+          leave them out.
+        </p>
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Field</TableHead>
+                <TableHead>Required</TableHead>
+                <TableHead>What it is</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {TOKEN_KEYS.map((key) => {
+                const m = FIELD_META[key];
+                return (
+                  <TableRow key={key}>
+                    <TableCell className="align-top font-mono text-xs">{key}</TableCell>
+                    <TableCell className="align-top">
+                      {m.required ? (
+                        <span className="text-xs font-medium text-foreground">Required</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Optional</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="align-top text-sm">
+                      <p>{m.description}</p>
+                      <p className="mt-1 font-mono text-xs text-muted-foreground">
+                        e.g. {m.example}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </Card>
+        <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
+          <li>Document.CreatedDate defaults to today. Client.ValidUntil defaults to today plus 30 days.</li>
+          <li>ScopeItems and TimelineItems are one item per line. A leading bullet, dash, or long dash is removed.</li>
+          <li>ProblemText and SolutionText split on blank lines into paragraphs.</li>
+          <li>Any extra keys (for example a legacy CaseStudy field) are accepted and ignored.</li>
+        </ul>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">Full token example</h2>
+        <CodeBlock>{TOKENS_EXAMPLE}</CodeBlock>
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="font-heading text-lg font-semibold">Pricing (PaymentConfig)</h2>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Pricing is set in the form, or inferred from an Investment.Structure block (below). It is
+          stored as a PaymentConfig in one of three shapes. Money is always an integer amountCents
+          plus a matching displayString. At send time the two must agree to the cent.
+        </p>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Flat, one time</h3>
+          <CodeBlock>{PAYMENT_ONETIME}</CodeBlock>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Flat, recurring</h3>
+          <CodeBlock>{PAYMENT_RECURRING}</CodeBlock>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Flat, setup fee plus recurring</h3>
+          <CodeBlock>{PAYMENT_COMBO}</CodeBlock>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Tiered (client picks one)</h3>
+          <CodeBlock>{PAYMENT_TIERED}</CodeBlock>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Sign only (no payment)</h3>
+          <CodeBlock>{PAYMENT_SIGNONLY}</CodeBlock>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">Optional: Investment.Structure</h2>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          A top level block in the pasted JSON that pre-fills the tier pricing UI. It is not one of
+          the token fields and is dropped after import.
+        </p>
+        <CodeBlock>{INVESTMENT_STRUCTURE}</CodeBlock>
+        <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
+          <li>type must be the string tiers, with two to four tiers.</li>
+          <li>A price counts as recurring when it contains /mo, /month, /quarter, /yr, or /year.</li>
+          <li>Inferred tiers are monthly. Quarterly or annual billing must be set in the form.</li>
+        </ul>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">Gotchas</h2>
+        <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
+          <li>displayString must match amountCents to the cent, or sending is blocked.</li>
+          <li>Tiers: two to four, each with a unique id, and at most one marked recommended.</li>
+          <li>Every tier needs at least a one time or a recurring amount.</li>
+          <li>Use flat pricing or tiers, not both.</li>
+          <li>Use generic names in examples and tests. The Notion sync matches real CRM rows by company name.</li>
+        </ul>
+      </section>
+    </div>
+  );
+}

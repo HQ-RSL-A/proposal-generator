@@ -1,5 +1,82 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Built the three safe quick wins (audit icons, /docs, logo-only)
+
+Per Rahul's go-ahead ("safe quick wins now"). All in the working tree, verified, NOT
+yet committed or deployed.
+
+- **Audit-trail icons** — `auditTimeline.tsx` EVENT_META now maps each of the 24 event
+  types to a lucide icon (emoji strings gone), with tone colors (emerald for
+  signed/paid, red for failed/declined/voided/expired/bounced, muted otherwise). Kept
+  the unknown-type fallback (Dot). Internal admin view only.
+- **/docs page** — new team-gated `src/app/(admin)/docs/page.tsx` documenting the import
+  schema with generic names (Acme Corp / Jordan Avery). The field table is derived from
+  `TOKEN_KEYS` and `FIELD_META` is typed `Record<keyof TokensJson>`, so the build fails
+  if types.ts drifts. Added a "Docs" nav item (all roles). Covers TokensJson, every
+  PaymentConfig shape, Investment.Structure, and the gotchas.
+- **Logo-only** — removed the wordmark `<span>`s from the landing header and the app
+  nav; emails + PDF were already logomark-only. Net: 2 deletions.
+
+Verified: `npm run build` green (13 routes incl. /docs), `npm test` 47/47.
+
+Decisions captured for the later builds: signing redesign uses **auto-advance** to the
+next field (Rahul overrode my tap rec); dashboard KPIs = **all 6**; /docs = team-gated.
+
+Open: commit + `vercel deploy --prod` to ship these (not done — needs Rahul's OK).
+
+## 2026-06-13 — Planning sweep: research-backed plans for all no-input items
+
+Rahul asked to plan + research everything that doesn't need his input (incl. nicer
+landing/login/dashboard), make the docs page generic, add a Stripe-swap guide + a
+"receipt on every transaction" task, and not touch anything risky without thinking it
+through. Ran four parallel research agents (sonnet) over the actual code + best
+practices. No app code changed this session — plans only, per his "don't proceed if it
+might alter something" guardrail.
+
+Produced 5 docs:
+
+- `docs/plans/signingFlowRedesign.md` — mobile signing rework (collect-then-place,
+  "Ready to sign" → "Review and sign", a "next field" chip replacing the auto-scroll),
+  toast redesign (top-center, persistent, role=alert), audit-trail lucide icons.
+  Phase enum is client-only; the one-shot sign transaction + stamp timestamps untouched.
+- `docs/plans/visualRedesign.md` — landing (prestige product page), sign-in (dark
+  split), dashboard (6-KPI ops view, all computable from current schema), logo-only
+  (net = 2 JSX deletions; emails/PDF already correct).
+- `docs/plans/transactionReceipts.md` — **found a real gap:** subscription RENEWALS
+  fire no receipt (no `invoice.paid` handler). Plan: branded Resend receipts on every
+  type, Stripe emails off, add `invoice.paid` (billing_reason guard) + set
+  `receipt_email`. Live webhook is **6 events, not 5**.
+- `docs/plans/tokenSchemaDocsPage.md` — generic `/docs` page, team-gated, table driven
+  off an exhaustive `Record<keyof TokensJson>` so it can't drift from types.ts. Noted
+  ROADMAP drift (both date fields self-heal; recurring regex matches mo/quarter/yr too).
+- `docs/stripeKeySwapGuide.md` — full swap runbook (Rahul does dashboard key+webhook,
+  Claude does env swap + deploy + verify; $1 live smoke test + rollback).
+
+ROADMAP updated: 2 new tasks added earlier (Stripe-swap guide, receipts), blocker
+corrected to 6 webhook events, and a "Detailed plans" index added. Open decisions for
+Rahul: visual direction per page, the dashboard KPI set, docs-page gating, and the
+three signing-redesign choices (button copy, affordance style, tap-vs-auto-advance).
+
+## 2026-06-13 — Backlog grew: client-experience polish (Rahul mobile test)
+
+Four new ROADMAP items under "Client experience and polish", from Rahul testing
+the signing flow on a phone:
+
+- **Signing ceremony UX redesign (mobile-first)** — collect name/title/signature
+  FIRST under a "Ready to sign" button, then the button flips to "Review and Sign"
+  and enters a tap-to-place mode (signature already adopted, just stamp fields). A
+  floating "jump to next field" pointer replaces the auto-scroll-to-bottom and also
+  catches any field left unsigned. Goal: foolproof for non-technical/older signers.
+- **Toast / notification redesign** — in-flow guidance ("tap the fields to sign")
+  is missed: bottom-right, too brief, low-priority feel. Make prominent +
+  persistent, recenter, rewrite copy. Mobile + desktop.
+- **Audit trail icons** — swap emojis for clean SVG/lucide icons per event type.
+- **Logo-only branding** — RSL/A logomark with no adjacent text everywhere, hero
+  first, then navbar/emails/PDF/sign-in.
+
+No code yet — backlog capture only. Build-time questions (button copy, pointer
+style, auto-advance vs tap) noted inline in ROADMAP.
+
 ## 2026-06-13 — Backlog groomed + reusable test token + GEMINI.md
 
 - **ROADMAP.md created** (open/planned work, linked from README). Three new items from

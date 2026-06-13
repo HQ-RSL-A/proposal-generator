@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { FileSignature, LogOut, Plus, Settings } from "lucide-react";
+import { BookOpen, FileSignature, LogOut, Plus, Settings } from "lucide-react";
 
 export interface ShellUser {
   name: string;
@@ -27,6 +27,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
 
   const nav = [
     { href: "/dashboard", label: "Proposals", icon: FileSignature },
+    { href: "/docs", label: "Docs", icon: BookOpen },
     ...(user.role === "ADMIN" ? [{ href: "/settings", label: "Settings", icon: Settings }] : []),
   ];
 
@@ -35,9 +36,8 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
       <header className="sticky top-0 z-40 border-b border-border bg-white/80 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
           <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="flex items-center gap-2.5">
+            <Link href="/dashboard" className="flex items-center">
               <Image src="/logomark.png" alt="RSL/A" width={28} height={28} className="rounded-md" />
-              <span className="font-heading text-base font-bold tracking-tight">Proposals</span>
             </Link>
             <nav className="flex items-center gap-1">
               {nav.map((item) => {
