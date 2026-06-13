@@ -1,5 +1,21 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Rehearsal bug: success page died after token rotation (fixed + shipped)
+
+Rahul's prod rehearsal surfaced a race at the payment landing: checkout's
+success_url carries the last signer's token; five seconds after signing, the
+executed-copy email rotated the payer's token (to mint its Complete Payment
+button), so finishing checkout 42 seconds later landed on "This link isn't
+valid". Payment, receipts, Notion, metadata all unaffected.
+
+Fix (1a95e48, deployed): generatePdf skips rotation + button when the payer is
+the last signer (their checkout is in flight; session-expiry recovery covers
+abandonment) and the email reassures instead; success_url now appends
+?session_id={CHECKOUT_SESSION_ID} and /paid resolves the proposal by session id
+whenever the path token is dead. Verified on prod against the real failed
+session: dead token + session id renders "You're all set"; dead token alone
+still gates. Fresh [TEST] draft re-seeded for the payment-leg re-test.
+
 ## 2026-06-12 — Design system pass: emails, PDF, two-place signing, footnotes, alerts
 
 Big batch from Rahul's review of the first executed document:
