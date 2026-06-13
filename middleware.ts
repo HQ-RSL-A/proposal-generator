@@ -19,6 +19,9 @@ export const config = {
   matcher: [
     // Everything is team-only except: the landing page (exact /), auth, public
     // signing/payment pages, their APIs, webhooks, crons, and static assets.
-    "/((?!$|api/|sign-in|sign/|pay/|_next/static|_next/image|favicon.ico|icon.svg|logomark.svg|fonts/).*)",
+    // Static assets are excluded by extension, not by name: on Vercel the
+    // middleware runs BEFORE public/ files are served (dev serves them first),
+    // so a renamed asset that isn't excluded here 307s to sign-in in prod.
+    "/((?!$|api/|sign-in|sign/|pay/|_next/static|_next/image|favicon.ico|fonts/|.*\\.(?:png|svg|jpg|jpeg|ico|webp)$).*)",
   ],
 };
