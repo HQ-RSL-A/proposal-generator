@@ -1,4 +1,6 @@
-# CLAUDE.md — proposalGenerator
+# GEMINI.md — proposalGenerator
+
+Mirrors `CLAUDE.md` (kept in sync). Same rules for the Gemini agent.
 
 ## What This Is
 

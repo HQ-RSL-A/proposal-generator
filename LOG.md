@@ -1,5 +1,28 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Backlog groomed + reusable test token + GEMINI.md
+
+- **ROADMAP.md created** (open/planned work, linked from README). Three new items from
+  Rahul: (1) whole-app mobile optimization across screen sizes, client signing flow first;
+  (2) landing + dashboard design pass with decision-useful KPIs (win rate, contracted
+  value, time-to-sign/pay, MRR); (3) an in-app `/docs` page documenting the token schema
+  for AI agents. Go-live blocker (Stripe live-key swap) and eventual items (attorney MSA
+  v4, in-app AI generation, orphaned-blob cleanup) also tracked there.
+- **Answered: pasting JSON is optional.** `/proposals/new` has a labeled input for every
+  field; the JSON paste only pre-fills them (it's the `generate-proposal` skill's output).
+  Captured the 17-key `TokensJson` + `PaymentConfig` schema in ROADMAP's reference section.
+- **docs/testProposalTokens.json** — reusable tiered test token (Brightline Test Co,
+  3 tiers). Deliberately omits the two date fields so `normalizeImportedTokens` defaults
+  them fresh (+30d) on every import, keeping it always signable. Validated against the real
+  importer. Paste into the import box to spin up a full test proposal instantly.
+- **GEMINI.md created**, mirroring CLAUDE.md (project folder had none; CLAUDE.md gained the
+  no-emoji, two-place-ceremony, token-rotation-exception, font, and deploy-command rules
+  this session).
+
+Next: Stripe live-key swap is the only thing gating real revenue. For the planned work,
+mobile-first is the suggested start (touches the live client experience; design pass can
+ride along). Dashboard KPIs need Rahul's pick of which metrics matter most before building.
+
 ## 2026-06-13 — Cleared all test data from prod (pre-launch clean slate)
 
 Rahul asked to clear the dashboard before the first real deal. Deleted all 5
