@@ -82,7 +82,7 @@ export function TierCards({
           >
             {tier.recommended ? (
               <span className="font-tag absolute -top-2.5 left-3 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                Most popular
+                Recommended
               </span>
             ) : null}
             <div className="flex items-center justify-between">

@@ -70,13 +70,26 @@ export function SignatureModal({
   const [company, setCompany] = React.useState(defaultCompany);
   const [font, setFont] = React.useState<SignatureFont>(SIGNATURE_FONTS[0]);
   const [consented, setConsented] = React.useState(false);
+  const [drawn, setDrawn] = React.useState(false);
   const [errors, setErrors] = React.useState<FieldErrors>({});
   const padRef = React.useRef<SignaturePadHandle>(null);
 
-  // Clear any validation errors each time the modal opens.
+  // Reset transient state each time the modal opens.
   React.useEffect(() => {
-    if (open) setErrors({});
+    if (open) {
+      setErrors({});
+      setDrawn(false);
+    }
   }, [open]);
+
+  // Everything the signer must provide before the CTA lights up.
+  const signatureReady = tab === "type" ? name.trim().length > 0 : drawn;
+  const complete =
+    name.trim().length > 0 &&
+    title.trim().length > 0 &&
+    company.trim().length > 0 &&
+    consented &&
+    signatureReady;
 
   const clearError = (key: keyof FieldErrors) =>
     setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
@@ -200,7 +213,13 @@ export function SignatureModal({
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="draw" className="pt-3">
-                <SignaturePadCanvas ref={padRef} onChange={() => clearError("signature")} />
+                <SignaturePadCanvas
+                  ref={padRef}
+                  onChange={() => {
+                    setDrawn(!(padRef.current?.isEmpty() ?? true));
+                    clearError("signature");
+                  }}
+                />
               </TabsContent>
               <TabsContent value="type" className="pt-3">
                 <div className="grid grid-cols-2 gap-2">
@@ -261,7 +280,12 @@ export function SignatureModal({
             ) : null}
           </div>
 
-          <Button className="w-full" size="lg" disabled={submitting} onClick={handleAdopt}>
+          <Button
+            className={cn("w-full transition-opacity duration-200", !complete && "opacity-60")}
+            size="lg"
+            disabled={submitting}
+            onClick={handleAdopt}
+          >
             {submitting ? "Applying signature…" : ctaLabel}
           </Button>
         </div>

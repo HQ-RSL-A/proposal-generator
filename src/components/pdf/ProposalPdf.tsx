@@ -228,7 +228,8 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
     <View style={{ flexDirection: "row", marginTop: 12 }}>
       {tiers.map((tier) => {
         const isSelected = tier.id === selectedTierId;
-        const highlight = isSelected || (!selectedTierId && tier.recommended);
+        // Match the web: only the chosen tier highlights; recommended is a label.
+        const highlight = isSelected;
         return (
           <View
             key={tier.id}
@@ -262,7 +263,7 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
               {isSelected ? (
                 <Text style={[s.microLabel, { color: BLUE }]}>Selected</Text>
               ) : tier.recommended ? (
-                <Text style={s.microLabel}>Most popular</Text>
+                <Text style={s.microLabel}>Recommended</Text>
               ) : null}
             </View>
             <View style={{ marginTop: 5 }}>
