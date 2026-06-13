@@ -21,33 +21,30 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       Written ahead of time; the swap itself still waits until everything else is
       locked and loaded.
 
-- [x] **Receipts / invoices on every transaction (launch-critical).** DONE 2026-06-13
-      (code): the `invoice.paid` renewal handler now sends the branded receipt; one-time,
-      first charge, and ACH were already covered by `applyPaidState`. The live webhook
-      subscribes `invoice.paid` at the Stripe swap. `receipt_email` skipped (redundant;
-      §11 evidence is the customer metadata). Every paying
-      subscription charge, every subscription RENEWAL, and ACH (which clears days
-      later). Likely a mix of Stripe email settings + setting the customer/receipt
-      email at checkout + an `invoice.paid` to Resend receipt for renewals. Must not
-      break paid-state guards, webhook idempotency, or the queue-backed side-effect
-      rule. Plan: [`docs/plans/transactionReceipts.md`](docs/plans/transactionReceipts.md).
+- [x] **Receipts / invoices on every transaction (launch-critical).** DONE 2026-06-13.
+      The `invoice.paid` renewal handler sends the branded receipt for every subscription
+      renewal; one-time, first charge, and ACH were already covered by `applyPaidState`.
+      Guarded to `billing_reason: subscription_cycle` so the first charge never
+      double-sends; does not touch paid-state; idempotent + queue-backed. `receipt_email`
+      skipped (redundant with the customer email + double-send risk; §11 evidence is the
+      customer metadata). The live webhook subscribes `invoice.paid` at the Stripe swap.
+      Plan: [`docs/plans/transactionReceipts.md`](docs/plans/transactionReceipts.md).
 
 ## Planned enhancements (added 2026-06-13)
 
-- [ ] **Mobile optimization, whole app.** Both the client-facing surfaces (proposal
-      document, signing ceremony, signature modal, outcome/pay screens, emails) and
-      the internal app (dashboard, proposal form, detail tabs, settings) need to work
-      cleanly across phone/tablet/desktop. Priority on the client signing flow — that
-      is where most clients actually open the link. Audit each breakpoint; the
-      two-place signature fields, the tier cards, the sticky action bar, and the wide
-      dashboard table are the likeliest trouble spots.
+- [ ] **Mobile optimization, internal app.** The client-facing surfaces (signing
+      ceremony, signature modal, tier cards, outcome/pay screens) were made mobile-clean
+      2026-06-13. STILL OPEN: the internal app across phone/tablet/desktop — the wide
+      dashboard table, the proposal form, the detail tabs, and settings. Audit each
+      breakpoint.
 
-- [ ] **Landing page + dashboard design pass.** Push both past the current clean-but-
-      plain state. Dashboard: add useful metrics/KPIs (candidates: win rate =
-      signed ÷ sent, total contracted value, avg time-to-sign, avg time-to-pay,
-      this-month vs last-month signed/collected, MRR from recurring deals, oldest
-      open proposal). Decide which KPIs are decision-useful before building cards for
-      all of them.
+- [ ] **Landing + sign-in + dashboard design pass (NEXT UP).** Push all three past the
+      current clean-but-plain state. Per-page direction is drafted in
+      [`docs/plans/visualRedesign.md`](docs/plans/visualRedesign.md) and the dashboard KPI
+      set is DECIDED (all 6: win rate, contracted value, MRR, signed this month vs last,
+      avg time-to-sign, oldest open — all computable from current data, no schema change).
+      Ready to build; confirm the visual direction per page first. Build runs through the
+      design skills (emilDesignEng / frontend-design / `/ui`).
 
 - [x] **Token-schema docs page (in-app, agent-friendly).** DONE 2026-06-13 — built as
       team-gated `/docs`, generic examples, field table auto-derived from `TOKEN_KEYS`
@@ -64,7 +61,9 @@ From Rahul's mobile signing test. The first item overlaps "Mobile optimization,
 whole app" above but is the detailed redesign of the signing interaction itself,
 not just responsive breakpoints. Build-time decisions flagged inline.
 
-- [ ] **Signing ceremony UX redesign (mobile-first).** The current
+- [x] **Signing ceremony UX redesign (mobile-first).** DONE 2026-06-13 (shipped,
+      phone-tested with Rahul; auto-advance chosen). Built details in
+      docs/plans/signingFlowRedesign.md. Original spec: The current
       adopt-then-place flow loses less tech-savvy signers on phones (an older or
       non-technical client gets confused about what to tap). Rework the sequence so
       it is foolproof:
@@ -88,7 +87,10 @@ not just responsive breakpoints. Build-time decisions flagged inline.
         affordance looks like (animated chevron vs labeled chip); whether
         placement auto-advances focus to the next field or waits for a tap.
 
-- [ ] **Notification / toast redesign (mobile + desktop).** The cards that tell a
+- [ ] **Notification / toast redesign (mobile + desktop).** PARTIAL 2026-06-13: the
+      signing-flow guidance + error toasts are done (branded blue/red via `toast.custom`,
+      top-center, persistent). STILL OPEN: the admin-side action toasts (PDF generating,
+      self-refresh). The cards that tell a
       signer what to do (e.g. "tap into the fields to add your signature") are
       getting missed: they sit bottom-right, vanish too fast, and read as
       low-priority. Make in-flow guidance prominent and persistent: reposition to

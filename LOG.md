@@ -1,5 +1,40 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Session wrap: client experience + receipts shipped; visual redesign next
+
+Big session, all shipped to prod across many deploys (latest 9cdf60f). Done tonight:
+
+- Planning sweep: 5 plan docs (`docs/plans/*`) + the Stripe key-swap runbook.
+- Quick wins: audit-trail lucide icons, team-gated `/docs` schema page, logo-only branding.
+- Signing flow redesign, mobile-first + phone-tested with Rahul: Ready to sign -> Review
+  and sign -> Finish, active-field ring, floating pointer chip, auto-advance, branded
+  top-center toasts, elevated floating action bar, inline field validation,
+  faded-until-valid CTA, caret fix, Recommended badge (web + PDF), scroll-to-pricing, no
+  pre-highlight on the recommended tier.
+- Post-sign outcome screens polished (OutcomeCard: dot texture, entrance, mobile) and
+  payment copy unified + made status-based (`src/lib/outcomeCopy.ts`), method-agnostic.
+- Receipts on every transaction: `invoice.paid` renewal handler (the launch-critical gap).
+
+Decisions: auto-advance for placement (Rahul); all 6 dashboard KPIs; `/docs` team-gated;
+`receipt_email` skipped (double-send risk; §11 evidence is the customer metadata); payment
+messaging keyed to status, not method.
+
+NEXT UP (open work, full detail in `ROADMAP.md`):
+
+1. Landing + sign-in + dashboard design pass + the 6 KPIs — Rahul's flagged next. Plan +
+   KPIs decided (`docs/plans/visualRedesign.md`); confirm visual direction per page, then
+   build via the design skills.
+2. Mobile optimization of the INTERNAL app (dashboard table, proposal form, detail tabs,
+   settings). Client-facing surfaces are already done.
+3. Admin-side action toasts (PDF / self-refresh) — the last slice of the toast pass.
+4. Stripe live-key swap — the only go-live blocker (Rahul's step; runbook ready; it also
+   subscribes `invoice.paid` live).
+5. Eventual: attorney MSA v4, in-app AI generation, orphaned-blob cleanup.
+
+HEADS UP: a [TEST] "Brightline" proposal + Rahul's sent copy are still in PROD (kept for
+testing) — clear before launch (the `.tmp/clearTestData.ts` pattern). Commits this session
+are local + deployed via Vercel CLI; NOT pushed to GitHub origin yet (ask-first).
+
 ## 2026-06-13 — Receipts on every transaction: invoice.paid renewal handler
 
 Closed the launch-critical silent-renewal gap. Added an `invoice.paid` case to the Stripe

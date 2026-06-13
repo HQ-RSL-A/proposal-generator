@@ -43,7 +43,7 @@ Resend (+svix webhooks) · Notion API (raw fetch) · Vitest.
   email needed.
 - Routes: `/` public landing → `/dashboard` (team) → `/settings` (admin; General + System
   tabs — System absorbed the old `/health` page, which now redirects to
-  `/settings?tab=system`).
+  `/settings?tab=system`); plus `/docs` (team-gated, in-app token-schema reference).
 
 ## Copy rules
 
@@ -51,7 +51,9 @@ All user-facing text follows `myBusiness/brandGuidelines/voiceDna.md`: no em/en 
 anywhere, short conversational sentences, no hype or AI-flag words, ranges as "X to Y".
 **No emojis anywhere** (emails, subjects, screens, PDF). Support address on every public
 surface is `team@rsla.io` (`SUPPORT_EMAIL` in `src/lib/constants.ts`; it's a Google group).
-`ADMIN_EMAIL` (lalia@rsla.io) is recipient-only, never displayed.
+`ADMIN_EMAIL` (lalia@rsla.io) is recipient-only, never displayed. Post-sign
+outcome-screen copy is shared in `src/lib/outcomeCopy.ts` and keyed to payment STATUS
+(confirmed vs clearing), never the payment method (no card/ACH wording).
 
 ## Email conventions
 
@@ -96,6 +98,11 @@ resolves the proposal by session id whenever the path token is dead.
   retry buttons (also on the proposal page).
 - `WebhookEvent` unique `externalId` = dedupe for Stripe + Resend (+ synthetic
   `reconcile_<sessionId>` ids).
+- Client receipt on every paid transaction: `applyPaidState` emails
+  `payment_received_client` on one-time / first-charge / ACH settlement; subscription
+  RENEWALS are caught by the `invoice.paid` handler (guarded to
+  `billing_reason: subscription_cycle` so the first charge never double-sends). Live
+  webhook = 6 events (the original 5 + `invoice.paid`).
 - Crons (`vercel.json`): process-jobs (*/5m), reconcile-payments (4h — polls Stripe for
   stuck AWAITING/PROCESSING/SESSION_EXPIRED, heals missed webhooks), daily 13:00 UTC
   (expiry + 3-day/1-day reminders). All Bearer `CRON_SECRET`; runs logged to `CronLog`.
