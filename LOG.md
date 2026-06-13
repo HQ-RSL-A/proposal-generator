@@ -16,6 +16,13 @@ whenever the path token is dead. Verified on prod against the real failed
 session: dead token + session id renders "You're all set"; dead token alone
 still gates. Fresh [TEST] draft re-seeded for the payment-leg re-test.
 
+**Re-test PASSED (Rahul, prod):** full loop on the new build end to end — sign
+both places → pay (4242) → "You're all set" with a working download button,
+executed copy delivered. The token-rotation race is closed. The entire
+PandaDoc-replacement flow is now verified in production. Only remaining work:
+the Stripe live-key swap (live restricted key → recreate webhook in live mode
+→ swap STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET on Vercel).
+
 ## 2026-06-12 — Design system pass: emails, PDF, two-place signing, footnotes, alerts
 
 Big batch from Rahul's review of the first executed document:
