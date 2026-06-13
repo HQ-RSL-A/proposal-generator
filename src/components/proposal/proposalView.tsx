@@ -56,14 +56,17 @@ export function TierCards({
 }) {
   return (
     <div
+      data-tier-anchor
       className={cn(
-        "mt-5 grid gap-3",
+        "mt-5 grid scroll-mt-24 gap-3",
         tiers.length === 2 ? "sm:grid-cols-2" : "sm:grid-cols-3"
       )}
     >
       {tiers.map((tier) => {
         const selected = tier.id === selectedTierId;
-        const highlighted = selected || (!selectedTierId && tier.recommended);
+        // Only the actively chosen tier is highlighted. The recommended tier is
+        // marked by its badge, not by a pre-selected look.
+        const highlighted = selected;
         return (
           <button
             key={tier.id}

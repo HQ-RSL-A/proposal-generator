@@ -247,7 +247,7 @@ export function SigningExperience({
 
   return (
     <div className="min-h-screen bg-surface pb-28">
-      <div className="mx-auto max-w-3xl px-3 pt-8 sm:px-6" data-tier-anchor={requiresTier || undefined}>
+      <div className="mx-auto max-w-3xl px-3 pt-8 sm:px-6">
         <ProposalView
           sections={sections}
           selectedTierId={selectedTierId}
