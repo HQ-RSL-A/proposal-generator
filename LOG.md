@@ -1,5 +1,13 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Post-sign outcome screens polished
+
+`OutcomeCard` (shared by signed / paid / declined / expired / pay-recovery) now uses the
+brand dot-pattern backdrop, a gentle fade+zoom entrance (reduced-motion safe), and
+tighter mobile padding. One change lifts all five screens. Tier-card stacking and the
+decline dialog were reviewed on mobile (fine, no changes). Client post-sign emails are
+being verified live by Rahul via the [TEST] proposal in his inbox. (1480621)
+
 ## 2026-06-13 — Signing polish round 2 (pricing scroll, badge, CTA fade, caret)
 
 More phone-test feedback from Rahul, all built + shipped:
