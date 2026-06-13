@@ -126,6 +126,13 @@ export function FullySignedClientEmail({
           </Paragraph>
           <CtaButton href={paymentUrl}>Complete Payment</CtaButton>
         </>
+      ) : paymentPending ? (
+        <Paragraph>
+          If you just completed checkout, you are all set and a payment confirmation follows in a
+          separate email. If you stepped away before paying, no stress: finishing the checkout you
+          were taken to after signing is all that is left, and a fresh payment link arrives
+          automatically if that session closes.
+        </Paragraph>
       ) : null}
       <Divider />
       <FinePrint>

@@ -262,7 +262,9 @@ export async function ensureCheckoutSession(
     oneTime,
     recurring,
     paymentConfig: config,
-    successUrl: `${base}/sign/${rawTokenForReturn}/paid`,
+    // Stripe substitutes the placeholder; the session id lets the /paid page
+    // identify the proposal even if the path token was rotated mid-checkout.
+    successUrl: `${base}/sign/${rawTokenForReturn}/paid?session_id={CHECKOUT_SESSION_ID}`,
     cancelUrl: `${base}/pay/${rawTokenForReturn}`,
     idempotencyKey: `checkout-${proposalId}-g${generation}-${proposal.stripeCheckoutSessionId ?? "first"}`,
   });

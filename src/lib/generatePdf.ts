@@ -129,10 +129,21 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
   if (!alreadySent) {
     const paymentPending =
       proposal.paymentStatus !== "NOT_REQUIRED" && proposal.paymentStatus !== "PAID";
+    // The last signer's token is baked into the Stripe success_url. When the
+    // payer IS the last signer (every single-signer deal), they are mid-checkout
+    // right now — rotating their token here would 404 the page Stripe returns
+    // them to. Skip the button for them; session-expiry recovery covers the
+    // abandoned case. Payers who signed earlier get the button as their entry
+    // point, and rotating THEIR token can't touch the in-flight success_url.
+    const lastSigner = [...proposal.parties]
+      .filter((p) => p.role === "CLIENT_SIGNER" && p.signedAt)
+      .sort((a, b) => b.signedAt!.getTime() - a.signedAt!.getTime())[0];
     for (const party of proposal.parties.filter((p) => p.role === "CLIENT_SIGNER")) {
-      // The payer's copy carries a payment link when checkout is still open.
+      const payerMidCheckout = party.payer && party.id === lastSigner?.id;
       const rawToken =
-        paymentPending && party.payer ? await rotatePartyToken(party.id) : undefined;
+        paymentPending && party.payer && !payerMidCheckout
+          ? await rotatePartyToken(party.id)
+          : undefined;
       await sendTemplateEmail("fully_signed_client", proposal.id, party.id, {
         paymentPending,
         rawToken,

@@ -7,11 +7,30 @@ import { CheckCircle2, Landmark, Link2Off } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 /** Stripe Checkout success_url lands here. The webhook is the source of truth. */
-export default async function PaidPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function PaidPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ session_id?: string }>;
+}) {
   const { token } = await params;
+  const { session_id: sessionId } = await searchParams;
   const gate = await gateToken(token);
 
-  if (!gate.ok) {
+  // Identify the proposal by token, or by the Stripe session id if the token
+  // was rotated while the client sat in checkout. Someone returning from a
+  // successful payment must never see a dead-link screen.
+  let proposalId: string | null = gate.ok ? gate.party.proposalId : null;
+  if (!proposalId && sessionId && /^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
+    const bySession = await prisma.proposal.findFirst({
+      where: { stripeCheckoutSessionId: sessionId },
+      select: { id: true },
+    });
+    proposalId = bySession?.id ?? null;
+  }
+
+  if (!proposalId) {
     return (
       <OutcomeCard icon={Link2Off} tone="neutral" title="This link isn't valid">
         <p>Check the most recent email from RSL/A, or ask for a fresh link.</p>
@@ -20,7 +39,7 @@ export default async function PaidPage({ params }: { params: Promise<{ token: st
   }
 
   const proposal = await prisma.proposal.findUniqueOrThrow({
-    where: { id: gate.party.proposalId },
+    where: { id: proposalId },
     select: { id: true, paymentStatus: true },
   });
   const finalDoc = await prisma.generatedDocument.findFirst({
@@ -28,21 +47,24 @@ export default async function PaidPage({ params }: { params: Promise<{ token: st
     select: { id: true },
   });
 
-  const downloadButton = finalDoc ? (
-    <div className="pt-3">
-      <Button
-        className="w-full"
-        nativeButton={false}
-        render={<a href={`/api/sign/${token}/document`} />}
-      >
-        Download your signed agreement
-      </Button>
-    </div>
-  ) : (
-    <p>
-      Your executed copy is in your inbox as an attachment, so you always have it on hand.
-    </p>
-  );
+  // The download endpoint is token-gated; without a live token the executed
+  // copy is already waiting in their inbox.
+  const downloadButton =
+    finalDoc && gate.ok ? (
+      <div className="pt-3">
+        <Button
+          className="w-full"
+          nativeButton={false}
+          render={<a href={`/api/sign/${token}/document`} />}
+        >
+          Download your signed agreement
+        </Button>
+      </div>
+    ) : (
+      <p>
+        Your executed copy is in your inbox as an attachment, so you always have it on hand.
+      </p>
+    );
 
   if (proposal.paymentStatus === "PROCESSING") {
     return (
