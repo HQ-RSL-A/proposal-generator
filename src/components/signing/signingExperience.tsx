@@ -173,21 +173,34 @@ export function SigningExperience({
   function handleAdopt(signature: AdoptedSignature) {
     setAdopted(signature);
     setModalOpen(false);
-    signToast("brand", "You're signed", "Now tap the highlighted box to drop your signature in.");
-    window.setTimeout(() => scrollToSlot("proposal"), 250);
+    // No auto-scroll: the signer scrolls to the box themselves, or taps the action-bar
+    // button / the floating chip (both call scrollToSlot) to jump to it.
+    signToast(
+      "brand",
+      "Signature ready",
+      "Now place it in the two highlighted boxes. Scroll to them, or tap the button below."
+    );
   }
 
   function handleStamp(place: SignaturePlace) {
-    setStamped((prev) => {
-      if (prev[place]) return prev;
-      stampTimes.current[place] = new Date().toISOString();
-      const next = { ...prev, [place]: true };
-      const remaining = PLACE_ORDER.find((p) => !next[p]);
-      if (remaining) {
-        window.setTimeout(() => scrollToSlot(remaining), 350);
-      }
-      return next;
-    });
+    if (stamped[place]) return;
+    stampTimes.current[place] = new Date().toISOString();
+    const next = { ...stamped, [place]: true };
+    setStamped(next);
+    // No auto-advance. The persistent chip + action-bar button lead to the next box.
+    const remaining = PLACE_ORDER.find((p) => !next[p]);
+    if (remaining) {
+      signToast(
+        "brand",
+        "Signature placed",
+        "Scroll to the other box, or tap the button to jump to it.",
+        { id: "stamp-progress" }
+      );
+    } else {
+      signToast("brand", "Both places signed", "Tap Finish at the bottom to submit.", {
+        id: "stamp-progress",
+      });
+    }
   }
 
   const stampedCount = PLACE_ORDER.filter((p) => stamped[p]).length;

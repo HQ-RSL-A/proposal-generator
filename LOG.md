@@ -1,5 +1,15 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Signing: no auto-scroll to signature fields (reverses earlier auto-advance)
+
+Rahul: tapping a "tap to sign" box shouldn't auto-scroll the page; the signer should scroll
+themselves or tap the button to jump to the next box. Reverses the earlier "auto-advance for
+placement (Rahul)" call. In `signingExperience.tsx`: removed the post-adopt scroll-to-first
+(handleAdopt) and the post-stamp scroll-to-next (handleStamp). The persistent floating chip
+and the action-bar "Review and sign" button remain as the manual jump-to-field controls (both
+still call scrollToSlot), and the toasts now point to scrolling/the button. handleStamp also
+restructured to set state + toast outside the updater. Build + lint + 65 tests green.
+
 ## 2026-06-13 — Fix: signature pad misaligned after rotating the phone
 
 Rahul on mobile: open /settings (or the signing modal), rotate to landscape, draw with a
