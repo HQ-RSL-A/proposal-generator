@@ -1,5 +1,21 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Dashboard mobile: card list instead of the wide table
+
+Rahul: the dashboard should be simpler to use on mobile. The 5-column proposals table
+cramped/overflowed on a phone. `dashboard/page.tsx` now computes each proposal's display row
+once, then renders two views: the full table on `md+` (`hidden md:block`), and a tappable
+card list below `md` (`md:hidden`) where each proposal is a card showing title (+version),
+client + company, status/payment chips, the deal amount, and valid-until. The KPI row went
+from stacked full-width cards to a compact 3-up strip on mobile (icon hidden, smaller
+label/value), roomy cards on desktop. Added a header "New proposal" button (icon-only on
+mobile). Press feedback on the cards (active:scale-[0.98], 150ms ease-out, per emilDesignEng);
+no entrance animation (list is seen constantly); hover ring auto-gated by Tailwind v4's
+hover media query. Build + lint clean. Scope: dashboard only; the rest of the internal-app
+mobile pass (proposal form, detail tabs, settings) is still open. The 6-KPI "ops command
+center" desktop redesign remains a separate task (awaiting visual sign-off). Verify on a
+real phone.
+
 ## 2026-06-13 — Signing: no auto-scroll to signature fields (reverses earlier auto-advance)
 
 Rahul: tapping a "tap to sign" box shouldn't auto-scroll the page; the signer should scroll
