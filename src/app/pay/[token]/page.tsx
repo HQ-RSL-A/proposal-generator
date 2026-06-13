@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { ensureCheckoutSession } from "@/lib/signingService";
 import { OutcomeCard } from "@/components/signing/outcomeCard";
 import { SUPPORT_EMAIL } from "@/lib/constants";
-import { AlertTriangle, CheckCircle2, Landmark, Link2Off, PenLine } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Link2Off, PenLine } from "lucide-react";
+import { OUTCOME_COPY } from "@/lib/outcomeCopy";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,8 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
 
   if (!gate.ok) {
     return (
-      <OutcomeCard icon={Link2Off} tone="neutral" title="This link isn't valid">
-        <p>Check the most recent email from RSL/A, or ask for a fresh payment link.</p>
+      <OutcomeCard icon={Link2Off} tone="neutral" title={OUTCOME_COPY.invalidLink.title}>
+        <p>{OUTCOME_COPY.invalidLink.body}</p>
       </OutcomeCard>
     );
   }
@@ -32,18 +33,15 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
 
   if (proposal.paymentStatus === "PAID") {
     return (
-      <OutcomeCard icon={CheckCircle2} tone="success" title="Already paid">
-        <p>This engagement is paid up. Nothing more to do here.</p>
+      <OutcomeCard icon={CheckCircle2} tone="success" title={OUTCOME_COPY.paymentConfirmed.title}>
+        <p>{OUTCOME_COPY.paymentConfirmed.body}</p>
       </OutcomeCard>
     );
   }
   if (proposal.paymentStatus === "PROCESSING") {
     return (
-      <OutcomeCard icon={Landmark} tone="wait" title="Your bank transfer is on its way">
-        <p>
-          ACH takes 1 to 2 business days to clear, and we email you the moment it lands. No
-          further action needed.
-        </p>
+      <OutcomeCard icon={Clock} tone="wait" title={OUTCOME_COPY.paymentProcessing.title}>
+        <p>{OUTCOME_COPY.paymentProcessing.body}</p>
       </OutcomeCard>
     );
   }

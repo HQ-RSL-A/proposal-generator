@@ -2,7 +2,8 @@ import { gateToken } from "@/lib/partyTokens";
 import { prisma } from "@/lib/prisma";
 import { OutcomeCard } from "@/components/signing/outcomeCard";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Landmark, Link2Off } from "lucide-react";
+import { CheckCircle2, Clock, Link2Off } from "lucide-react";
+import { OUTCOME_COPY } from "@/lib/outcomeCopy";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +33,8 @@ export default async function PaidPage({
 
   if (!proposalId) {
     return (
-      <OutcomeCard icon={Link2Off} tone="neutral" title="This link isn't valid">
-        <p>Check the most recent email from RSL/A, or ask for a fresh link.</p>
+      <OutcomeCard icon={Link2Off} tone="neutral" title={OUTCOME_COPY.invalidLink.title}>
+        <p>{OUTCOME_COPY.invalidLink.body}</p>
       </OutcomeCard>
     );
   }
@@ -68,24 +69,16 @@ export default async function PaidPage({
 
   if (proposal.paymentStatus === "PROCESSING") {
     return (
-      <OutcomeCard icon={Landmark} tone="wait" title="Your bank transfer is on its way">
-        <p>
-          ACH takes 1 to 2 business days to clear, and we confirm by email the moment it lands.
-          Your fully signed agreement is already in your inbox, and work gets scheduled in the
-          meantime.
-        </p>
+      <OutcomeCard icon={Clock} tone="wait" title={OUTCOME_COPY.paymentProcessing.title}>
+        <p>{OUTCOME_COPY.paymentProcessing.body}</p>
         {downloadButton}
       </OutcomeCard>
     );
   }
 
   return (
-    <OutcomeCard icon={CheckCircle2} tone="success" title="You're all set">
-      <p>
-        Your payment went through, and a confirmation email is on its way to you. The fully signed
-        agreement was sent to your inbox the moment everyone signed, so everything you agreed to is
-        already in your hands.
-      </p>
+    <OutcomeCard icon={CheckCircle2} tone="success" title={OUTCOME_COPY.paymentConfirmed.title}>
+      <p>{OUTCOME_COPY.paymentConfirmed.body}</p>
       {downloadButton}
     </OutcomeCard>
   );
