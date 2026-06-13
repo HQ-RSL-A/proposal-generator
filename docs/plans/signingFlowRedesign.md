@@ -7,7 +7,7 @@ Decisions needed from Rahul are marked **[DECIDE]**. My recommendation follows e
 
 ---
 
-## 1. Signing ceremony UX redesign (mobile-first)
+## 1. Signing ceremony UX redesign (mobile-first) — BUILT 2026-06-13 (pending visual QA + deploy)
 
 **Problem.** On a phone, the current flow drops people. Tapping any signature slot
 opens the modal; the signer enters name/title/company + draws/types + consents, then
@@ -81,7 +81,7 @@ without an animated scroll), and don't yank the view while the signer is mid-sta
 
 ---
 
-## 2. Toast / notification redesign (mobile + desktop)
+## 2. Toast / notification redesign (mobile + desktop) — PARTIAL 2026-06-13 (signing toasts to top-center + chip/ring replace the missed guidance; admin action toasts still open)
 
 **Problem.** Action-critical guidance ("tap the fields to add your signature") sits
 bottom-right, auto-dismisses in ~4s, reads as low priority, and gets missed.

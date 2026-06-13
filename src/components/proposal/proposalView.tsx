@@ -134,6 +134,8 @@ export interface SignerSlot {
 export interface SigningInteraction {
   adoptedPngDataUrl: string | null;
   stamped: Record<SignaturePlace, boolean>;
+  /** The field the signer should act on next; gets the attention ring. */
+  activePlace: SignaturePlace | null;
   onStamp: (place: SignaturePlace) => void;
   onRequestAdopt: () => void;
 }
@@ -149,13 +151,15 @@ function SignatureSlotBox({
 }) {
   const interactive = Boolean(slot.isSelf && signing && !slot.signedAt);
   const stampedHere = interactive && Boolean(signing?.stamped[place]);
+  const isActive = interactive && !stampedHere && signing?.activePlace === place;
 
   return (
     <div
       data-signature-slot={interactive ? place : undefined}
       className={cn(
-        "rounded-xl border p-4 transition-colors",
-        interactive && !stampedHere ? "border-primary/60 bg-accent/40" : "border-border"
+        "rounded-xl border p-4 transition-[border-color,background-color,box-shadow] duration-200",
+        interactive && !stampedHere ? "border-primary/60 bg-accent/40" : "border-border",
+        isActive && "border-primary ring-2 ring-primary/70 ring-offset-2 ring-offset-surface"
       )}
     >
       <p className="font-semibold">{slot.name}</p>

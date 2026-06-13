@@ -1,6 +1,6 @@
 # Plan — In-app token-schema docs page
 
-Status: BUILT 2026-06-13 — team-gated `/docs`, in working tree (not yet deployed). Low risk (new route). Requirement from Rahul: content +
+Status: SHIPPED 2026-06-13 — team-gated `/docs`, live on prod. Low risk (new route). Requirement from Rahul: content +
 all examples must be **generic / industry-standard**, never a real or test client name
 (use "Acme Corp", contact "Jordan Avery", etc.). Source of truth = `src/lib/types.ts`.
 

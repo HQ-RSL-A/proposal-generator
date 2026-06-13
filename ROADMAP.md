@@ -48,7 +48,7 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
 
 - [x] **Token-schema docs page (in-app, agent-friendly).** DONE 2026-06-13 — built as
       team-gated `/docs`, generic examples, field table auto-derived from `TOKEN_KEYS`
-      (compile-time drift guard). In working tree, not yet deployed. A `/docs` (or better-named)
+      (compile-time drift guard). Shipped to prod. A `/docs` (or better-named)
       route documenting the proposal token schema + payment-config shape + a copy-paste
       example, so other AI agents (the `generate-proposal` skill, or any agent) can
       produce a valid import JSON without reading the source. Decide gating: team-only
@@ -96,7 +96,7 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       self-refresh, etc.).
 
 - [x] **Audit trail: professional icons, no emojis.** DONE 2026-06-13 (lucide icons +
-      tone colors; in working tree, not yet deployed). The audit trail / event log
+      tone colors; shipped to prod). The audit trail / event log
       (internal proposal detail view) currently uses emojis for event types.
       Replace with clean SVG icons (lucide or similar) per event type for a
       professional look, consistent with the no-emoji rule on client-facing

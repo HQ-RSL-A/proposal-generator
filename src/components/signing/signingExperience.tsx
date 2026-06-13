@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -82,8 +83,9 @@ export function SigningExperience({
       setAdopted(null);
       setStamped({ proposal: false, agreement: false });
       stampTimes.current = { proposal: null, agreement: null };
-      toast.info("Pricing changed", {
-        description: "Since the deal changed, please adopt your signature again.",
+      toast.info("Pricing updated", {
+        description: "Since the deal changed, please sign again to continue.",
+        position: "top-center",
       });
     }
     fetch(`/api/sign/${token}/track`, {
@@ -95,7 +97,11 @@ export function SigningExperience({
 
   function openSignModal() {
     if (requiresTier && !selectedTierId) {
-      toast.error("Pick a pricing option first. It's part of what you're agreeing to.");
+      toast.error("Select a plan before signing", {
+        description: "It's part of what you're agreeing to.",
+        position: "top-center",
+        duration: 6000,
+      });
       document
         .querySelector("[data-tier-anchor]")
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -107,8 +113,10 @@ export function SigningExperience({
   function handleAdopt(signature: AdoptedSignature) {
     setAdopted(signature);
     setModalOpen(false);
-    toast.success("Signature adopted", {
-      description: "Now place it in the two highlighted spots, starting with the acceptance.",
+    toast.success("You're signed", {
+      description: "Now tap the highlighted box to drop your signature in.",
+      position: "top-center",
+      duration: 5000,
     });
     window.setTimeout(() => scrollToSlot("proposal"), 250);
   }
@@ -128,6 +136,8 @@ export function SigningExperience({
 
   const stampedCount = PLACE_ORDER.filter((p) => stamped[p]).length;
   const allStamped = stampedCount === PLACE_ORDER.length;
+  const activePlace =
+    adopted && !allStamped ? (PLACE_ORDER.find((p) => !stamped[p]) ?? null) : null;
 
   async function handleSubmit() {
     if (!adopted || !allStamped || submitting) return;
@@ -153,7 +163,11 @@ export function SigningExperience({
       if (!response.ok) {
         if (data.code === "expired") router.push(`/sign/${token}/expired`);
         else if (data.code === "already_signed") router.push(`/sign/${token}/signed`);
-        else toast.error(data.error ?? "Something went wrong");
+        else
+          toast.error(data.error ?? "Something went wrong", {
+            id: "sign-submit",
+            position: "top-center",
+          });
         return;
       }
       if (typeof data.redirectUrl === "string" && data.redirectUrl.startsWith("http")) {
@@ -163,8 +177,10 @@ export function SigningExperience({
         router.push(data.redirectUrl ?? `/sign/${token}/signed`);
       }
     } catch {
-      toast.error("Network hiccup", {
-        description: "Your signature was not submitted, so please try again.",
+      toast.error("Could not submit", {
+        description: "Check your connection and try again.",
+        id: "sign-submit",
+        position: "top-center",
       });
     } finally {
       setSubmitting(false);
@@ -217,11 +233,24 @@ export function SigningExperience({
           signing={{
             adoptedPngDataUrl: adopted?.pngDataUrl ?? null,
             stamped,
+            activePlace,
             onStamp: handleStamp,
             onRequestAdopt: openSignModal,
           }}
         />
       </div>
+
+      {/* Floating guide to the next signature field */}
+      {activePlace ? (
+        <button
+          type="button"
+          onClick={() => scrollToSlot(activePlace)}
+          className="fixed bottom-24 left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-transform active:scale-[0.97]"
+        >
+          <PenLine className="h-4 w-4" />
+          {activePlace === "proposal" ? "Place your signature" : "One more signature left"}
+        </button>
+      ) : null}
 
       {/* Sticky action bar */}
       <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 backdrop-blur">
@@ -242,17 +271,16 @@ export function SigningExperience({
             )}
             {!adopted ? (
               <Button size="lg" onClick={openSignModal} disabled={submitting}>
-                Review &amp; Sign
+                Ready to sign
               </Button>
             ) : !allStamped ? (
               <Button
                 size="lg"
                 onClick={() => {
-                  const next = PLACE_ORDER.find((p) => !stamped[p]);
-                  if (next) scrollToSlot(next);
+                  if (activePlace) scrollToSlot(activePlace);
                 }}
               >
-                Place signature ({stampedCount}/2)
+                Review and sign
               </Button>
             ) : (
               <Button size="lg" onClick={handleSubmit} disabled={submitting}>

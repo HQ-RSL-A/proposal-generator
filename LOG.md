@@ -1,5 +1,30 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Signing flow redesign (mobile-first) built
+
+Implemented the approved signing UX rework. View-state only: the one-shot sign
+transaction, stamp timestamps, tier-reset, and decline flow are untouched. Build green,
+47 tests pass. NOT visually QA'd live yet (signing page is token-gated, best tested on a
+real phone) and not committed/deployed.
+
+- CTA states: "Ready to sign" (opens the collect modal) -> "Review and sign" (jumps to
+  the active field) -> "Finish & Submit" / "Finish & continue to payment".
+- New `activePlace` drives an attention ring on the exact field to sign next, so the
+  (kept) auto-advance scroll lands on an obviously highlighted target instead of a blind
+  jump to the bottom. That reconciles "auto-advance" with the old "don't just yank me
+  down" complaint.
+- Floating pointer chip above the action bar leads the signer to the next or missed field
+  (tap to scroll), with press feedback; shows only during placement.
+- Signing toasts moved to top-center with clearer copy, stable ids, and longer durations
+  so the guidance stops getting missed; the persistent chip + ring are the primary guide.
+
+Files: signingExperience.tsx (phase-derived `activePlace`, chip, toast positions, button
+labels), proposalView.tsx (SigningInteraction.activePlace + active-field ring). Decisions
++ plan in docs/plans/signingFlowRedesign.md.
+
+Next: visual QA on a real phone, then commit + deploy. Admin-side action toasts (PDF /
+self-refresh) redesign still open.
+
 ## 2026-06-13 — Built the three safe quick wins (audit icons, /docs, logo-only)
 
 Per Rahul's go-ahead ("safe quick wins now"). All in the working tree, verified, NOT
@@ -22,7 +47,8 @@ Verified: `npm run build` green (13 routes incl. /docs), `npm test` 47/47.
 Decisions captured for the later builds: signing redesign uses **auto-advance** to the
 next field (Rahul overrode my tap rec); dashboard KPIs = **all 6**; /docs = team-gated.
 
-Open: commit + `vercel deploy --prod` to ship these (not done — needs Rahul's OK).
+Shipped: committed (1386023) + deployed to proposals.rsla.io (smoke-checked: landing
+200, /docs gated 307, logomark 200). Not pushed to origin yet (ask-first).
 
 ## 2026-06-13 — Planning sweep: research-backed plans for all no-input items
 
