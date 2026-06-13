@@ -1,5 +1,17 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Unified post-sign payment copy (status-based, method-agnostic)
+
+Rahul: combine the messaging, don't distinguish by payment method. The duplicate copy on
+`/sign/[token]/paid` and `/pay/[token]` (invalid link, payment confirmed, payment
+clearing) now lives in `src/lib/outcomeCopy.ts` as a single source, so they can't drift.
+Dropped the "bank transfer / ACH" wording and the bank icon (Landmark -> Clock);
+messaging is keyed to STATUS (confirmed vs still clearing), never the method. Kept one
+accuracy guardrail: a payment still clearing reads "Your payment is on its way", not
+"you're all set" (card clears instantly, a transfer takes a day or two). `/pay` "Already
+paid" now matches the `/paid` success. Emails left as is (they already fire only on
+actual settlement, so they're status-based already). (3bd0378)
+
 ## 2026-06-13 — Post-sign outcome screens polished
 
 `OutcomeCard` (shared by signed / paid / declined / expired / pay-recovery) now uses the
