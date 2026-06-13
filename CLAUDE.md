@@ -17,7 +17,10 @@ Deploys to `proposals.rsla.io`. See `BRAIN.md` for architecture and reference.
   Versions are immutable: attorney revisions = new version row + new seed entry, never an
   update. Signed documents keep the version they were signed with.
 - **Raw signing tokens are never stored** — only SHA-256 hashes. Any email embedding a
-  signing/payment link rotates that party's token first (`rotatePartyToken`).
+  signing/payment link rotates that party's token first (`rotatePartyToken`). **Exception:**
+  never rotate the payer's token while their checkout is in flight (payer == last signer);
+  Stripe's success_url carries it. The /paid page also resolves by `?session_id=` as a
+  safety net — keep both halves intact.
 - **Side effects are queue-backed.** External calls (email, Notion, Stripe metadata, PDF)
   go through `PendingJob` + `after()` immediate attempt + cron sweep. Never let an
   integration failure block signing or payment.
@@ -47,8 +50,12 @@ Deploys to `proposals.rsla.io`. See `BRAIN.md` for architecture and reference.
 ## Commands
 
 ```bash
-npm run dev          # localhost:1235
-npm test             # vitest (pure logic: tokens, hashing, cents, MSA parser, validation)
-npm run build        # prisma generate + next build
-npx prisma db seed   # seed MsaVersion v3 + AdminSettings
+npm run dev                    # localhost:1235
+npm test                       # vitest (pure logic: tokens, hashing, cents, MSA parser, validation)
+npm run build                  # prisma generate + next build
+npx prisma db seed             # seed MsaVersion v3 + AdminSettings
+npx tsx scripts/pdfSmoke.ts    # render the full PDF locally (required after any PDF change)
+npx tsx scripts/emailPreview.tsx  # render all 14 emails to docs/emailPreviews/
+npx tsx scripts/e2eSeed.ts     # fresh [TEST] rehearsal draft (fake company, prod DB)
+vercel deploy --prod --yes     # SHIP — the Vercel project is NOT git-linked; push alone deploys nothing
 ```

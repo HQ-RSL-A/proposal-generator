@@ -82,6 +82,11 @@ lookup). Reusable for viewing until signed; sign action is one-shot. Expiry =
 `validUntil` (end-of-day America/New_York). Post-signature the token stays valid for the
 confirmation page and `/pay/[token]` recovery. **Every token-bearing email rotates first** —
 latest email always has the live link; failed sends retry via job with `needsToken: true`.
+**One deliberate exception:** the executed-copy email never rotates the payer's token when
+the payer was the last signer — their checkout is in flight and Stripe's success_url carries
+that token (rotating it stranded a paying client on "link isn't valid" once). Belt and
+suspenders: success_url appends `?session_id={CHECKOUT_SESSION_ID}` and `/sign/[token]/paid`
+resolves the proposal by session id whenever the path token is dead.
 
 ## Reliability
 
@@ -102,9 +107,11 @@ latest email always has the live link; failed sends retry via job with `needsTok
 - Supabase project `bjqouysamajtmghyztoa` (shared with expenseVault), **schema `proposals`**
   (free-tier org is at its 2-project cap; the schema is fully isolated and portable —
   `pg_dump --schema=proposals` to move it to its own project later).
-- Migration: `prisma/migrations/0001_init.sql` (includes `CREATE SCHEMA` + RLS enables;
-  PostgREST can't reach the schema — not in the exposed list — and RLS is deny-all on top).
-- Apply: `npx prisma db execute --file prisma/migrations/0001_init.sql` then `npx prisma db seed`.
+- Migrations: hand SQL in `prisma/migrations/` — `0001_init.sql` (schema + RLS; PostgREST
+  can't reach the schema and RLS is deny-all on top), `0002`/`0003` (users/roles, signer
+  title+company), `0004_signature_stamps.sql` (two-place ceremony timestamps). All applied.
+- Apply: `npx prisma db execute --file prisma/migrations/<file>.sql`; fresh DB also needs
+  `npx prisma db seed` (MSA v3 + AdminSettings).
 
 ## Environment variables
 
@@ -133,11 +140,17 @@ latest email always has the live link; failed sends retry via job with `needsTok
 - Satoshi registers from the original OTFs (they were never the crash cause; a TTF
   conversion attempt corrupted the lowercase "i" glyph — don't convert).
 - Verify any PDF change with `npx tsx scripts/pdfSmoke.ts` and Read the output.
+- Fonts: Satoshi (headings, original OTFs) + Inter (body, statics extracted losslessly from
+  the official Inter.ttc into `public/fonts/`). Same pairing as the web app.
 - Signed PDF layout: cover (logomark.png) → narrative → scope/timeline → investment +
-  Acceptance signatures → MSA + "Agreed and Accepted" execution block after §37 →
-  E-Signature Certificate (bordered, industry format: reference, sent/viewed/signed
-  timestamps, IP, signature images, completion line, ESIGN statement + SHA-256). No
-  user-agent strings or raw event logs in the client-facing document.
+  How to Proceed + Acceptance signatures → numbered Notes block (destinations for the
+  superscript note markers; internal links) → MSA + "Agreed and Accepted" execution block
+  after §37 (second signing place) → E-Signature Certificate (bordered, industry format:
+  reference, sent/viewed/signed timestamps, placement line, IP, signature images,
+  completion line, ESIGN statement + SHA-256). No user-agent strings or raw event logs in
+  the client-facing document. Links render blue (case studies underlined; footer rsla.io).
+- Attachment + token-gated download share `executedPdfFilename()`:
+  `{Title} - Fully Signed - {Company} x RSLA.pdf`.
 
 ## Gotchas
 
