@@ -1,6 +1,19 @@
 # LOG.md — proposalGenerator
 
-## 2026-06-13 — Optional add-ons + 50% deposit (built, verified; not yet committed/deployed)
+## 2026-06-13 — Fix: signature pad misaligned after rotating the phone
+
+Rahul on mobile: open /settings (or the signing modal), rotate to landscape, draw with a
+finger -> the ink lands away from the finger, offset growing toward the right. Root cause in
+`signaturePadCanvas.tsx`: the canvas backing store (canvas.width/height + ctx DPR scale) was
+sized once on mount. Rotating changes the canvas CSS width but not the backing store, so the
+alignment invariant `canvas.width === offsetWidth * ratio` breaks and signature_pad maps
+touches to the wrong place. Fix: re-fit on every size change via ResizeObserver (+ a window
+resize listener), recomputing width/height/ratio and preserving strokes with toData/fromData.
+Also made the handle's `isEmpty` toData-based, since signature_pad keeps `_isEmpty` true after
+fromData (would otherwise read empty after a re-fit restored the drawing). Build + lint clean.
+Fixes both the admin saved-signature pad and the client signing modal.
+
+## 2026-06-13 — Optional add-ons + 50% deposit (shipped to prod)
 
 Two new payment capabilities, both extending the one resolver -> Stripe -> render surface.
 Plan + decisions in `~/.claude/plans/need-to-add-a-fuzzy-hickey.md`. Build green, 65/65 tests
