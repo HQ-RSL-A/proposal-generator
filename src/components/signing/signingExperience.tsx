@@ -3,7 +3,8 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { PenLine } from "lucide-react";
+import { Check, PenLine, TriangleAlert } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,6 +28,40 @@ function scrollToSlot(place: SignaturePlace) {
   document
     .querySelector(`[data-signature-slot="${place}"]`)
     ?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+/** Branded, on-brand toast for the signing flow (Anchor Blue for guidance, red for errors). */
+function signToast(
+  tone: "brand" | "error",
+  title: string,
+  description?: string,
+  opts?: { id?: string; duration?: number }
+) {
+  toast.custom(
+    () => (
+      <div
+        className={cn(
+          "flex w-full items-start gap-3 rounded-2xl px-4 py-3 text-white shadow-xl ring-1 ring-black/10",
+          tone === "brand" ? "bg-primary" : "bg-red-600"
+        )}
+      >
+        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
+          {tone === "brand" ? (
+            <Check className="h-3.5 w-3.5" />
+          ) : (
+            <TriangleAlert className="h-3.5 w-3.5" />
+          )}
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold leading-snug">{title}</p>
+          {description ? (
+            <p className="mt-0.5 text-xs leading-snug text-white/85">{description}</p>
+          ) : null}
+        </div>
+      </div>
+    ),
+    { position: "top-center", duration: opts?.duration ?? 5000, id: opts?.id }
+  );
 }
 
 export function SigningExperience({
@@ -83,10 +118,11 @@ export function SigningExperience({
       setAdopted(null);
       setStamped({ proposal: false, agreement: false });
       stampTimes.current = { proposal: null, agreement: null };
-      toast.info("Pricing updated", {
-        description: "Since the deal changed, please sign again to continue.",
-        position: "top-center",
-      });
+      signToast(
+        "brand",
+        "Pricing updated",
+        "Since the deal changed, please sign again to continue."
+      );
     }
     fetch(`/api/sign/${token}/track`, {
       method: "POST",
@@ -97,9 +133,7 @@ export function SigningExperience({
 
   function openSignModal() {
     if (requiresTier && !selectedTierId) {
-      toast.error("Select a plan before signing", {
-        description: "It's part of what you're agreeing to.",
-        position: "top-center",
+      signToast("error", "Select a plan before signing", "It's part of what you're agreeing to.", {
         duration: 6000,
       });
       document
@@ -113,11 +147,7 @@ export function SigningExperience({
   function handleAdopt(signature: AdoptedSignature) {
     setAdopted(signature);
     setModalOpen(false);
-    toast.success("You're signed", {
-      description: "Now tap the highlighted box to drop your signature in.",
-      position: "top-center",
-      duration: 5000,
-    });
+    signToast("brand", "You're signed", "Now tap the highlighted box to drop your signature in.");
     window.setTimeout(() => scrollToSlot("proposal"), 250);
   }
 
@@ -163,11 +193,7 @@ export function SigningExperience({
       if (!response.ok) {
         if (data.code === "expired") router.push(`/sign/${token}/expired`);
         else if (data.code === "already_signed") router.push(`/sign/${token}/signed`);
-        else
-          toast.error(data.error ?? "Something went wrong", {
-            id: "sign-submit",
-            position: "top-center",
-          });
+        else signToast("error", data.error ?? "Something went wrong", undefined, { id: "sign-submit" });
         return;
       }
       if (typeof data.redirectUrl === "string" && data.redirectUrl.startsWith("http")) {
@@ -177,10 +203,8 @@ export function SigningExperience({
         router.push(data.redirectUrl ?? `/sign/${token}/signed`);
       }
     } catch {
-      toast.error("Could not submit", {
-        description: "Check your connection and try again.",
+      signToast("error", "Could not submit", "Check your connection and try again.", {
         id: "sign-submit",
-        position: "top-center",
       });
     } finally {
       setSubmitting(false);
@@ -204,7 +228,7 @@ export function SigningExperience({
       });
       const data = await response.json();
       if (!response.ok) {
-        toast.error(data.error ?? "Something went wrong");
+        signToast("error", data.error ?? "Something went wrong");
         return;
       }
       router.push(data.redirectUrl ?? `/sign/${token}/declined`);
@@ -245,16 +269,16 @@ export function SigningExperience({
         <button
           type="button"
           onClick={() => scrollToSlot(activePlace)}
-          className="fixed bottom-24 left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-transform active:scale-[0.97]"
+          className="fixed bottom-28 left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-transform active:scale-[0.97]"
         >
           <PenLine className="h-4 w-4" />
           {activePlace === "proposal" ? "Place your signature" : "One more signature left"}
         </button>
       ) : null}
 
-      {/* Sticky action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
+      {/* Floating action bar, lifted off the document */}
+      <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-3 pt-2">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-border bg-white px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(17,24,39,0.18),0_12px_34px_-6px_rgba(17,24,39,0.30)] ring-1 ring-black/5">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{partyName}</p>
             <p className="truncate text-xs text-muted-foreground">{statusLine}</p>
