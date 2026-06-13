@@ -1,5 +1,21 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Cleared all test data from prod (pre-launch clean slate)
+
+Rahul asked to clear the dashboard before the first real deal. Deleted all 5
+test/demo proposals from the prod DB (`.tmp/clearTestData.ts`, gitignored):
+2 [DEMO] (Brightline voided, Scorpion signed/paid), 3 [TEST] rehearsals
+(signed/paid). Cascade removed their parties, signatures, audit events, email
+logs, payments, documents, and jobs; also cleared 67 WebhookEvent dedup rows
+(no FK to proposal) and nulled the self-referencing `parentId` revision links
+first (no cascade on that relation). `proposals remaining: 0`.
+
+Caveats: signature PNGs + executed PDFs remain in Vercel Blob as orphans
+(harmless, tiny, private — deterministic paths if a purge is ever wanted).
+Stripe still holds the test-mode customers/sessions/payments from these runs;
+they clear naturally on the live-key swap (separate live data store). All
+Stripe work (live keys, webhook, ACH) deferred by Rahul.
+
 ## 2026-06-13 — Rehearsal bug: success page died after token rotation (fixed + shipped)
 
 Rahul's prod rehearsal surfaced a race at the payment landing: checkout's
