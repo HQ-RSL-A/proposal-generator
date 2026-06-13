@@ -21,8 +21,11 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       Written ahead of time; the swap itself still waits until everything else is
       locked and loaded.
 
-- [ ] **Receipts / invoices on every transaction (launch-critical).** Every paying
-      client must get a receipt or invoice for every charge: one-time, the first
+- [x] **Receipts / invoices on every transaction (launch-critical).** DONE 2026-06-13
+      (code): the `invoice.paid` renewal handler now sends the branded receipt; one-time,
+      first charge, and ACH were already covered by `applyPaidState`. The live webhook
+      subscribes `invoice.paid` at the Stripe swap. `receipt_email` skipped (redundant;
+      §11 evidence is the customer metadata). Every paying
       subscription charge, every subscription RENEWAL, and ACH (which clears days
       later). Likely a mix of Stripe email settings + setting the customer/receipt
       email at checkout + an `invoice.paid` to Resend receipt for renewals. Must not

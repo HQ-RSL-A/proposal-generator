@@ -155,6 +155,49 @@ export async function POST(request: NextRequest) {
       });
       break;
     }
+
+    case "invoice.paid": {
+      // Subscription renewals. The first charge is covered by
+      // checkout.session.completed; billing_reason filters it out so the receipt
+      // isn't sent twice. Renewals don't change paymentStatus (already PAID) — they
+      // just owe the client a receipt for that month's charge.
+      const invoice = event.data.object as Stripe.Invoice;
+      const billingReason = (invoice as unknown as { billing_reason?: string }).billing_reason;
+      if (billingReason !== "subscription_cycle") break;
+
+      const subId =
+        typeof (invoice as unknown as { subscription?: string }).subscription === "string"
+          ? (invoice as unknown as { subscription: string }).subscription
+          : ((invoice.parent as { subscription_details?: { subscription?: string } } | null)
+              ?.subscription_details?.subscription ?? null);
+      if (!subId) break;
+      const payment = await prisma.payment.findFirst({
+        where: { stripeSubscriptionId: subId },
+      });
+      if (!payment) break;
+
+      const amountPaidCents = invoice.amount_paid ?? undefined;
+      await logEvent({
+        proposalId: payment.proposalId,
+        eventType: "PAYMENT_PAID",
+        metadata: { kind: "subscription_renewal", invoiceId: invoice.id, amountPaidCents },
+      });
+      after(async () => {
+        const { sendTemplateEmail } = await import("@/lib/email");
+        const payer = await prisma.party.findFirst({
+          where: { proposalId: payment.proposalId, role: "CLIENT_SIGNER", payer: true },
+        });
+        if (payer) {
+          await sendTemplateEmail("payment_received_client", payment.proposalId, payer.id, {
+            amountCents: amountPaidCents,
+          });
+        }
+        await sendTemplateEmail("payment_received_admin", payment.proposalId, null, {
+          amountCents: amountPaidCents,
+        });
+      });
+      break;
+    }
   }
 
   return NextResponse.json({ received: true });

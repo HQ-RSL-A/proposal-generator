@@ -1,5 +1,23 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Receipts on every transaction: invoice.paid renewal handler
+
+Closed the launch-critical silent-renewal gap. Added an `invoice.paid` case to the Stripe
+webhook that, for `billing_reason: "subscription_cycle"` only (so the first charge —
+covered by checkout.session.completed — never double-sends), maps the invoice to its
+proposal via `stripeSubscriptionId`, logs a PAYMENT_PAID (kind: subscription_renewal)
+event, and sends the branded `payment_received_client` receipt + admin notice for that
+month's amount. Does NOT touch paymentStatus (already PAID); idempotent via
+`recordWebhookOnce`; emails via the self-healing `sendTemplateEmail`. Mirrors the existing
+`invoice.payment_failed` + `applyPaidState` patterns.
+
+Coverage is now complete: one-time, first subscription charge, and ACH were already
+covered by `applyPaidState`; renewals were the missing piece. `receipt_email` on the
+PaymentIntent was intentionally skipped (redundant with the customer email, risks a double
+receipt; §11 evidence is the customer metadata). The live webhook subscribes `invoice.paid`
+at the Stripe swap (runbook already lists 6 events). Build green, 47 tests pass. Verify a
+real renewal via a Stripe test event (runbook step 8) or the first live cycle.
+
 ## 2026-06-13 — Unified post-sign payment copy (status-based, method-agnostic)
 
 Rahul: combine the messaging, don't distinguish by payment method. The duplicate copy on

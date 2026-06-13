@@ -1,8 +1,11 @@
 # Plan — A receipt/invoice on every transaction
 
-Status: planned, not started. Touches money/webhook code → must ship and verify
-**before** the live-key swap (it's a prerequisite in the swap runbook). Re-confirm
-exact symbol names at build.
+Status: SHIPPED 2026-06-13. The `invoice.paid` renewal handler is in and deployed;
+one-time / first-charge / ACH receipts were already covered by `applyPaidState`. The live
+webhook subscribes `invoice.paid` at the Stripe swap (already in the runbook's 6 events).
+**`receipt_email` was intentionally skipped** — the customer already carries the email,
+the §11 chargeback evidence is the attached customer metadata, and `receipt_email` would
+risk a double receipt if Stripe's own email setting is ever turned on.
 
 ---
 
