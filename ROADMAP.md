@@ -87,6 +87,14 @@ stripped). `ProblemText`/`SolutionText` split on blank lines into paragraphs. Im
 normalization tolerates a missing `Client.ValidUntil` (defaults +30 days) and ignores a
 legacy `Client.CaseStudy` field.
 
+**Ready-to-use test token:** [`docs/testProposalTokens.json`](docs/testProposalTokens.json)
+— paste into the "Import from generate-proposal skill" box on `/proposals/new` for an
+instant tiered test proposal (Brightline Test Co, 3 tiers). It deliberately omits the two
+date fields so every import gets fresh dates and is always signable. Add an optional
+`Investment.Structure` block (`type: "tiers"`, `tiers[].name/price/includes/recommended`,
+prices ending `/month` register as recurring) to auto-fill pricing; drop it to import text
+only and set pricing in the form.
+
 **Pricing is configured separately** (in the form's Checkout section, or inferred from
 extra keys in the import) and stored as `PaymentConfig`: flat (`oneTime`/`recurring`),
 tiered (`tiers[]`, client picks one), or sign-only. Money is always integer

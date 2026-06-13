@@ -1,0 +1,53 @@
+{
+  "Client.ProposalTitle": "Growth Marketing System for Brightline Test Co",
+  "Client.FirstName": "Dominique",
+  "Client.LastName": "Norris",
+  "Client.Company": "Brightline Test Co",
+  "Client.ProblemTitle": "Strong Demand, Inconsistent Lead Flow",
+  "Client.ProblemText": "This is an internal test proposal, so the details below are illustrative. Brightline gets steady interest but the inbound arrives in unpredictable waves, and the follow-up lives in a notebook instead of a system.\n\nThe site is slow, the reviews are thin, and the ad spend is not pointed at anything measurable. None of it talks to each other.",
+  "Client.SolutionTitle": "One System That Runs Itself",
+  "Client.SolutionText": "Rebuild the website on a fast, search-ready foundation, then layer on a rotating monthly service so there is always one channel being pushed.\n\nEverything reports into one place, so you can see what each dollar returns instead of guessing.",
+  "Client.AtGlanceServices": "Website rebuild plus rotating monthly marketing (Meta Ads, Google Business Profile, or SEO)",
+  "Client.AtGlanceInvestment": "Three options, $1,800 to $4,500 per month",
+  "Client.AtGlanceTimeline": "Website live in 2 to 3 weeks, marketing starts right after",
+  "Client.ScopeItems": "• Complete website rebuild with mobile optimization and fast load times\n• Service pages with clear pricing and service-area coverage\n• One rotating marketing service per cycle from a fixed menu\n• Monthly strategy call plus performance reporting",
+  "Client.TimelineItems": "• Week 1 to 2: website rebuild and launch\n• Week 3: first marketing service goes live\n• Monthly: review results, pick next cycle's focus",
+  "Client.InvestmentDetails": "Pick the option that fits where Brightline is right now:",
+  "Client.InvestmentNote": "Monthly fees are billed in advance at the start of each cycle. You can move between tiers with 30 days' notice.",
+  "Investment.Structure": {
+    "type": "tiers",
+    "tiers": [
+      {
+        "name": "Foundation",
+        "price": "$1,800/month",
+        "includes": [
+          "Website rebuild included",
+          "One rotating service per quarter",
+          "Quarterly strategy call",
+          "Email support"
+        ]
+      },
+      {
+        "name": "Growth",
+        "price": "$3,000/month",
+        "recommended": true,
+        "includes": [
+          "Website rebuild included",
+          "One rotating service per month",
+          "Monthly strategy call plus reporting",
+          "Review management included"
+        ]
+      },
+      {
+        "name": "Premier",
+        "price": "$4,500/month",
+        "includes": [
+          "Everything in Growth",
+          "Two rotating services per month",
+          "Dedicated landing pages per campaign",
+          "Priority support (same-day response)"
+        ]
+      }
+    ]
+  }
+}
