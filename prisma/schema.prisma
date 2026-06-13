@@ -164,8 +164,10 @@ model Proposal {
   contentHash   String?
   frozenAt      DateTime?
 
-  validUntil     DateTime?
-  selectedTierId String?
+  validUntil       DateTime?
+  selectedTierId   String?
+  // Client's chosen add-on ids at sign time (offer lives in frozenContent.paymentConfig.addOns)
+  selectedAddOnIds Json      @default("[]")
 
   stripeCheckoutSessionId String? @unique
   stripeCustomerId        String?

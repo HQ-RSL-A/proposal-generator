@@ -10,8 +10,9 @@ import {
   Text,
   View,
 } from "@react-pdf/renderer";
-import type { ProposalSections } from "@/lib/proposalContent";
-import type { TierConfig } from "@/lib/types";
+import type { DepositScheduleInfo, ProposalSections } from "@/lib/proposalContent";
+import type { AddOn, TierConfig } from "@/lib/types";
+import { formatCents } from "@/lib/currency";
 
 const fontsDir = path.join(process.cwd(), "public", "fonts");
 const logoPath = path.join(process.cwd(), "public", "logomark.png");
@@ -297,6 +298,63 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
   );
 }
 
+/** Global add-ons, with the chosen ones marked. Mirrors the web AddOnPicker. */
+function AddOnsTable({ addOns, selectedIds }: { addOns: AddOn[]; selectedIds: string[] }) {
+  if (addOns.length === 0) return null;
+  return (
+    <View style={{ marginTop: 12 }} wrap={false}>
+      <Text style={[s.microLabel, { marginBottom: 5 }]}>Optional add-ons</Text>
+      {addOns.map((addOn) => {
+        const selected = selectedIds.includes(addOn.id);
+        return (
+          <View key={addOn.id} style={s.bulletRow}>
+            <Text style={[s.bulletDot, { color: selected ? BLUE : FAINT }]}>
+              {selected ? "+" : "-"}
+            </Text>
+            <Text style={{ flex: 1, color: selected ? BODY : MUTED }}>{addOn.label}</Text>
+            <Text style={{ color: selected ? BODY : MUTED, fontWeight: selected ? 600 : 400 }}>
+              {addOn.displayString}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+/** Payment-schedule block shown when a deposit is taken. */
+function DepositScheduleBlock({ schedule }: { schedule: DepositScheduleInfo }) {
+  const lines: string[] = [];
+  if (schedule.depositAmountCents != null && schedule.remainingCents != null) {
+    lines.push(
+      `Due at signing: ${formatCents(schedule.depositAmountCents)} (${schedule.depositPercent}% deposit).`
+    );
+    lines.push(
+      `The remaining ${formatCents(schedule.remainingCents)} is collected when the build is complete.`
+    );
+  } else {
+    lines.push(
+      `A ${schedule.depositPercent}% deposit on the build fee is due at signing. The rest is collected when the build is complete.`
+    );
+  }
+  if (schedule.deferredRecurring) {
+    lines.push(`Your ${schedule.deferredRecurring.displayString} retainer starts when work begins.`);
+  }
+  return (
+    <View
+      style={{ marginTop: 10, borderTopWidth: 0.75, borderTopColor: HAIRLINE, paddingTop: 8 }}
+      wrap={false}
+    >
+      <Text style={[s.microLabel, { marginBottom: 3 }]}>Payment schedule</Text>
+      {lines.map((line, i) => (
+        <Text key={i} style={{ fontSize: 9, marginBottom: 1.5 }}>
+          {line}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 export interface SignerCertInfo {
   name: string;
   email: string;
@@ -355,11 +413,13 @@ export function ProposalPdf({
   signers,
   certificate,
   selectedTierId,
+  selectedAddOnIds = [],
 }: {
   sections: ProposalSections;
   signers: SignerCertInfo[];
   certificate: CertificateInfo;
   selectedTierId: string | null;
+  selectedAddOnIds?: string[];
 }) {
   const admin = signers.find((p) => p.role === "ADMIN_SIGNER");
   const clientSigners = signers.filter((p) => p.role === "CLIENT_SIGNER");
@@ -475,6 +535,12 @@ export function ProposalPdf({
           ))}
         {sections.investment.tiers ? (
           <TierTable tiers={sections.investment.tiers} selectedTierId={selectedTierId} />
+        ) : null}
+        {sections.investment.addOns && sections.investment.addOns.length > 0 ? (
+          <AddOnsTable addOns={sections.investment.addOns} selectedIds={selectedAddOnIds} />
+        ) : null}
+        {sections.investment.depositSchedule ? (
+          <DepositScheduleBlock schedule={sections.investment.depositSchedule} />
         ) : null}
 
         <Text style={s.h2}>{sections.howToProceed.heading}</Text>

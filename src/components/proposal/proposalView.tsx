@@ -3,8 +3,9 @@
 import * as React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import type { ProposalSections } from "@/lib/proposalContent";
-import type { TierConfig } from "@/lib/types";
+import { formatCents } from "@/lib/currency";
+import type { DepositScheduleInfo, ProposalSections } from "@/lib/proposalContent";
+import type { AddOn, TierConfig } from "@/lib/types";
 import { Check, PenLine } from "lucide-react";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -118,6 +119,97 @@ export function TierCards({
           </button>
         );
       })}
+    </div>
+  );
+}
+
+/** Optional add-ons the client can stack on top of the chosen tier or flat price. */
+export function AddOnPicker({
+  addOns,
+  selectedIds,
+  onToggle,
+  readOnly,
+}: {
+  addOns: AddOn[];
+  selectedIds: string[];
+  onToggle?: (id: string, checked: boolean) => void;
+  readOnly?: boolean;
+}) {
+  if (addOns.length === 0) return null;
+  return (
+    <div className="mt-6">
+      <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+        Optional add-ons
+      </p>
+      <div className="mt-3 space-y-2">
+        {addOns.map((addOn) => {
+          const checked = selectedIds.includes(addOn.id);
+          return (
+            <label
+              key={addOn.id}
+              className={cn(
+                "flex items-center gap-3 rounded-xl border p-3.5 transition-all",
+                checked ? "border-primary bg-accent shadow-sm" : "border-border bg-white",
+                readOnly ? "cursor-default" : "cursor-pointer hover:border-primary/60"
+              )}
+            >
+              <span
+                className={cn(
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
+                  checked ? "border-primary bg-primary text-white" : "border-border bg-white"
+                )}
+              >
+                {checked ? <Check className="h-3.5 w-3.5" /> : null}
+              </span>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={checked}
+                disabled={readOnly}
+                onChange={(e) => onToggle?.(addOn.id, e.target.checked)}
+              />
+              <span className="flex flex-1 items-center justify-between gap-3">
+                <span className="text-sm font-medium">{addOn.label}</span>
+                <span className="whitespace-nowrap text-sm font-bold">{addOn.displayString}</span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Payment-schedule banner shown when a deposit is taken. */
+export function DepositScheduleBanner({ schedule }: { schedule: DepositScheduleInfo }) {
+  const lines: string[] = [];
+  if (schedule.depositAmountCents != null && schedule.remainingCents != null) {
+    lines.push(
+      `Due at signing: ${formatCents(schedule.depositAmountCents)} (${schedule.depositPercent}% deposit).`
+    );
+    lines.push(
+      `The remaining ${formatCents(schedule.remainingCents)} is collected when the build is complete.`
+    );
+  } else {
+    lines.push(
+      `A ${schedule.depositPercent}% deposit on the build fee is due at signing. The rest is collected when the build is complete.`
+    );
+  }
+  if (schedule.deferredRecurring) {
+    lines.push(
+      `Your ${schedule.deferredRecurring.displayString} retainer starts when work begins.`
+    );
+  }
+  return (
+    <div className="mt-6 rounded-xl border border-primary/30 bg-accent/50 p-4">
+      <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-primary">
+        Payment schedule
+      </p>
+      <div className="mt-2 space-y-1 text-sm leading-relaxed">
+        {lines.map((line, i) => (
+          <p key={i}>{line}</p>
+        ))}
+      </div>
     </div>
   );
 }
@@ -237,6 +329,10 @@ export function ProposalView({
   selectedTierId,
   onTierSelect,
   tiersReadOnly,
+  selectedAddOnIds = [],
+  onAddOnToggle,
+  addOnsReadOnly,
+  depositScheduleOverride,
   clientSlots,
   rslaSlot,
   signing,
@@ -245,10 +341,19 @@ export function ProposalView({
   selectedTierId: string | null;
   onTierSelect?: (tierId: string) => void;
   tiersReadOnly?: boolean;
+  selectedAddOnIds?: string[];
+  onAddOnToggle?: (id: string, checked: boolean) => void;
+  addOnsReadOnly?: boolean;
+  /** Live schedule from the signing page; overrides the server-computed one. Undefined = use sections. */
+  depositScheduleOverride?: DepositScheduleInfo | null;
   clientSlots: SignerSlot[];
   rslaSlot: SignerSlot;
   signing?: SigningInteraction;
 }) {
+  const depositSchedule =
+    depositScheduleOverride !== undefined
+      ? depositScheduleOverride
+      : sections.investment.depositSchedule;
   return (
     <article className="document-page mx-auto max-w-3xl rounded-2xl border border-border bg-white px-6 py-10 sm:px-12 sm:py-14">
       {/* Cover */}
@@ -370,6 +475,15 @@ export function ProposalView({
             readOnly={tiersReadOnly}
           />
         ) : null}
+        {sections.investment.addOns && sections.investment.addOns.length > 0 ? (
+          <AddOnPicker
+            addOns={sections.investment.addOns}
+            selectedIds={selectedAddOnIds}
+            onToggle={onAddOnToggle}
+            readOnly={addOnsReadOnly}
+          />
+        ) : null}
+        {depositSchedule ? <DepositScheduleBanner schedule={depositSchedule} /> : null}
 
         {/* How to proceed */}
         <SectionHeading>{sections.howToProceed.heading}</SectionHeading>

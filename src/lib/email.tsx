@@ -133,6 +133,7 @@ export function buildTemplate(
     amountCents?: number;
     declinedReason?: string | null;
     paymentPending?: boolean;
+    depositNote?: string;
   }
 ): BuiltEmail {
   const dashboardUrl = appUrl(`/proposals/${proposal.id}`);
@@ -232,6 +233,7 @@ export function buildTemplate(
             data={data}
             amountLine={context.amountCents ? formatCents(context.amountCents) : dealSummaryLine(proposal)}
             isAdmin={false}
+            depositNote={context.depositNote}
           />
         ),
       };
@@ -245,6 +247,7 @@ export function buildTemplate(
             data={data}
             amountLine={context.amountCents ? formatCents(context.amountCents) : dealSummaryLine(proposal)}
             isAdmin
+            depositNote={context.depositNote}
           />
         ),
       };

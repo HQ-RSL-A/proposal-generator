@@ -33,7 +33,12 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
 
   if (!proposal.frozenContent) throw new Error("Proposal has no frozen content");
   const frozen = proposal.frozenContent as unknown as FrozenContent;
-  const sections = sectionsFromFrozen(frozen, proposal.msaVersion.bodyMarkdown);
+  const sections = sectionsFromFrozen(
+    frozen,
+    proposal.msaVersion.bodyMarkdown,
+    proposal.selectedTierId
+  );
+  const selectedAddOnIds = (proposal.selectedAddOnIds as unknown as string[] | null) ?? [];
 
   const firstViewedByParty = new Map<string, Date>();
   for (const event of proposal.auditEvents) {
@@ -90,9 +95,13 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
   };
 
   const pdfBuffer = await renderToBuffer(
-    React.createElement(ProposalPdf, { sections, signers, certificate, selectedTierId: proposal.selectedTierId }) as Parameters<
-      typeof renderToBuffer
-    >[0]
+    React.createElement(ProposalPdf, {
+      sections,
+      signers,
+      certificate,
+      selectedTierId: proposal.selectedTierId,
+      selectedAddOnIds,
+    }) as Parameters<typeof renderToBuffer>[0]
   );
 
   const blobPath = blobPaths.signedPdf(proposal.id, proposal.versionNumber);

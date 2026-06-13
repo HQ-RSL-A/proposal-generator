@@ -20,7 +20,8 @@ import {
   type SignerSlot,
 } from "@/components/proposal/proposalView";
 import { SignatureModal, type AdoptedSignature } from "@/components/signing/signatureModal";
-import type { ProposalSections } from "@/lib/proposalContent";
+import { computeDepositSchedule, type ProposalSections } from "@/lib/proposalContent";
+import type { PaymentConfig } from "@/lib/types";
 
 const PLACE_ORDER: SignaturePlace[] = ["proposal", "agreement"];
 
@@ -67,9 +68,11 @@ function signToast(
 export function SigningExperience({
   token,
   sections,
+  paymentConfig,
   partyName,
   requiresTier,
   initialTierId,
+  initialAddOnIds,
   willCheckout,
   validUntilLabel,
   clientSlots,
@@ -77,9 +80,12 @@ export function SigningExperience({
 }: {
   token: string;
   sections: ProposalSections;
+  /** Frozen config, so the client can resolve the live deposit schedule + consent summary. */
+  paymentConfig: PaymentConfig;
   partyName: string;
   requiresTier: boolean;
   initialTierId: string | null;
+  initialAddOnIds: string[];
   willCheckout: boolean;
   validUntilLabel: string | null;
   clientSlots: SignerSlot[];
@@ -87,6 +93,7 @@ export function SigningExperience({
 }) {
   const router = useRouter();
   const [selectedTierId, setSelectedTierId] = React.useState<string | null>(initialTierId);
+  const [selectedAddOnIds, setSelectedAddOnIds] = React.useState<string[]>(initialAddOnIds);
   const [modalOpen, setModalOpen] = React.useState(false);
   const [declineOpen, setDeclineOpen] = React.useState(false);
   const [declineReason, setDeclineReason] = React.useState("");
@@ -130,6 +137,25 @@ export function SigningExperience({
       body: JSON.stringify({ kind: "tier_selected", tierId }),
     }).catch(() => {});
   }
+
+  function handleAddOnToggle(addOnId: string, checked: boolean) {
+    setSelectedAddOnIds((prev) =>
+      checked ? [...prev, addOnId] : prev.filter((id) => id !== addOnId)
+    );
+    // Toggling add-ons changes the price the consent restated, so re-adopt like a tier change.
+    if (adopted) {
+      setAdopted(null);
+      setStamped({ proposal: false, agreement: false });
+      stampTimes.current = { proposal: null, agreement: null };
+      signToast("brand", "Selection updated", "Since the deal changed, please sign again to continue.");
+    }
+  }
+
+  // Live deposit schedule: depends on the chosen tier (flat is constant). Add-ons do not change it.
+  const depositSchedule = React.useMemo(
+    () => computeDepositSchedule(paymentConfig, selectedTierId),
+    [paymentConfig, selectedTierId]
+  );
 
   function openSignModal() {
     if (requiresTier && !selectedTierId) {
@@ -185,6 +211,7 @@ export function SigningExperience({
           fontFamily: adopted.fontFamily,
           esignConsent: true,
           selectedTierId,
+          selectedAddOnIds,
           stampedProposalAt: stampTimes.current.proposal,
           stampedAgreementAt: stampTimes.current.agreement,
         }),
@@ -252,6 +279,9 @@ export function SigningExperience({
           sections={sections}
           selectedTierId={selectedTierId}
           onTierSelect={handleTierSelect}
+          selectedAddOnIds={selectedAddOnIds}
+          onAddOnToggle={handleAddOnToggle}
+          depositScheduleOverride={depositSchedule}
           clientSlots={clientSlots}
           rslaSlot={rslaSlot}
           signing={{
@@ -329,11 +359,22 @@ export function SigningExperience({
         ctaLabel="Adopt signature"
         selectedTierSummary={(() => {
           const tier = sections.investment.tiers?.find((t) => t.id === selectedTierId);
-          if (!tier) return null;
-          const price = [tier.oneTime?.displayString, tier.recurring?.displayString]
-            .filter(Boolean)
-            .join(" + ");
-          return `${tier.label}${price ? ` at ${price}` : ""}`;
+          const tierPart = tier
+            ? (() => {
+                const price = [tier.oneTime?.displayString, tier.recurring?.displayString]
+                  .filter(Boolean)
+                  .join(" + ");
+                return `${tier.label}${price ? ` at ${price}` : ""}`;
+              })()
+            : null;
+          const selectedAddOns = (paymentConfig.addOns ?? []).filter((a) =>
+            selectedAddOnIds.includes(a.id)
+          );
+          const addOnPart = selectedAddOns.length
+            ? `add-ons: ${selectedAddOns.map((a) => `${a.label} (${a.displayString})`).join(", ")}`
+            : null;
+          const parts = [tierPart, addOnPart].filter(Boolean);
+          return parts.length ? parts.join(", plus ") : null;
         })()}
       />
 

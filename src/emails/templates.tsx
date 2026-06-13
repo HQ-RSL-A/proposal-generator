@@ -193,10 +193,13 @@ export function PaymentReceivedEmail({
   data,
   amountLine,
   isAdmin,
+  depositNote,
 }: {
   data: ProposalEmailData;
   amountLine: string;
   isAdmin: boolean;
+  /** Set on deposit deals so the receipt does not read as paid in full. */
+  depositNote?: string;
 }) {
   return (
     <EmailShell preview={`Payment received for ${data.proposalTitle}`}>
@@ -205,6 +208,7 @@ export function PaymentReceivedEmail({
         <>
           <DetailRow label="Proposal" value={data.proposalTitle} />
           <DetailRow label="Amount" value={amountLine} />
+          {depositNote ? <DetailRow label="Note" value={depositNote} /> : null}
         </>
       ) : (
         <>
@@ -214,6 +218,7 @@ export function PaymentReceivedEmail({
             <strong>{data.proposalTitle}</strong> just came through. A kickoff email with next
             steps and scheduling is on its way to you, and work begins right away.
           </Paragraph>
+          {depositNote ? <Paragraph>{depositNote}</Paragraph> : null}
           <FinePrint>
             Need anything before kickoff? Just reply to this email and it reaches the team.
           </FinePrint>

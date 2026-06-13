@@ -64,11 +64,23 @@ async function executeJob(job: PendingJob): Promise<void> {
         }
       } else {
         const config = (frozen?.paymentConfig ?? proposal.paymentConfig) as PaymentConfig;
+        // Notion records the full contract value (base + selected add-ons), never the deposit.
         const { oneTime, recurring } = effectiveLineItems(config, proposal.selectedTierId);
+        const selectedAddOnIds = (proposal.selectedAddOnIds as unknown as string[] | null) ?? [];
+        const selectedAddOns = (config.addOns ?? []).filter((a) => selectedAddOnIds.includes(a.id));
+        const addOnOneTimeCents = selectedAddOns
+          .filter((a) => a.intervalMonths === null)
+          .reduce((sum, a) => sum + a.amountCents, 0);
+        const addOnMonthlyCents = selectedAddOns
+          .filter((a) => a.intervalMonths === 1)
+          .reduce((sum, a) => sum + a.amountCents, 0);
+        const oneTimeTotal = (oneTime?.amountCents ?? 0) + addOnOneTimeCents;
+        const monthlyBase = recurring && recurring.intervalMonths === 1 ? recurring.amountCents : 0;
+        const monthlyTotal = monthlyBase + addOnMonthlyCents;
         const { pageId } = await updateCrmOnPaid({
           company: tokens["Client.Company"],
-          monthlyFeeCents: recurring && recurring.intervalMonths === 1 ? recurring.amountCents : null,
-          oneTimeFeeCents: oneTime?.amountCents ?? null,
+          monthlyFeeCents: monthlyTotal > 0 ? monthlyTotal : null,
+          oneTimeFeeCents: oneTimeTotal > 0 ? oneTimeTotal : null,
           proposalUrl,
           signedPdfUrl: proposal.documents[0]?.blobUrl ?? null,
           stripeCustomerId: proposal.stripeCustomerId,

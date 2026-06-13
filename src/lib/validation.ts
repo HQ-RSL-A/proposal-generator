@@ -72,6 +72,18 @@ const tierConfigSchema = z.object({
   recurring: recurringItemSchema.nullable(),
 });
 
+const addOnSchema = z.object({
+  id: nonEmpty,
+  label: nonEmpty,
+  displayString: nonEmpty,
+  amountCents: z.number().int().positive(),
+  intervalMonths: z.union([z.literal(1), z.literal(3), z.literal(12)]).nullable(),
+});
+
+const depositConfigSchema = z.object({
+  depositPercent: z.number().int().min(1).max(99),
+});
+
 export const paymentConfigSchema = z
   .object({
     currency: z.literal("usd"),
@@ -80,6 +92,8 @@ export const paymentConfigSchema = z
     recurring: recurringItemSchema.nullable(),
     tiers: z.array(tierConfigSchema).min(2).max(4).nullable(),
     preferAch: z.boolean(),
+    addOns: z.array(addOnSchema).max(10).nullable().optional(),
+    deposit: depositConfigSchema.nullable().optional(),
   })
   .superRefine((config, ctx) => {
     const hasFlat = Boolean(config.oneTime || config.recurring);
@@ -107,6 +121,23 @@ export const paymentConfigSchema = z
         }
       }
     }
+    if (config.addOns && config.addOns.length > 0) {
+      const ids = config.addOns.map((a) => a.id);
+      if (new Set(ids).size !== ids.length) {
+        ctx.addIssue({ code: "custom", message: "Add-on ids must be unique." });
+      }
+    }
+    if (config.deposit) {
+      const hasFlatOneTime = Boolean(config.oneTime);
+      const hasTierOneTime = config.tiers?.some((t) => t.oneTime) ?? false;
+      if (!hasFlatOneTime && !hasTierOneTime) {
+        ctx.addIssue({
+          code: "custom",
+          message:
+            "A deposit needs a one-time build fee. Add a one-time amount, or add it to at least one tier.",
+        });
+      }
+    }
   });
 
 /**
@@ -128,6 +159,9 @@ export function validatePaymentConfigForSend(config: PaymentConfig): string[] {
   for (const tier of config.tiers ?? []) {
     check(tier.oneTime);
     check(tier.recurring);
+  }
+  for (const addOn of config.addOns ?? []) {
+    check(addOn);
   }
   return errors;
 }

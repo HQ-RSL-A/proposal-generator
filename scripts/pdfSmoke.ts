@@ -37,9 +37,14 @@ const paymentConfig: PaymentConfig = {
   oneTime: null,
   recurring: null,
   tiers: [
-    { id: "tier-foundation", label: "Foundation", recommended: false, includes: ["Website rebuild included", "One rotating service per quarter"], oneTime: null, recurring: { amountCents: 180000, displayString: "$1,800/month", label: "Retainer", intervalMonths: 1 } },
-    { id: "tier-growth", label: "Growth", recommended: true, includes: ["Website rebuild included", "One rotating service per month"], oneTime: null, recurring: { amountCents: 300000, displayString: "$3,000/month", label: "Retainer", intervalMonths: 1 } },
+    { id: "tier-foundation", label: "Foundation", recommended: false, includes: ["Website rebuild included", "One rotating service per quarter"], oneTime: { amountCents: 400000, displayString: "$4,000", label: "Website build" }, recurring: { amountCents: 180000, displayString: "$1,800/month", label: "Retainer", intervalMonths: 1 } },
+    { id: "tier-growth", label: "Growth", recommended: true, includes: ["Website rebuild included", "One rotating service per month"], oneTime: { amountCents: 600000, displayString: "$6,000", label: "Website build" }, recurring: { amountCents: 300000, displayString: "$3,000/month", label: "Retainer", intervalMonths: 1 } },
   ],
+  addOns: [
+    { id: "addon-rush", label: "Rush delivery (two-week build)", displayString: "$800", amountCents: 80000, intervalMonths: null },
+    { id: "addon-extra-channel", label: "Extra ad channel each month", displayString: "$500/month", amountCents: 50000, intervalMonths: 1 },
+  ],
+  deposit: { depositPercent: 50 },
 };
 
 // A valid 1x1 PNG: enough for layout verification (real signatures come from the app).
@@ -48,11 +53,17 @@ function fakeSignaturePng(): string {
 }
 
 async function main() {
-  const sections = buildProposalSections({ tokens, paymentConfig, msaBodyMarkdown: msa });
+  const sections = buildProposalSections({
+    tokens,
+    paymentConfig,
+    msaBodyMarkdown: msa,
+    selectedTierId: "tier-growth",
+  });
   const buffer = await renderToBuffer(
     React.createElement(ProposalPdf, {
       sections,
       selectedTierId: "tier-growth",
+      selectedAddOnIds: ["addon-rush"],
       signers: [
         {
           name: "Dominique Norris",

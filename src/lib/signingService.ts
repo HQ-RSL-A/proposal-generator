@@ -3,7 +3,7 @@ import { blobPaths, putPrivate } from "@/lib/blob";
 import { logEvent } from "@/lib/audit";
 import { gateToken } from "@/lib/partyTokens";
 import { createCheckoutSession, findOrCreateCustomer } from "@/lib/stripe";
-import { effectiveLineItems, isSignOnly, type PaymentConfig, type TokensJson } from "@/lib/types";
+import { effectiveCheckout, isSignOnly, type PaymentConfig, type TokensJson } from "@/lib/types";
 import type { Proposal, SignatureType } from "@/generated/prisma/client";
 
 export class SigningError extends Error {
@@ -34,6 +34,8 @@ export interface SignSubmission {
   fontFamily: string | null;
   esignConsent: boolean;
   selectedTierId: string | null;
+  /** Global add-on ids the client toggled on. */
+  selectedAddOnIds: string[];
   /** Client-side tap times of the two-place ceremony (ISO strings). */
   stampedProposalAt: string | null;
   stampedAgreementAt: string | null;
@@ -102,6 +104,16 @@ export async function submitSignature(submission: SignSubmission): Promise<SignR
     tierId = submission.selectedTierId;
   }
 
+  const addOnIds = submission.selectedAddOnIds ?? [];
+  if (addOnIds.length > 0) {
+    const validIds = new Set((config.addOns ?? []).map((a) => a.id));
+    for (const id of addOnIds) {
+      if (!validIds.has(id)) {
+        throw new SigningError("bad_signature", `Unknown add-on: ${id}`);
+      }
+    }
+  }
+
   // Blob write happens before the transaction; the fixed path makes retries overwrite.
   const png = decodeSignaturePng(submission.signaturePngDataUrl);
   const { url: imageBlobUrl } = await putPrivate(
@@ -153,7 +165,7 @@ export async function submitSignature(submission: SignSubmission): Promise<SignR
       if (remaining > 0) {
         await tx.proposal.update({
           where: { id: proposal.id },
-          data: { status: "PARTIALLY_SIGNED", selectedTierId: tierId },
+          data: { status: "PARTIALLY_SIGNED", selectedTierId: tierId, selectedAddOnIds: addOnIds },
         });
         return { allSigned: false };
       }
@@ -164,6 +176,7 @@ export async function submitSignature(submission: SignSubmission): Promise<SignR
           status: "SIGNED",
           completedAt: now,
           selectedTierId: tierId,
+          selectedAddOnIds: addOnIds,
           paymentStatus: isSignOnly(config) ? "NOT_REQUIRED" : "AWAITING",
         },
       });
@@ -236,8 +249,9 @@ export async function ensureCheckoutSession(
   });
   const config = frozenPaymentConfig(proposal);
   const tokens = frozenTokens(proposal);
-  const { oneTime, recurring } = effectiveLineItems(config, proposal.selectedTierId);
-  if (!oneTime && !recurring) throw new Error("No payable line items");
+  const selectedAddOnIds = (proposal.selectedAddOnIds as unknown as string[] | null) ?? [];
+  const checkout = effectiveCheckout(config, proposal.selectedTierId, selectedAddOnIds);
+  if (checkout.lineItems.length === 0) throw new Error("No payable line items");
 
   // Reuse a still-open session when one exists.
   if (proposal.stripeCheckoutSessionId) {
@@ -259,8 +273,7 @@ export async function ensureCheckoutSession(
     proposalId,
     proposalTitle: tokens["Client.ProposalTitle"],
     customerId: customer.id,
-    oneTime,
-    recurring,
+    checkout,
     paymentConfig: config,
     // Stripe substitutes the placeholder; the session id lets the /paid page
     // identify the proposal even if the path token was rotated mid-checkout.

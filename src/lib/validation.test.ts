@@ -119,6 +119,78 @@ describe("validatePaymentConfigForSend", () => {
   });
 });
 
+describe("paymentConfigSchema add-ons and deposit", () => {
+  const tieredWithBuild: PaymentConfig = {
+    currency: "usd",
+    paymentMethods: ["card"],
+    oneTime: null,
+    recurring: null,
+    tiers: [
+      { id: "tier-a", label: "A", recommended: false, includes: [], oneTime: { amountCents: 400000, displayString: "$4,000", label: "Build" }, recurring: null },
+      { id: "tier-b", label: "B", recommended: true, includes: [], oneTime: null, recurring: { amountCents: 50000, displayString: "$500/month", label: "Retainer", intervalMonths: 1 } },
+    ],
+    preferAch: false,
+  };
+
+  it("accepts add-ons (one-time + recurring)", () => {
+    const ok = {
+      ...flatConfig,
+      addOns: [
+        { id: "addon-logo", label: "Logo", displayString: "$800", amountCents: 80000, intervalMonths: null },
+        { id: "addon-seo", label: "SEO", displayString: "$500/month", amountCents: 50000, intervalMonths: 1 },
+      ],
+    };
+    expect(paymentConfigSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it("rejects duplicate add-on ids", () => {
+    const bad = {
+      ...flatConfig,
+      addOns: [
+        { id: "dup", label: "A", displayString: "$1", amountCents: 100, intervalMonths: null },
+        { id: "dup", label: "B", displayString: "$2", amountCents: 200, intervalMonths: null },
+      ],
+    };
+    expect(paymentConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects an add-on with non-positive cents", () => {
+    const bad = {
+      ...flatConfig,
+      addOns: [{ id: "addon-zero", label: "Zero", displayString: "$0", amountCents: 0, intervalMonths: null }],
+    };
+    expect(paymentConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("accepts a deposit when a flat one-time exists", () => {
+    expect(paymentConfigSchema.safeParse({ ...flatConfig, deposit: { depositPercent: 50 } }).success).toBe(true);
+  });
+
+  it("accepts a deposit when at least one tier has a one-time", () => {
+    expect(paymentConfigSchema.safeParse({ ...tieredWithBuild, deposit: { depositPercent: 50 } }).success).toBe(true);
+  });
+
+  it("rejects a deposit with no one-time anywhere", () => {
+    const recurringOnly: PaymentConfig = { ...flatConfig, oneTime: null, deposit: { depositPercent: 50 } };
+    expect(paymentConfigSchema.safeParse(recurringOnly).success).toBe(false);
+  });
+
+  it("rejects a deposit percent out of range", () => {
+    expect(paymentConfigSchema.safeParse({ ...flatConfig, deposit: { depositPercent: 0 } }).success).toBe(false);
+    expect(paymentConfigSchema.safeParse({ ...flatConfig, deposit: { depositPercent: 100 } }).success).toBe(false);
+  });
+
+  it("validatePaymentConfigForSend catches add-on display/cents drift", () => {
+    const drifted = {
+      ...flatConfig,
+      addOns: [{ id: "addon-logo", label: "Logo", displayString: "$800", amountCents: 90000, intervalMonths: null }],
+    } as PaymentConfig;
+    const errors = validatePaymentConfigForSend(drifted);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("$800");
+  });
+});
+
 describe("partiesSchema", () => {
   it("requires exactly one payer", () => {
     expect(

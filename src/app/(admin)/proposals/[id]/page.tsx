@@ -46,12 +46,14 @@ export default async function ProposalDetailPage({
   const config = frozenPaymentConfig(proposal);
   const frozen = proposal.frozenContent as unknown as FrozenContent | null;
   const sections = frozen
-    ? sectionsFromFrozen(frozen, proposal.msaVersion.bodyMarkdown)
+    ? sectionsFromFrozen(frozen, proposal.msaVersion.bodyMarkdown, proposal.selectedTierId)
     : buildProposalSections({
         tokens,
         paymentConfig: config,
         msaBodyMarkdown: proposal.msaVersion.bodyMarkdown,
+        selectedTierId: proposal.selectedTierId,
       });
+  const selectedAddOnIds = (proposal.selectedAddOnIds as unknown as string[] | null) ?? [];
 
   const partyRows: PartyRow[] = proposal.parties.map((party) => {
     const lastEmail = proposal.emailLogs.find((log) => log.partyId === party.id);
@@ -157,6 +159,8 @@ export default async function ProposalDetailPage({
               sections={sections}
               selectedTierId={proposal.selectedTierId}
               tiersReadOnly
+              selectedAddOnIds={selectedAddOnIds}
+              addOnsReadOnly
               clientSlots={
                 clientParties.length > 0
                   ? clientParties.map((p) => ({

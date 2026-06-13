@@ -30,6 +30,20 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       customer metadata). The live webhook subscribes `invoice.paid` at the Stripe swap.
       Plan: [`docs/plans/transactionReceipts.md`](docs/plans/transactionReceipts.md).
 
+## Payments: add-ons + deposit (added 2026-06-13)
+
+- [x] **Optional add-ons.** DONE 2026-06-13 (built + verified; pending commit/deploy). Global
+      add-on list on `PaymentConfig` (each one-time or recurring); client multi-selects on the
+      signing page and they stack as extra Stripe line items. New `effectiveCheckout` resolver,
+      `Proposal.selectedAddOnIds` (migration 0005), rendered web + PDF, importable via
+      `Investment.AddOns`. Max 10.
+- [x] **50% deposit (configurable %).** DONE 2026-06-13 (built + verified; pending
+      commit/deploy). When on, the signing checkout charges only the deposit on the one-time
+      build fee in payment mode; the retainer (and recurring add-ons) are deferred, started
+      manually later. No payments-schema change. Payment schedule shown on proposal/PDF/`/paid`
+      + receipt; Notion records full contract value. Eventual upgrade (tool-driven balance +
+      retainer auto-start) tracked under Eventual / backlog.
+
 ## Planned enhancements (added 2026-06-13)
 
 - [ ] **Mobile optimization, internal app.** The client-facing surfaces (signing
@@ -119,6 +133,10 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       v4 row (no code change). Signed docs keep their signed version.
 - [ ] **In-app AI proposal generation.** The V1 fast-follow: generate the token JSON
       from a transcript inside the app instead of via the external skill.
+- [ ] **Tool-driven deposit balance + retainer start.** The automated version of the deposit
+      feature: a "Request balance" action that opens a second Stripe checkout for the remaining
+      build fee, and a one-click retainer start when the build completes. Needs a payments-schema
+      change (one-to-many `Payment` + deposit-aware statuses). v1 collects both manually.
 - [ ] **Orphaned-blob cleanup (low priority).** Test-run signature PNGs + PDFs remain in
       Vercel Blob after the DB clear; tiny + private. Purge script if ever wanted.
 

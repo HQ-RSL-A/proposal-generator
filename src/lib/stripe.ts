@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import type { OneTimeItem, PaymentConfig, RecurringItem } from "@/lib/types";
+import type { EffectiveCheckout, PaymentConfig } from "@/lib/types";
 
 let stripeClient: Stripe | null = null;
 
@@ -38,44 +38,36 @@ export async function createCheckoutSession(input: {
   proposalId: string;
   proposalTitle: string;
   customerId: string;
-  oneTime: OneTimeItem | null;
-  recurring: RecurringItem | null;
+  checkout: EffectiveCheckout;
   paymentConfig: PaymentConfig;
   successUrl: string;
   cancelUrl: string;
   idempotencyKey: string;
 }): Promise<Stripe.Checkout.Session> {
   const stripe = getStripe();
-  const { oneTime, recurring, paymentConfig } = input;
-  if (!oneTime && !recurring) {
+  const { checkout, paymentConfig } = input;
+  const items = checkout.lineItems;
+  if (items.length === 0) {
     throw new Error("createCheckoutSession called with no line items");
   }
 
-  const mode: Stripe.Checkout.SessionCreateParams.Mode = recurring ? "subscription" : "payment";
+  // A recurring line forces subscription mode (one-time lines then land on the first
+  // invoice). The deposit path carries no recurring line, so it stays in payment mode and
+  // never opens a subscription.
+  const hasRecurring = items.some((li) => li.intervalMonths !== null);
+  const mode: Stripe.Checkout.SessionCreateParams.Mode = hasRecurring
+    ? "subscription"
+    : "payment";
 
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-  if (recurring) {
-    lineItems.push({
-      quantity: 1,
-      price_data: {
-        currency: paymentConfig.currency,
-        unit_amount: recurring.amountCents,
-        recurring: intervalMap[recurring.intervalMonths],
-        product_data: { name: `${recurring.label} · ${input.proposalTitle}` },
-      },
-    });
-  }
-  if (oneTime) {
-    // In subscription mode a one-time line item lands on the first invoice.
-    lineItems.push({
-      quantity: 1,
-      price_data: {
-        currency: paymentConfig.currency,
-        unit_amount: oneTime.amountCents,
-        product_data: { name: `${oneTime.label} · ${input.proposalTitle}` },
-      },
-    });
-  }
+  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((li) => ({
+    quantity: 1,
+    price_data: {
+      currency: paymentConfig.currency,
+      unit_amount: li.amountCents,
+      ...(li.intervalMonths !== null ? { recurring: intervalMap[li.intervalMonths] } : {}),
+      product_data: { name: `${li.label} · ${input.proposalTitle}` },
+    },
+  }));
 
   const paymentMethodTypes = [...paymentConfig.paymentMethods];
   if (paymentConfig.preferAch && paymentMethodTypes.includes("us_bank_account")) {

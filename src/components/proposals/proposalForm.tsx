@@ -14,7 +14,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { createProposal, updateProposal } from "@/actions/proposals";
 import { normalizeImportedTokens } from "@/lib/validation";
 import { parseCentsFromDisplayString } from "@/lib/currency";
-import { TOKEN_KEYS, type PaymentConfig, type TierConfig, type TokensJson } from "@/lib/types";
+import {
+  TOKEN_KEYS,
+  type AddOn,
+  type DepositConfig,
+  type PaymentConfig,
+  type TierConfig,
+  type TokensJson,
+} from "@/lib/types";
 
 type PricingMode = "flat" | "tiers" | "signOnly";
 
@@ -32,8 +39,21 @@ interface FormState {
     intervalMonths: 1 | 3 | 12;
   };
   tiers: TierDraft[];
+  /** Global optional add-ons; apply across flat + tiers, not sign-only. */
+  addOns: AddOnDraft[];
+  depositEnabled: boolean;
+  depositPercent: number;
   methods: { card: boolean; ach: boolean };
   preferAch: boolean;
+}
+
+interface AddOnDraft {
+  id: string;
+  label: string;
+  displayString: string;
+  amountCents: number;
+  isRecurring: boolean;
+  intervalMonths: 1 | 3 | 12;
 }
 
 interface TierDraft {
@@ -53,6 +73,25 @@ interface TierDraft {
 }
 
 const emptyMoney = { label: "", displayString: "", amountCents: 0 };
+
+function blankAddOn(): AddOnDraft {
+  return {
+    id: "",
+    label: "",
+    displayString: "",
+    amountCents: 0,
+    isRecurring: false,
+    intervalMonths: 1,
+  };
+}
+
+function slugifyAddOn(label: string, index: number): string {
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `addon-${slug || index + 1}`;
+}
 
 function blankTier(index: number): TierDraft {
   return {
@@ -108,6 +147,17 @@ function configToState(config: PaymentConfig | null): Partial<FormState> {
           intervalMonths: 1,
         },
       })) ?? [],
+    addOns:
+      config.addOns?.map((a) => ({
+        id: a.id,
+        label: a.label,
+        displayString: a.displayString,
+        amountCents: a.amountCents,
+        isRecurring: a.intervalMonths !== null,
+        intervalMonths: (a.intervalMonths ?? 1) as 1 | 3 | 12,
+      })) ?? [],
+    depositEnabled: Boolean(config.deposit),
+    depositPercent: config.deposit?.depositPercent ?? 50,
     methods: {
       card: config.paymentMethods.includes("card"),
       ach: config.paymentMethods.includes("us_bank_account"),
@@ -129,8 +179,23 @@ function stateToConfig(state: FormState): PaymentConfig {
       recurring: null,
       tiers: null,
       preferAch: state.preferAch,
+      addOns: null,
+      deposit: null,
     };
   }
+
+  // Add-ons + deposit are config-level and apply across flat and tiers.
+  const cleanedAddOns: AddOn[] = state.addOns
+    .filter((a) => a.label.trim() || a.displayString.trim() || a.amountCents > 0)
+    .map((a, i) => ({
+      id: a.id || slugifyAddOn(a.label, i),
+      label: a.label,
+      displayString: a.displayString,
+      amountCents: a.amountCents,
+      intervalMonths: a.isRecurring ? a.intervalMonths : null,
+    }));
+  const addOns = cleanedAddOns.length > 0 ? cleanedAddOns : null;
+
   if (state.pricingMode === "tiers") {
     const tiers: TierConfig[] = state.tiers.map((tier) => ({
       id: tier.id,
@@ -143,6 +208,10 @@ function stateToConfig(state: FormState): PaymentConfig {
       oneTime: tier.oneTimeEnabled ? { ...tier.oneTime } : null,
       recurring: tier.recurringEnabled ? { ...tier.recurring } : null,
     }));
+    // Deposit needs a one-time on at least one tier.
+    const tiersHaveOneTime = tiers.some((t) => t.oneTime);
+    const deposit: DepositConfig | null =
+      state.depositEnabled && tiersHaveOneTime ? { depositPercent: state.depositPercent } : null;
     return {
       currency: "usd",
       paymentMethods: methods.length ? methods : ["card"],
@@ -150,15 +219,23 @@ function stateToConfig(state: FormState): PaymentConfig {
       recurring: null,
       tiers,
       preferAch: state.preferAch,
+      addOns,
+      deposit,
     };
   }
+
+  const oneTime = state.oneTimeEnabled ? { ...state.oneTime } : null;
+  const deposit: DepositConfig | null =
+    state.depositEnabled && oneTime ? { depositPercent: state.depositPercent } : null;
   return {
     currency: "usd",
     paymentMethods: methods.length ? methods : ["card"],
-    oneTime: state.oneTimeEnabled ? { ...state.oneTime } : null,
+    oneTime,
     recurring: state.recurringEnabled ? { ...state.recurring } : null,
     tiers: null,
     preferAch: state.preferAch,
+    addOns,
+    deposit,
   };
 }
 
@@ -187,6 +264,33 @@ function inferTiersFromImport(raw: Record<string, unknown>): TierDraft[] | null 
       },
     };
   });
+}
+
+/** Best-effort mapping of the skill's Investment.AddOns to add-on drafts. */
+function inferAddOnsFromImport(raw: Record<string, unknown>): AddOnDraft[] | null {
+  const list = raw["Investment.AddOns"] as { name: string; price: string }[] | undefined;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return list.slice(0, 10).map((addOn, i) => {
+    const cents = parseCentsFromDisplayString(addOn.price) ?? 0;
+    const isRecurring = /\/\s*(mo|month|quarter|yr|year)/i.test(addOn.price);
+    return {
+      id: slugifyAddOn(addOn.name, i),
+      label: addOn.name,
+      displayString: addOn.price,
+      amountCents: cents,
+      isRecurring,
+      intervalMonths: 1 as const,
+    };
+  });
+}
+
+/** Optional Investment.DepositPercent (1..99) from the skill import. */
+function inferDepositFromImport(raw: Record<string, unknown>): number | null {
+  const value = raw["Investment.DepositPercent"];
+  const num = typeof value === "number" ? value : typeof value === "string" ? Number(value) : NaN;
+  if (!Number.isFinite(num)) return null;
+  const pct = Math.round(num);
+  return pct >= 1 && pct <= 99 ? pct : null;
 }
 
 const tokenFieldGroups: { heading: string; fields: { key: keyof TokensJson; label: string; multiline?: boolean }[] }[] = [
@@ -329,6 +433,9 @@ export function ProposalForm({
     recurringEnabled: true,
     recurring: { ...emptyMoney, label: "Monthly retainer", intervalMonths: 1 },
     tiers: [blankTier(0), blankTier(1), blankTier(2)],
+    addOns: [],
+    depositEnabled: false,
+    depositPercent: 50,
     methods: { card: true, ach: false },
     preferAch: false,
     ...configToState(initialConfig ?? null),
@@ -336,6 +443,11 @@ export function ProposalForm({
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setState((prev) => ({ ...prev, [key]: value }));
+
+  // Deposit applies only to a one-time build fee (flat or on a tier).
+  const hasOneTime =
+    (state.pricingMode === "flat" && state.oneTimeEnabled) ||
+    (state.pricingMode === "tiers" && state.tiers.some((t) => t.oneTimeEnabled));
 
   function handleImport() {
     let raw: unknown;
@@ -350,7 +462,10 @@ export function ProposalForm({
       toast.error(`Import failed: ${errors[0]}`);
       return;
     }
-    const inferredTiers = inferTiersFromImport(raw as Record<string, unknown>);
+    const rawObj = raw as Record<string, unknown>;
+    const inferredTiers = inferTiersFromImport(rawObj);
+    const inferredAddOns = inferAddOnsFromImport(rawObj);
+    const inferredDeposit = inferDepositFromImport(rawObj);
     setState((prev) => ({
       ...prev,
       title: tokens["Client.ProposalTitle"],
@@ -358,10 +473,17 @@ export function ProposalForm({
       ...(inferredTiers
         ? { pricingMode: "tiers" as PricingMode, tiers: inferredTiers }
         : {}),
+      ...(inferredAddOns ? { addOns: inferredAddOns } : {}),
+      ...(inferredDeposit ? { depositEnabled: true, depositPercent: inferredDeposit } : {}),
     }));
+    const extras = [
+      inferredTiers ? `${inferredTiers.length} pricing tiers` : null,
+      inferredAddOns ? `${inferredAddOns.length} add-ons` : null,
+      inferredDeposit ? `${inferredDeposit}% deposit` : null,
+    ].filter(Boolean);
     toast.success(
-      inferredTiers
-        ? `Imported with ${inferredTiers.length} pricing tiers. Review the amounts.`
+      extras.length
+        ? `Imported with ${extras.join(", ")}. Review the amounts.`
         : "Imported. Set up pricing below."
     );
   }
@@ -645,6 +767,118 @@ export function ProposalForm({
           ) : null}
         </CardContent>
       </Card>
+
+      {state.pricingMode !== "signOnly" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Add-ons and deposit</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium">Optional add-ons</p>
+                <p className="text-xs text-muted-foreground">
+                  The client can toggle these on top of the price they pick. Each is one-time or
+                  recurring.
+                </p>
+              </div>
+              {state.addOns.map((addOn, index) => (
+                <div key={index} className="space-y-2 rounded-lg border border-border p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={addOn.isRecurring}
+                        onCheckedChange={(v) => {
+                          const addOns = [...state.addOns];
+                          addOns[index] = { ...addOn, isRecurring: Boolean(v) };
+                          set("addOns", addOns);
+                        }}
+                      />
+                      <Label className="text-xs">Recurring</Label>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() => set("addOns", state.addOns.filter((_, i) => i !== index))}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <MoneyFields
+                    value={{
+                      label: addOn.label,
+                      displayString: addOn.displayString,
+                      amountCents: addOn.amountCents,
+                      intervalMonths: addOn.intervalMonths,
+                    }}
+                    onChange={(v) => {
+                      const addOns = [...state.addOns];
+                      addOns[index] = {
+                        ...addOn,
+                        label: v.label,
+                        displayString: v.displayString,
+                        amountCents: v.amountCents,
+                        intervalMonths: (v.intervalMonths ?? addOn.intervalMonths) as 1 | 3 | 12,
+                      };
+                      set("addOns", addOns);
+                    }}
+                    withInterval={addOn.isRecurring}
+                  />
+                </div>
+              ))}
+              {state.addOns.length < 10 ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => set("addOns", [...state.addOns, blankAddOn()])}
+                >
+                  Add add-on
+                </Button>
+              ) : null}
+            </div>
+
+            <div className="space-y-2 border-t border-border pt-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={state.depositEnabled}
+                  disabled={!hasOneTime}
+                  onCheckedChange={(v) => set("depositEnabled", Boolean(v))}
+                />
+                <Label>Charge a deposit only at signing</Label>
+              </div>
+              {!hasOneTime ? (
+                <p className="text-xs text-muted-foreground">
+                  Add a one-time build fee (flat, or on at least one tier) to use a deposit.
+                </p>
+              ) : state.depositEnabled ? (
+                <div className="flex flex-wrap items-end gap-3">
+                  <div className="w-28">
+                    <Label className="text-xs">Deposit %</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={99}
+                      value={state.depositPercent}
+                      onChange={(e) =>
+                        set(
+                          "depositPercent",
+                          Math.min(99, Math.max(1, Math.round(Number(e.target.value) || 0)))
+                        )
+                      }
+                    />
+                  </div>
+                  <p className="flex-1 text-xs text-muted-foreground">
+                    Only this share of the one-time build fee is charged at signing. The rest is
+                    collected later, and any monthly retainer is deferred and started when the build
+                    is done.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="flex justify-end gap-2 pb-12">
         <Button variant="ghost" onClick={() => router.back()}>

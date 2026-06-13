@@ -1,5 +1,41 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Optional add-ons + 50% deposit (built, verified; not yet committed/deployed)
+
+Two new payment capabilities, both extending the one resolver -> Stripe -> render surface.
+Plan + decisions in `~/.claude/plans/need-to-add-a-fuzzy-hickey.md`. Build green, 65/65 tests
+(was 47, +18), pdfSmoke rendered + visually read (add-ons table + payment schedule render
+clean, no layout corruption).
+
+- **Add-ons.** New `AddOn` type on `PaymentConfig` (global list; each one-time OR recurring).
+  New `effectiveCheckout(config, tierId, addOnIds)` sibling to `effectiveLineItems` (the latter
+  untouched so Notion still reads full base amounts) returns the full charge set with the
+  deposit transform applied. Client multi-selects via checkboxes after the tier cards
+  (`AddOnPicker` in proposalView), selection recorded on `Proposal.selectedAddOnIds` at sign
+  time (migration 0005, jsonb default `[]`), parallel to `selectedTierId`. Toggling add-ons
+  resets the two-place ceremony like a tier change. Rendered in web + PDF + admin preview;
+  importable from the skill JSON via `Investment.AddOns`.
+- **Deposit.** New `PaymentConfig.deposit { depositPercent }` (default 50). When set and an
+  effective one-time build fee exists, the signing checkout charges ONLY the deposit as a
+  single one-time line in `mode: "payment"` — the retainer (and any recurring add-ons) are
+  DEFERRED, so no subscription opens at signing. Rahul collects the balance + starts the
+  retainer manually (the chosen minimal approach; no payments-schema change, still one Payment
+  row, `amountTotalCents` = the deposit). Payment schedule communicated on proposal/PDF/the
+  `/paid` screen ("Deposit received, we're underway") + a deposit line on the receipt email.
+  Notion CRM records the FULL contract value (base + add-ons), never the deposit.
+- **Decisions** (from Rahul): tool charges deposit only; deposit on the build fee only;
+  retainer deferred. Defaults taken: recurring add-ons also deferred under a deposit (session
+  always payment-mode); max 10 add-ons; deposit configurable 1-99%.
+- **Files:** types.ts (resolver), validation.ts, stripe.ts, signingService.ts,
+  proposalContent.ts, proposalForm.tsx, proposalView.tsx, signingExperience.tsx, sign route +
+  page, ProposalPdf.tsx + pdfSmoke, generatePdf.ts, admin detail page, outcomeCopy.ts + paid
+  page, jobRunner.ts (Notion), email.tsx + templates.tsx (receipt), paymentState.ts. Migration
+  `0005_addons_deposit.sql` applied to prod DB (additive, idempotent). New
+  `effectiveCheckout.test.ts` + extended validation tests.
+- **Open:** NOT committed or deployed yet. Pre-existing lint error in `signatureModal.tsx`
+  (untouched by this work; newer react-hooks set-state-in-effect rule) is the only `npm run
+  lint` failure. Manual e2e (configure -> send -> sign -> pay) still to do against a [TEST] draft.
+
 ## 2026-06-13 — Session wrap: client experience + receipts shipped; visual redesign next
 
 Big session, all shipped to prod across many deploys (latest 9cdf60f). Done tonight:

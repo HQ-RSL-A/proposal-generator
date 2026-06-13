@@ -5,6 +5,9 @@ import { logEvent } from "@/lib/audit";
 import { enqueueJob } from "@/lib/jobs";
 import { runJobNow } from "@/lib/jobRunner";
 import { sendTemplateEmail } from "@/lib/email";
+import { computeDepositSchedule } from "@/lib/proposalContent";
+import { formatCents } from "@/lib/currency";
+import type { PaymentConfig } from "@/lib/types";
 
 /**
  * Records a webhook (or synthetic reconcile) event exactly once.
@@ -99,16 +102,37 @@ export async function applyPaidState(
       payload: { proposalId },
     });
 
+    // On a deposit deal only the deposit was charged — the receipt must say so.
+    const proposal = await prisma.proposal.findUnique({ where: { id: proposalId } });
+    let depositNote: string | undefined;
+    if (proposal) {
+      const frozen = proposal.frozenContent as { paymentConfig?: PaymentConfig } | null;
+      const config = (frozen?.paymentConfig ?? proposal.paymentConfig) as PaymentConfig;
+      const schedule = computeDepositSchedule(config, proposal.selectedTierId);
+      if (schedule) {
+        const remaining =
+          schedule.remainingCents != null
+            ? `The remaining ${formatCents(schedule.remainingCents)} is collected when the build is complete.`
+            : "The balance is collected when the build is complete.";
+        const retainer = schedule.deferredRecurring
+          ? ` Your ${schedule.deferredRecurring.displayString} retainer starts when work begins.`
+          : "";
+        depositNote = `This is your ${schedule.depositPercent}% deposit. ${remaining}${retainer}`;
+      }
+    }
+
     const payer = await prisma.party.findFirst({
       where: { proposalId, role: "CLIENT_SIGNER", payer: true },
     });
     if (payer) {
       await sendTemplateEmail("payment_received_client", proposalId, payer.id, {
         amountCents: session.amount_total ?? undefined,
+        depositNote,
       });
     }
     await sendTemplateEmail("payment_received_admin", proposalId, null, {
       amountCents: session.amount_total ?? undefined,
+      depositNote,
     });
 
     await runJobNow(notionJob.id);

@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { OutcomeCard } from "@/components/signing/outcomeCard";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, Link2Off } from "lucide-react";
-import { OUTCOME_COPY } from "@/lib/outcomeCopy";
+import { OUTCOME_COPY, depositPaidCopy } from "@/lib/outcomeCopy";
+import { frozenPaymentConfig } from "@/lib/signingService";
+import { computeDepositSchedule } from "@/lib/proposalContent";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +43,6 @@ export default async function PaidPage({
 
   const proposal = await prisma.proposal.findUniqueOrThrow({
     where: { id: proposalId },
-    select: { id: true, paymentStatus: true },
   });
   const finalDoc = await prisma.generatedDocument.findFirst({
     where: { proposalId: proposal.id, isFinal: true },
@@ -76,9 +77,18 @@ export default async function PaidPage({
     );
   }
 
+  // Deposit deals settled the deposit only — say so, rather than "paid in full".
+  const schedule = computeDepositSchedule(frozenPaymentConfig(proposal), proposal.selectedTierId);
+  const confirmed = schedule
+    ? depositPaidCopy({
+        remainingCents: schedule.remainingCents,
+        deferredRecurringDisplay: schedule.deferredRecurring?.displayString ?? null,
+      })
+    : OUTCOME_COPY.paymentConfirmed;
+
   return (
-    <OutcomeCard icon={CheckCircle2} tone="success" title={OUTCOME_COPY.paymentConfirmed.title}>
-      <p>{OUTCOME_COPY.paymentConfirmed.body}</p>
+    <OutcomeCard icon={CheckCircle2} tone="success" title={confirmed.title}>
+      <p>{confirmed.body}</p>
       {downloadButton}
     </OutcomeCard>
   );

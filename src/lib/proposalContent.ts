@@ -2,8 +2,15 @@
 // (ProposalView) and the PDF renderer (ProposalPdf) consume this structure,
 // which guarantees the signed PDF shows exactly what the signer saw.
 
-import type { FrozenContent, PaymentConfig, TierConfig, TokensJson } from "@/lib/types";
-import { isSignOnly } from "@/lib/types";
+import type {
+  AddOn,
+  FrozenContent,
+  PaymentConfig,
+  RecurringItem,
+  TierConfig,
+  TokensJson,
+} from "@/lib/types";
+import { effectiveLineItems, isSignOnly } from "@/lib/types";
 import {
   parseMsa,
   replaceTokensInBlocks,
@@ -21,6 +28,50 @@ export interface ProposalNote {
   id: string;
   number: number;
   text: string;
+}
+
+/** Payment schedule when a deposit is taken: deposit now, balance + retainer later. */
+export interface DepositScheduleInfo {
+  depositPercent: number;
+  /** Precise once an effective one-time build fee is known (flat, or a tier is selected). */
+  depositAmountCents: number | null;
+  remainingCents: number | null;
+  deferredRecurring: RecurringItem | null;
+}
+
+/**
+ * Resolves the deposit payment schedule for display. Mirrors the deposit branch of
+ * effectiveCheckout but returns nullable amounts so the pre-selection tiered view can
+ * still say "a deposit applies" before the client picks a tier.
+ */
+export function computeDepositSchedule(
+  config: PaymentConfig,
+  selectedTierId: string | null
+): DepositScheduleInfo | null {
+  if (!config.deposit) return null;
+  const pct = config.deposit.depositPercent;
+  const { oneTime, recurring } = effectiveLineItems(config, selectedTierId);
+  if (oneTime && oneTime.amountCents > 0) {
+    const depositAmountCents = Math.round((oneTime.amountCents * pct) / 100);
+    return {
+      depositPercent: pct,
+      depositAmountCents,
+      remainingCents: oneTime.amountCents - depositAmountCents,
+      deferredRecurring: recurring,
+    };
+  }
+  const tiered = Boolean(config.tiers && config.tiers.length > 0);
+  // Tiered + browsing: a deposit applies to whichever tier carries the build fee.
+  if (tiered && !selectedTierId) {
+    return {
+      depositPercent: pct,
+      depositAmountCents: null,
+      remainingCents: null,
+      deferredRecurring: null,
+    };
+  }
+  // Flat with no build fee, or a selected tier with no build fee: deposit does not apply.
+  return null;
 }
 
 export interface ProposalSections {
@@ -54,6 +105,8 @@ export interface ProposalSections {
     note: string;
     details: string;
     tiers: TierConfig[] | null;
+    addOns: AddOn[] | null;
+    depositSchedule: DepositScheduleInfo | null;
     noteNumber: number;
   };
   howToProceed: { heading: string; intro: string; steps: string[] };
@@ -91,8 +144,10 @@ export function buildProposalSections(input: {
   tokens: TokensJson;
   paymentConfig: PaymentConfig;
   msaBodyMarkdown: string;
+  /** When known (post-sign, or a live tier pick), resolves exact deposit amounts. */
+  selectedTierId?: string | null;
 }): ProposalSections {
-  const { tokens, paymentConfig, msaBodyMarkdown } = input;
+  const { tokens, paymentConfig, msaBodyMarkdown, selectedTierId = null } = input;
   const clientFull = `${tokens["Client.FirstName"]} ${tokens["Client.LastName"]}`;
   const clientLine = `${clientFull}, ${tokens["Client.Company"]}`;
 
@@ -102,6 +157,7 @@ export function buildProposalSections(input: {
   );
 
   const signOnly = isSignOnly(paymentConfig);
+  const depositSchedule = computeDepositSchedule(paymentConfig, selectedTierId);
 
   // Numbered in order of appearance in the document. The leading "*" of the
   // legacy footnote strings is dropped: markers are superscript numbers now.
@@ -169,6 +225,8 @@ export function buildProposalSections(input: {
       note: tokens["Client.InvestmentNote"],
       details: tokens["Client.InvestmentDetails"],
       tiers: paymentConfig.tiers,
+      addOns: paymentConfig.addOns ?? null,
+      depositSchedule,
       noteNumber: 4,
     },
     howToProceed: {
@@ -180,11 +238,17 @@ export function buildProposalSections(input: {
             "Within 24 hours, you'll receive the invoice or payment link for the first payment shown in Your Investment.",
             "As soon as that payment lands, you'll get a kickoff email with next steps and scheduling. Work begins right away.",
           ]
-        : [
-            "Sign below. You adopt your signature once and place it in two spots, the proposal acceptance and the agreement execution.",
-            "Right after signing, you'll be taken to a secure checkout for the first payment shown in Your Investment.",
-            "As soon as that payment lands, you'll get a kickoff email with next steps and scheduling. Work begins right away.",
-          ],
+        : depositSchedule
+          ? [
+              "Sign below. You adopt your signature once and place it in two spots, the proposal acceptance and the agreement execution.",
+              "Right after signing, you'll be taken to a secure checkout for the deposit shown in Your Investment.",
+              "As soon as the deposit lands, work begins. The remaining balance is collected when the build is complete.",
+            ]
+          : [
+              "Sign below. You adopt your signature once and place it in two spots, the proposal acceptance and the agreement execution.",
+              "Right after signing, you'll be taken to a secure checkout for the first payment shown in Your Investment.",
+              "As soon as that payment lands, you'll get a kickoff email with next steps and scheduling. Work begins right away.",
+            ],
     },
     acceptance: {
       heading: "Acceptance",
@@ -209,11 +273,13 @@ export function buildProposalSections(input: {
 
 export function sectionsFromFrozen(
   frozen: FrozenContent,
-  msaBodyMarkdown: string
+  msaBodyMarkdown: string,
+  selectedTierId: string | null = null
 ): ProposalSections {
   return buildProposalSections({
     tokens: frozen.tokens,
     paymentConfig: frozen.paymentConfig,
     msaBodyMarkdown,
+    selectedTierId,
   });
 }

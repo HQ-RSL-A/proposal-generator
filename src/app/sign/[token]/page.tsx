@@ -119,11 +119,12 @@ export default async function SigningPage({
 
   const frozen = proposal.frozenContent as unknown as FrozenContent | null;
   const sections = frozen
-    ? sectionsFromFrozen(frozen, proposal.msaVersion.bodyMarkdown)
+    ? sectionsFromFrozen(frozen, proposal.msaVersion.bodyMarkdown, proposal.selectedTierId)
     : buildProposalSections({
         tokens: frozenTokens(proposal),
         paymentConfig: config,
         msaBodyMarkdown: proposal.msaVersion.bodyMarkdown,
+        selectedTierId: proposal.selectedTierId,
       });
 
   const signedIds = new Set(proposal.signatures.map((sig) => sig.partyId));
@@ -148,13 +149,17 @@ export default async function SigningPage({
         : null,
   };
 
+  const initialAddOnIds = (proposal.selectedAddOnIds as unknown as string[] | null) ?? [];
+
   return (
     <SigningExperience
       token={token}
       sections={sections}
+      paymentConfig={config}
       partyName={party.name}
       requiresTier={Boolean(config.tiers && config.tiers.length > 0 && !proposal.selectedTierId)}
       initialTierId={proposal.selectedTierId}
+      initialAddOnIds={initialAddOnIds}
       willCheckout={!signOnly && party.payer}
       validUntilLabel={proposal.validUntil ? formatDate(proposal.validUntil) : null}
       clientSlots={clientSlots}
