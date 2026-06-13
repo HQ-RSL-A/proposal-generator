@@ -36,6 +36,14 @@ export interface AdoptedSignature {
   fontFamily: string | null;
 }
 
+type FieldErrors = {
+  name?: string;
+  title?: string;
+  company?: string;
+  signature?: string;
+  consent?: string;
+};
+
 export function SignatureModal({
   open,
   onOpenChange,
@@ -62,19 +70,35 @@ export function SignatureModal({
   const [company, setCompany] = React.useState(defaultCompany);
   const [font, setFont] = React.useState<SignatureFont>(SIGNATURE_FONTS[0]);
   const [consented, setConsented] = React.useState(false);
-  const [hasDrawn, setHasDrawn] = React.useState(false);
+  const [errors, setErrors] = React.useState<FieldErrors>({});
   const padRef = React.useRef<SignaturePadHandle>(null);
 
-  const canAdopt =
-    consented &&
-    name.trim().length > 0 &&
-    title.trim().length > 0 &&
-    company.trim().length > 0 &&
-    !submitting &&
-    (tab === "type" || hasDrawn);
+  // Clear any validation errors each time the modal opens.
+  React.useEffect(() => {
+    if (open) setErrors({});
+  }, [open]);
+
+  const clearError = (key: keyof FieldErrors) =>
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
+
+  function validate(): FieldErrors {
+    const next: FieldErrors = {};
+    if (!name.trim()) next.name = "Enter your full legal name.";
+    if (!title.trim()) next.title = "Add your title, like Owner or CEO.";
+    if (!company.trim()) next.company = "Add your company name.";
+    if (tab === "draw" && (padRef.current?.isEmpty() ?? true)) {
+      next.signature = "Draw your signature in the box above.";
+    }
+    if (!consented) next.consent = "Check the box to e-sign.";
+    return next;
+  }
 
   async function handleAdopt() {
-    if (!canAdopt) return;
+    if (submitting) return;
+    const found = validate();
+    setErrors(found);
+    if (Object.keys(found).length > 0) return;
+
     if (tab === "draw") {
       const pad = padRef.current;
       if (!pad || pad.isEmpty()) return;
@@ -119,78 +143,125 @@ export function SignatureModal({
           ) : null}
           <div className="space-y-1.5">
             <Label className="text-xs">Full legal name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <Input
+              value={name}
+              aria-invalid={Boolean(errors.name)}
+              onChange={(e) => {
+                setName(e.target.value);
+                clearError("name");
+              }}
+            />
+            {errors.name ? <p className="text-xs text-destructive">{errors.name}</p> : null}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Your title</Label>
               <Input
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Owner"
+                aria-invalid={Boolean(errors.title)}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  clearError("title");
+                }}
               />
+              {errors.title ? <p className="text-xs text-destructive">{errors.title}</p> : null}
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Company</Label>
-              <Input value={company} onChange={(e) => setCompany(e.target.value)} />
+              <Input
+                value={company}
+                aria-invalid={Boolean(errors.company)}
+                onChange={(e) => {
+                  setCompany(e.target.value);
+                  clearError("company");
+                }}
+              />
+              {errors.company ? (
+                <p className="text-xs text-destructive">{errors.company}</p>
+              ) : null}
             </div>
           </div>
 
-          <Tabs value={tab} onValueChange={(v) => setTab(v as "draw" | "type")}>
-            <TabsList className="w-full">
-              <TabsTrigger value="draw" className="flex-1">
-                Draw
-              </TabsTrigger>
-              <TabsTrigger value="type" className="flex-1">
-                Type
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="draw" className="pt-3">
-              <SignaturePadCanvas
-                ref={padRef}
-                onChange={() => setHasDrawn(!(padRef.current?.isEmpty() ?? true))}
-              />
-            </TabsContent>
-            <TabsContent value="type" className="pt-3">
-              <div className="grid grid-cols-2 gap-2">
-                {SIGNATURE_FONTS.map((option) => (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => setFont(option)}
-                    className={cn(
-                      "flex h-20 flex-col items-start justify-center rounded-lg border px-4 transition-colors",
-                      font.id === option.id
-                        ? "border-primary bg-accent"
-                        : "border-border hover:border-primary/50"
-                    )}
-                  >
-                    <span
-                      className={cn(option.className, "max-w-full truncate text-2xl text-foreground")}
+          <div>
+            <Tabs
+              value={tab}
+              onValueChange={(v) => {
+                setTab(v as "draw" | "type");
+                clearError("signature");
+              }}
+            >
+              <TabsList className="w-full">
+                <TabsTrigger value="draw" className="flex-1">
+                  Draw
+                </TabsTrigger>
+                <TabsTrigger value="type" className="flex-1">
+                  Type
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="draw" className="pt-3">
+                <SignaturePadCanvas ref={padRef} onChange={() => clearError("signature")} />
+              </TabsContent>
+              <TabsContent value="type" className="pt-3">
+                <div className="grid grid-cols-2 gap-2">
+                  {SIGNATURE_FONTS.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => setFont(option)}
+                      className={cn(
+                        "flex h-20 flex-col items-start justify-center rounded-lg border px-4 transition-colors",
+                        font.id === option.id
+                          ? "border-primary bg-accent"
+                          : "border-border hover:border-primary/50"
+                      )}
                     >
-                      {name.trim() || "Your name"}
-                    </span>
-                    <span className="font-tag mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                      {option.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
+                      <span
+                        className={cn(
+                          option.className,
+                          "max-w-full truncate text-2xl text-foreground"
+                        )}
+                      >
+                        {name.trim() || "Your name"}
+                      </span>
+                      <span className="font-tag mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {option.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+            {errors.signature ? (
+              <p className="mt-2 text-xs text-destructive">{errors.signature}</p>
+            ) : null}
+          </div>
 
-          <label className="flex cursor-pointer gap-3 rounded-lg border border-border bg-surface p-3">
-            <Checkbox
-              checked={consented}
-              onCheckedChange={(v) => setConsented(Boolean(v))}
-              className="mt-0.5"
-            />
-            <span className="text-xs leading-relaxed text-muted-foreground">
-              {ESIGN_CONSENT_TEXT}
-            </span>
-          </label>
+          <div>
+            <label
+              className={cn(
+                "flex cursor-pointer gap-3 rounded-lg border bg-surface p-3",
+                errors.consent ? "border-destructive" : "border-border"
+              )}
+            >
+              <Checkbox
+                checked={consented}
+                onCheckedChange={(v) => {
+                  setConsented(Boolean(v));
+                  clearError("consent");
+                }}
+                className="mt-0.5"
+              />
+              <span className="text-xs leading-relaxed text-muted-foreground">
+                {ESIGN_CONSENT_TEXT}
+              </span>
+            </label>
+            {errors.consent ? (
+              <p className="mt-1 text-xs text-destructive">{errors.consent}</p>
+            ) : null}
+          </div>
 
-          <Button className="w-full" size="lg" disabled={!canAdopt} onClick={handleAdopt}>
+          <Button className="w-full" size="lg" disabled={submitting} onClick={handleAdopt}>
             {submitting ? "Applying signature…" : ctaLabel}
           </Button>
         </div>

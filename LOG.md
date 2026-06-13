@@ -1,5 +1,24 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Signing redesign shipped + phone-test fixes (bar, toasts, validation)
+
+Deployed the signing redesign (commits 002f245, then fixes below) and Rahul tested it on
+his phone against a seeded [TEST] Brightline draft sent to rahul.lalia23@gmail.com.
+Feedback addressed, each built + shipped:
+
+- **Action bar elevated** (1e0f371). It blended into the white document (translucent
+  edge-to-edge bar). Now a rounded, opaque, shadowed floating island lifted off the page
+  with margin around it.
+- **Branded toasts** (1e0f371). Top-center toasts looked like stock sonner. Now
+  `toast.custom` with Anchor Blue for guidance and red for errors, with an icon.
+- **Signature modal validation** (this commit). A missing field used to just leave the
+  Adopt button disabled with no explanation. Now tapping Adopt surfaces an inline error
+  under each empty field (name, title, company, drawn signature, consent), clearing as
+  each is fixed. Uses the Input's built-in aria-invalid destructive styling.
+
+Build green, 47 tests pass throughout. Open: the [TEST] Brightline draft + Rahul's sent
+copy are still in prod; clean up when he is done testing.
+
 ## 2026-06-13 — Signing flow redesign (mobile-first) built
 
 Implemented the approved signing UX rework. View-state only: the one-shot sign
