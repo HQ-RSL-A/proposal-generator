@@ -1,5 +1,22 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Signing polish round 2 (pricing scroll, badge, CTA fade, caret)
+
+More phone-test feedback from Rahul, all built + shipped:
+
+- Empty-plan prompt now scrolls to the pricing cards (`data-tier-anchor` moved off the
+  whole-doc wrapper onto TierCards) instead of a random spot. (cc77ecb)
+- Recommended tier no longer pre-highlighted; only the actively chosen tier highlights;
+  the recommendation is shown by its badge. (cc77ecb)
+- Tier badge "Most popular" -> "Recommended" on the web and in the PDF; PDF highlight
+  aligned to the web (only the selected tier highlights). Verified the PDF via pdfSmoke
+  with a non-recommended selection: the RECOMMENDED label renders cleanly. (fbb5a3a)
+- Adopt-signature CTA is dimmed until name/title/company/signature/consent are all in,
+  then lights up. Still tappable while dimmed so an early tap surfaces the inline field
+  errors. (fbb5a3a)
+- Fixed the caret rendering below short inputs on mobile: `text-base` line-height (24px)
+  overflowed the `h-8` box (22px). Tightened the shared Input line-height. (fbb5a3a)
+
 ## 2026-06-13 — Signing redesign shipped + phone-test fixes (bar, toasts, validation)
 
 Deployed the signing redesign (commits 002f245, then fixes below) and Rahul tested it on
