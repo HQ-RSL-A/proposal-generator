@@ -242,6 +242,9 @@ model Signature {
   esignConsented Boolean       @default(false)
   consentedAt    DateTime?
   signedAt       DateTime      @default(now())
+  /** Client-side tap times for the two-place ceremony (proposal acceptance + MSA execution). */
+  stampedProposalAt  DateTime?
+  stampedAgreementAt DateTime?
   ipAddress      String?
   userAgent      String?
 

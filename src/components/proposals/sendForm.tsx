@@ -54,7 +54,10 @@ export function SendForm({
         toast.error(result.error);
         return;
       }
-      toast.success("Proposal sent. Signing invites are on the way.");
+      toast.success("Proposal sent", {
+        description:
+          "Each signer just got their own signing link by email. You'll be emailed the moment everyone has signed.",
+      });
       router.push(`/proposals/${proposalId}`);
       router.refresh();
     } finally {

@@ -34,6 +34,9 @@ export interface SignSubmission {
   fontFamily: string | null;
   esignConsent: boolean;
   selectedTierId: string | null;
+  /** Client-side tap times of the two-place ceremony (ISO strings). */
+  stampedProposalAt: string | null;
+  stampedAgreementAt: string | null;
   ipAddress: string | null;
   userAgent: string | null;
 }
@@ -132,6 +135,12 @@ export async function submitSignature(submission: SignSubmission): Promise<SignR
           esignConsented: true,
           consentedAt: now,
           signedAt: now,
+          stampedProposalAt: submission.stampedProposalAt
+            ? new Date(submission.stampedProposalAt)
+            : null,
+          stampedAgreementAt: submission.stampedAgreementAt
+            ? new Date(submission.stampedAgreementAt)
+            : null,
           ipAddress: submission.ipAddress,
           userAgent: submission.userAgent,
         },
@@ -178,6 +187,14 @@ export async function submitSignature(submission: SignSubmission): Promise<SignR
       adoptedName: submission.adoptedName,
       ipAddress: submission.ipAddress,
       userAgent: submission.userAgent,
+      ...(submission.stampedProposalAt || submission.stampedAgreementAt
+        ? {
+            placements: {
+              proposalAcceptance: submission.stampedProposalAt,
+              agreementExecution: submission.stampedAgreementAt,
+            },
+          }
+        : {}),
       ...(tierId ? { selectedTierId: tierId } : {}),
     },
   });

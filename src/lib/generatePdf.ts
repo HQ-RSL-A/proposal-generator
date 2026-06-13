@@ -8,7 +8,7 @@ import { logEvent } from "@/lib/audit";
 import { sendTemplateEmail } from "@/lib/email";
 import { rotatePartyToken } from "@/lib/partyTokens";
 import { sectionsFromFrozen } from "@/lib/proposalContent";
-import type { FrozenContent, PaymentConfig } from "@/lib/types";
+import type { FrozenContent } from "@/lib/types";
 import {
   ProposalPdf,
   type CertificateInfo,
@@ -73,6 +73,10 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
       signedAt: signature ? formatDateTime(signature.signedAt) : null,
       ipAddress: signature?.ipAddress ?? null,
       signatureDataUri: dataUri,
+      placements:
+        signature?.stampedProposalAt && signature?.stampedAgreementAt
+          ? "Placed on the proposal acceptance and the agreement execution"
+          : null,
     });
   }
 

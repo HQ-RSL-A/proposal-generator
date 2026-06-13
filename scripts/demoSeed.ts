@@ -7,13 +7,13 @@ import pg from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
-const DEMO_TITLE = "[DEMO] Multi-Channel Marketing System for Scorpion Junk Removal";
+const DEMO_TITLE = "[DEMO] Multi-Channel Marketing System for Brightline Test Co";
 
 const tokens = {
-  "Client.ProposalTitle": "Multi-Channel Marketing System for Scorpion Junk Removal",
+  "Client.ProposalTitle": "Multi-Channel Marketing System for Brightline Test Co",
   "Client.FirstName": "Dominique",
   "Client.LastName": "Norris",
-  "Client.Company": "Scorpion Junk Removal",
+  "Client.Company": "Brightline Test Co",
   "Client.ProblemTitle": "Inconsistent Lead Flow Despite Strong Market Demand",
   "Client.ProblemText":
     'You put it perfectly: "the business is there, the money\'s there, it\'s just getting the consistent lead flows." Right now you\'re getting 6-8 conversations daily at $12 per conversation through Meta ads, but you know the system isn\'t optimized.\n\nThe bigger issue is you\'re stuck managing everything manually - from Facebook messages to transferring customer info from your notebook into Jobber after the fact. Your website isn\'t even loading right now, which means you\'re missing out on Google traffic entirely.',

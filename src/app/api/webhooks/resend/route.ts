@@ -88,6 +88,21 @@ export async function POST(request: NextRequest) {
         eventType: "EMAIL_BOUNCED",
         metadata: { templateId: log.templateId, recipient: log.recipient },
       });
+      // A bounced email means the client never saw it. Surface immediately so
+      // the address can be corrected and the email resent from the dashboard.
+      {
+        const { sendSystemAlert } = await import("@/lib/email");
+        await sendSystemAlert({
+          summary: `An email bounced: ${log.recipient}`,
+          details: [
+            { label: "Recipient", value: log.recipient },
+            { label: "Email", value: log.templateId },
+            { label: "Fix", value: "Correct the address on the proposal page, then resend" },
+          ],
+          dedupeKey: `bounce-${log.id}`,
+          proposalId: log.proposalId,
+        });
+      }
       break;
 
     case "email.complained":

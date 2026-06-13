@@ -105,7 +105,8 @@ export function SignatureModal({
         <DialogHeader>
           <DialogTitle className="font-heading">Adopt your signature</DialogTitle>
           <DialogDescription>
-            One signature executes the proposal and the Master Services Agreement.
+            You adopt it once, then place it in two spots: the proposal acceptance and the
+            agreement execution.
           </DialogDescription>
         </DialogHeader>
 

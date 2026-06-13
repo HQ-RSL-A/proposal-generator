@@ -12,9 +12,21 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { ProposalView, type SignerSlot } from "@/components/proposal/proposalView";
+import {
+  ProposalView,
+  type SignaturePlace,
+  type SignerSlot,
+} from "@/components/proposal/proposalView";
 import { SignatureModal, type AdoptedSignature } from "@/components/signing/signatureModal";
 import type { ProposalSections } from "@/lib/proposalContent";
+
+const PLACE_ORDER: SignaturePlace[] = ["proposal", "agreement"];
+
+function scrollToSlot(place: SignaturePlace) {
+  document
+    .querySelector(`[data-signature-slot="${place}"]`)
+    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
 
 export function SigningExperience({
   token,
@@ -43,6 +55,15 @@ export function SigningExperience({
   const [declineOpen, setDeclineOpen] = React.useState(false);
   const [declineReason, setDeclineReason] = React.useState("");
   const [submitting, setSubmitting] = React.useState(false);
+  const [adopted, setAdopted] = React.useState<AdoptedSignature | null>(null);
+  const [stamped, setStamped] = React.useState<Record<SignaturePlace, boolean>>({
+    proposal: false,
+    agreement: false,
+  });
+  const stampTimes = React.useRef<Record<SignaturePlace, string | null>>({
+    proposal: null,
+    agreement: null,
+  });
 
   // View tracking — once per page load.
   React.useEffect(() => {
@@ -55,6 +76,16 @@ export function SigningExperience({
 
   function handleTierSelect(tierId: string) {
     setSelectedTierId(tierId);
+    // Changing the deal after adopting invalidates the ceremony: the consent
+    // restated the old tier, so the signature has to be adopted again.
+    if (adopted) {
+      setAdopted(null);
+      setStamped({ proposal: false, agreement: false });
+      stampTimes.current = { proposal: null, agreement: null };
+      toast.info("Pricing changed", {
+        description: "Since the deal changed, please adopt your signature again.",
+      });
+    }
     fetch(`/api/sign/${token}/track`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -73,21 +104,49 @@ export function SigningExperience({
     setModalOpen(true);
   }
 
-  async function handleAdopt(signature: AdoptedSignature) {
+  function handleAdopt(signature: AdoptedSignature) {
+    setAdopted(signature);
+    setModalOpen(false);
+    toast.success("Signature adopted", {
+      description: "Now place it in the two highlighted spots, starting with the acceptance.",
+    });
+    window.setTimeout(() => scrollToSlot("proposal"), 250);
+  }
+
+  function handleStamp(place: SignaturePlace) {
+    setStamped((prev) => {
+      if (prev[place]) return prev;
+      stampTimes.current[place] = new Date().toISOString();
+      const next = { ...prev, [place]: true };
+      const remaining = PLACE_ORDER.find((p) => !next[p]);
+      if (remaining) {
+        window.setTimeout(() => scrollToSlot(remaining), 350);
+      }
+      return next;
+    });
+  }
+
+  const stampedCount = PLACE_ORDER.filter((p) => stamped[p]).length;
+  const allStamped = stampedCount === PLACE_ORDER.length;
+
+  async function handleSubmit() {
+    if (!adopted || !allStamped || submitting) return;
     setSubmitting(true);
     try {
       const response = await fetch(`/api/sign/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          signatureType: signature.type,
-          signaturePngDataUrl: signature.pngDataUrl,
-          adoptedName: signature.adoptedName,
-          signerTitle: signature.signerTitle,
-          signerCompany: signature.signerCompany,
-          fontFamily: signature.fontFamily,
+          signatureType: adopted.type,
+          signaturePngDataUrl: adopted.pngDataUrl,
+          adoptedName: adopted.adoptedName,
+          signerTitle: adopted.signerTitle,
+          signerCompany: adopted.signerCompany,
+          fontFamily: adopted.fontFamily,
           esignConsent: true,
           selectedTierId,
+          stampedProposalAt: stampTimes.current.proposal,
+          stampedAgreementAt: stampTimes.current.agreement,
         }),
       });
       const data = await response.json();
@@ -104,10 +163,19 @@ export function SigningExperience({
         router.push(data.redirectUrl ?? `/sign/${token}/signed`);
       }
     } catch {
-      toast.error("Network hiccup. Your signature was not applied, so please try again.");
+      toast.error("Network hiccup", {
+        description: "Your signature was not submitted, so please try again.",
+      });
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function handleRedo() {
+    setAdopted(null);
+    setStamped({ proposal: false, agreement: false });
+    stampTimes.current = { proposal: null, agreement: null };
+    setModalOpen(true);
   }
 
   async function handleDecline() {
@@ -129,6 +197,14 @@ export function SigningExperience({
     }
   }
 
+  const statusLine = !adopted
+    ? `${validUntilLabel ? `Valid until ${validUntilLabel}` : "Ready when you are"}${
+        willCheckout ? " · Secure checkout follows signing" : ""
+      }`
+    : allStamped
+      ? "Both places signed. Finish below."
+      : `${stampedCount} of 2 places signed`;
+
   return (
     <div className="min-h-screen bg-surface pb-28">
       <div className="mx-auto max-w-3xl px-3 pt-8 sm:px-6" data-tier-anchor={requiresTier || undefined}>
@@ -138,6 +214,12 @@ export function SigningExperience({
           onTierSelect={handleTierSelect}
           clientSlots={clientSlots}
           rslaSlot={rslaSlot}
+          signing={{
+            adoptedPngDataUrl: adopted?.pngDataUrl ?? null,
+            stamped,
+            onStamp: handleStamp,
+            onRequestAdopt: openSignModal,
+          }}
         />
       </div>
 
@@ -146,18 +228,41 @@ export function SigningExperience({
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{partyName}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {validUntilLabel ? `Valid until ${validUntilLabel}` : "Ready when you are"}
-              {willCheckout ? " · Secure checkout follows signing" : ""}
-            </p>
+            <p className="truncate text-xs text-muted-foreground">{statusLine}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setDeclineOpen(true)}>
-              Decline
-            </Button>
-            <Button size="lg" onClick={openSignModal} disabled={submitting}>
-              Review &amp; Sign
-            </Button>
+            {adopted ? (
+              <Button variant="ghost" size="sm" onClick={handleRedo} disabled={submitting}>
+                Redo signature
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => setDeclineOpen(true)}>
+                Decline
+              </Button>
+            )}
+            {!adopted ? (
+              <Button size="lg" onClick={openSignModal} disabled={submitting}>
+                Review &amp; Sign
+              </Button>
+            ) : !allStamped ? (
+              <Button
+                size="lg"
+                onClick={() => {
+                  const next = PLACE_ORDER.find((p) => !stamped[p]);
+                  if (next) scrollToSlot(next);
+                }}
+              >
+                Place signature ({stampedCount}/2)
+              </Button>
+            ) : (
+              <Button size="lg" onClick={handleSubmit} disabled={submitting}>
+                {submitting
+                  ? "Submitting…"
+                  : willCheckout
+                    ? "Finish & continue to payment"
+                    : "Finish & Submit"}
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -169,7 +274,7 @@ export function SigningExperience({
         defaultCompany={sections.acceptance.clientCompany}
         submitting={submitting}
         onAdopt={handleAdopt}
-        ctaLabel={willCheckout ? "Adopt & Sign, continue to payment" : "Adopt & Sign"}
+        ctaLabel="Adopt signature"
         selectedTierSummary={(() => {
           const tier = sections.investment.tiers?.find((t) => t.id === selectedTierId);
           if (!tier) return null;
@@ -185,7 +290,7 @@ export function SigningExperience({
           <DialogHeader>
             <DialogTitle className="font-heading">Decline this proposal?</DialogTitle>
             <DialogDescription>
-              Rahul will be notified. You can optionally say why. It helps.
+              Our team will be notified. You can optionally say why. It helps.
             </DialogDescription>
           </DialogHeader>
           <Textarea

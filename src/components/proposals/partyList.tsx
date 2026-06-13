@@ -94,7 +94,10 @@ export function PartyList({
                     try {
                       const result = await remindParty(party.id);
                       if (!result.ok) return void toast.error(result.error);
-                      toast.success("Reminder sent");
+                      toast.success("Reminder sent", {
+                        description:
+                          "It carries a fresh signing link, so links in earlier emails no longer work.",
+                      });
                       router.refresh();
                     } finally {
                       setBusyId(null);

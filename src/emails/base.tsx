@@ -4,12 +4,15 @@ import {
   Head,
   Hr,
   Html,
+  Img,
   Link,
   Preview,
   Section,
   Text,
 } from "@react-email/components";
 import * as React from "react";
+
+import { SUPPORT_EMAIL } from "@/lib/constants";
 
 export const brand = {
   blue: "#0070F3",
@@ -18,6 +21,12 @@ export const brand = {
   border: "#E5E7EB",
   muted: "#6B7280",
 };
+
+export { SUPPORT_EMAIL };
+
+function logoUrl(): string {
+  return `${process.env.NEXT_PUBLIC_APP_URL ?? "https://proposals.rsla.io"}/logomark.png`;
+}
 
 export function EmailShell({
   preview,
@@ -32,10 +41,16 @@ export function EmailShell({
       <Preview>{preview}</Preview>
       <Body style={{ backgroundColor: brand.sand, fontFamily: "Inter, Helvetica, Arial, sans-serif", margin: 0, padding: "24px 0" }}>
         <Container style={{ maxWidth: "560px", margin: "0 auto" }}>
-          <Section style={{ padding: "0 8px 12px" }}>
-            <Text style={{ fontSize: "15px", fontWeight: 700, letterSpacing: "0.08em", color: brand.slate, margin: 0 }}>
-              RSL/<span style={{ color: brand.blue }}>A</span>
-            </Text>
+          <Section style={{ padding: "0 8px 14px" }}>
+            {/* Logomark only — the wordmark has its own letterforms, never
+                approximate it with text. */}
+            <Img
+              src={logoUrl()}
+              alt="RSL/A"
+              width={32}
+              height={32}
+              style={{ borderRadius: "7px", display: "block" }}
+            />
           </Section>
           <Section
             style={{
@@ -54,9 +69,9 @@ export function EmailShell({
                 rsla.io
               </Link>
               <br />
-              Questions? Reply to this email or write to{" "}
-              <Link href="mailto:lalia@rsla.io" style={{ color: brand.muted, textDecoration: "underline" }}>
-                lalia@rsla.io
+              Questions? Just reply to this email and it reaches the whole team, or write to{" "}
+              <Link href={`mailto:${SUPPORT_EMAIL}`} style={{ color: brand.muted, textDecoration: "underline" }}>
+                {SUPPORT_EMAIL}
               </Link>
             </Text>
           </Section>

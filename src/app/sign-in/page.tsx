@@ -10,7 +10,7 @@ export default async function SignInPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface dot-pattern">
       <div className="document-page w-full max-w-sm rounded-2xl border border-border bg-white p-8 text-center">
-        <Image src="/logomark.svg" alt="RSL/A" width={40} height={40} className="mx-auto" />
+        <Image src="/logomark.png" alt="RSL/A" width={44} height={44} className="mx-auto rounded-lg" />
         <h1 className="font-heading mt-4 text-xl font-bold">Proposal Generator</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           RSL/A team only. Sign in with your rsla.io Google account.

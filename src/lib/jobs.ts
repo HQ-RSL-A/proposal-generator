@@ -60,6 +60,24 @@ export async function failJob(job: PendingJob, error: unknown): Promise<void> {
           scheduledAt: new Date(Date.now() + delayMs),
         },
   });
+
+  // A job that exhausted its retries needs a human. Alert immediately instead
+  // of waiting for someone to open the dashboard. Dynamic import avoids a
+  // module cycle (email.tsx enqueues jobs through this file).
+  if (dead) {
+    const { sendSystemAlert } = await import("@/lib/email");
+    await sendSystemAlert({
+      summary: `A ${job.jobType} background task failed permanently`,
+      details: [
+        { label: "Task", value: job.jobType },
+        { label: "Attempts", value: `${job.attempts} of ${job.maxAttempts}` },
+        { label: "Error", value: message.slice(0, 300) },
+        ...(job.proposalId ? [{ label: "Proposal", value: job.proposalId }] : []),
+      ],
+      dedupeKey: `job-${job.id}-dead`,
+      proposalId: job.proposalId ?? undefined,
+    });
+  }
 }
 
 /** Reset a DEAD job for manual retry from the dashboard. */

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { PaymentChip, StatusChip } from "@/components/dashboard/statusChip";
 import { Button } from "@/components/ui/button";
-import { FileSignature, Plus } from "lucide-react";
+import { Banknote, FileSignature, Hourglass, PenLine, Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -44,29 +44,46 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <Card className="card-hover">
           <CardContent className="pt-4">
-            <p className="font-tag text-xs uppercase tracking-wide text-muted-foreground">
-              Awaiting signature
-            </p>
-            <p className="font-heading mt-1 text-2xl font-bold">{open}</p>
+            <div className="flex items-start justify-between">
+              <p className="font-tag text-xs uppercase tracking-wide text-muted-foreground">
+                Awaiting signature
+              </p>
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-accent text-primary">
+                <Hourglass className="h-3.5 w-3.5" />
+              </span>
+            </div>
+            <p className="font-heading mt-1 text-2xl font-bold tabular-nums">{open}</p>
           </CardContent>
         </Card>
         <Card className="card-hover">
           <CardContent className="pt-4">
-            <p className="font-tag text-xs uppercase tracking-wide text-muted-foreground">
-              Signed, unpaid
-            </p>
-            <p className="font-heading mt-1 text-2xl font-bold">{signedAwaiting}</p>
+            <div className="flex items-start justify-between">
+              <p className="font-tag text-xs uppercase tracking-wide text-muted-foreground">
+                Signed, unpaid
+              </p>
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-amber-50 text-amber-600">
+                <PenLine className="h-3.5 w-3.5" />
+              </span>
+            </div>
+            <p className="font-heading mt-1 text-2xl font-bold tabular-nums">{signedAwaiting}</p>
           </CardContent>
         </Card>
         <Card className="card-hover">
           <CardContent className="pt-4">
-            <p className="font-tag text-xs uppercase tracking-wide text-muted-foreground">
-              Collected via checkout
+            <div className="flex items-start justify-between">
+              <p className="font-tag text-xs uppercase tracking-wide text-muted-foreground">
+                Collected via checkout
+              </p>
+              <span className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-50 text-emerald-600">
+                <Banknote className="h-3.5 w-3.5" />
+              </span>
+            </div>
+            <p className="font-heading mt-1 text-2xl font-bold tabular-nums">
+              {formatCents(paidCents)}
             </p>
-            <p className="font-heading mt-1 text-2xl font-bold">{formatCents(paidCents)}</p>
           </CardContent>
         </Card>
       </div>
@@ -115,11 +132,15 @@ export default async function DashboardPage() {
                   if (recurring) dealParts.push(`${formatCents(recurring.amountCents)}/mo`);
                 }
                 return (
-                  <TableRow key={proposal.id}>
+                  <TableRow
+                    key={proposal.id}
+                    className="group relative cursor-pointer transition-colors hover:bg-surface"
+                  >
                     <TableCell>
+                      {/* The stretched link makes the whole row a click target. */}
                       <Link
                         href={`/proposals/${proposal.id}`}
-                        className="font-medium hover:text-primary"
+                        className="font-medium group-hover:text-primary after:absolute after:inset-0 after:content-['']"
                       >
                         {proposal.title}
                       </Link>

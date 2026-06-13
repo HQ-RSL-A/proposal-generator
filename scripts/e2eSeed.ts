@@ -6,7 +6,7 @@ import pg from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
-const TITLE = "[TEST] Full Rehearsal — Brightline Test Co";
+const TITLE = "[TEST] Full Rehearsal: Brightline Test Co";
 
 async function main() {
   const pool = new pg.Pool({

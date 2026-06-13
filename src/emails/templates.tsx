@@ -25,22 +25,23 @@ export function SigningInviteEmail({
   signingUrl: string;
 }) {
   return (
-    <EmailShell preview={`Your proposal from RSL/A: ${data.proposalTitle}`}>
-      <Heading>Your proposal is ready to review</Heading>
+    <EmailShell preview={`Your proposal from RSL/A is ready: ${data.proposalTitle}`}>
+      <Heading>Your proposal is ready when you are</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        Here&apos;s the proposal we discussed: <strong>{data.proposalTitle}</strong>. It covers the
-        full scope, timeline, investment, and agreement. Reviewing and signing takes a few minutes,
-        all in your browser.
+        The proposal we put together for {data.clientCompany} is ready for you:{" "}
+        <strong>{data.proposalTitle}</strong>. Everything we discussed is in there, from the scope
+        and timeline to the investment and the agreement that goes with it. The whole thing lives
+        in your browser, and reviewing and signing takes just a few minutes.
       </Paragraph>
       <CtaButton href={signingUrl}>Review &amp; Sign</CtaButton>
       <Paragraph>
-        This proposal is valid until <strong>{data.validUntil}</strong>.
+        It stays valid until <strong>{data.validUntil}</strong>, so take the time you need.
       </Paragraph>
       <Divider />
       <FinePrint>
-        This signing link is unique to you, so please don&apos;t forward it. If anything looks off
-        or you have questions, just reply to this email.
+        This signing link is unique to you, so please keep it to yourself. If anything looks off or
+        a question comes up, just reply to this email and it reaches the team.
       </FinePrint>
     </EmailShell>
   );
@@ -56,18 +57,20 @@ export function SigningReminderEmail({
   daysLeft: number;
 }) {
   return (
-    <EmailShell preview={`Reminder: ${data.proposalTitle} expires soon`}>
+    <EmailShell preview={`Your proposal closes ${daysLeft <= 1 ? "today" : `in ${daysLeft} days`}`}>
       <Heading>
-        {daysLeft <= 1 ? "Last day" : `${daysLeft} days left`} on your proposal
+        {daysLeft <= 1 ? "Today is the last day for this one" : `${daysLeft} days left on your proposal`}
       </Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        Quick nudge. The proposal <strong>{data.proposalTitle}</strong> is still waiting for your
-        signature and expires on <strong>{data.validUntil}</strong>. Here&apos;s your fresh link:
+        A gentle nudge from our side. <strong>{data.proposalTitle}</strong> is still waiting for
+        your signature, and the window closes on <strong>{data.validUntil}</strong>. Here is a
+        fresh link that takes you right back to where you left off.
       </Paragraph>
       <CtaButton href={signingUrl}>Review &amp; Sign</CtaButton>
       <FinePrint>
-        This link replaces the one in earlier emails. Questions? Just reply.
+        This link replaces the ones in earlier emails. If you have questions or the timing no
+        longer works, just reply and we will figure it out together.
       </FinePrint>
     </EmailShell>
   );
@@ -83,15 +86,16 @@ export function CoSignerSignedEmail({
   signingUrl: string;
 }) {
   return (
-    <EmailShell preview={`${signedByName} has signed. Your signature completes it.`}>
+    <EmailShell preview={`${signedByName} has signed. Yours is the only signature left.`}>
       <Heading>{signedByName} has signed</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        <strong>{signedByName}</strong> just signed <strong>{data.proposalTitle}</strong>. Your
-        signature is the last one needed to put it into effect.
+        Good news. <strong>{signedByName}</strong> just signed{" "}
+        <strong>{data.proposalTitle}</strong>, which means yours is the only signature left. Once
+        you have signed, the agreement takes effect and everything starts moving.
       </Paragraph>
       <CtaButton href={signingUrl}>Review &amp; Sign</CtaButton>
-      <FinePrint>This link replaces the one in earlier emails.</FinePrint>
+      <FinePrint>This link replaces the ones in earlier emails.</FinePrint>
     </EmailShell>
   );
 }
@@ -106,25 +110,28 @@ export function FullySignedClientEmail({
   paymentUrl: string | null;
 }) {
   return (
-    <EmailShell preview={`Fully executed: ${data.proposalTitle}`}>
-      <Heading>Your agreement is fully executed</Heading>
+    <EmailShell preview={`Fully signed: ${data.proposalTitle}`}>
+      <Heading>Everything is signed</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        All parties have signed <strong>{data.proposalTitle}</strong>. Your executed copy is attached
-        to this email: the proposal, the Master Services Agreement, and the signature certificate,
-        all in one PDF for your records.
+        All parties have signed <strong>{data.proposalTitle}</strong>, and your executed copy is
+        attached to this email. It carries the proposal, the Master Services Agreement, and the
+        signature certificate in a single PDF, so keep it somewhere safe.
       </Paragraph>
       {paymentPending && paymentUrl ? (
         <>
           <Paragraph>
-            One step left: the first payment shown in <em>Your Investment</em>. If you didn&apos;t
-            complete checkout already, you can do it here:
+            One step remains: the first payment shown in <em>Your Investment</em>. If you have not
+            completed checkout already, this button takes you straight there.
           </Paragraph>
           <CtaButton href={paymentUrl}>Complete Payment</CtaButton>
         </>
       ) : null}
       <Divider />
-      <FinePrint>Keep this email. The attached PDF is your executed agreement.</FinePrint>
+      <FinePrint>
+        The attached PDF is your executed agreement. If a question comes up about anything in it,
+        just reply to this email.
+      </FinePrint>
     </EmailShell>
   );
 }
@@ -142,7 +149,7 @@ export function FullySignedAdminEmail({
 }) {
   return (
     <EmailShell preview={`Signed: ${data.clientCompany}`}>
-      <Heading>🎉 {data.clientCompany} signed</Heading>
+      <Heading>{data.clientCompany} signed</Heading>
       <DetailRow label="Proposal" value={data.proposalTitle} />
       <DetailRow label="Deal" value={totalLine} />
       <DetailRow label="Payment" value={paymentStatusLine} />
@@ -161,14 +168,16 @@ export function PaymentLinkEmail({
 }) {
   return (
     <EmailShell preview={`Complete your payment for ${data.proposalTitle}`}>
-      <Heading>Complete your payment</Heading>
+      <Heading>One step left: the first payment</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        Your agreement <strong>{data.proposalTitle}</strong> is signed. The only step left is the
-        first payment, and work begins as soon as it lands.
+        <strong>{data.proposalTitle}</strong> is fully signed, which was the hard part. The only
+        thing left is the first payment, and work begins the moment it lands.
       </Paragraph>
       <CtaButton href={paymentUrl}>Pay Securely</CtaButton>
-      <FinePrint>Payments are processed by Stripe. Card and bank transfer accepted.</FinePrint>
+      <FinePrint>
+        Stripe handles the payment itself. Card and bank transfer both work.
+      </FinePrint>
     </EmailShell>
   );
 }
@@ -184,7 +193,7 @@ export function PaymentReceivedEmail({
 }) {
   return (
     <EmailShell preview={`Payment received for ${data.proposalTitle}`}>
-      <Heading>{isAdmin ? `💸 ${data.clientCompany} paid` : "Payment received. We're on."}</Heading>
+      <Heading>{isAdmin ? `${data.clientCompany} paid` : "Payment received, and we are underway"}</Heading>
       {isAdmin ? (
         <>
           <DetailRow label="Proposal" value={data.proposalTitle} />
@@ -194,11 +203,13 @@ export function PaymentReceivedEmail({
         <>
           <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
           <Paragraph>
-            We received your payment of <strong>{amountLine}</strong> for{" "}
-            <strong>{data.proposalTitle}</strong>. You&apos;ll get a kickoff email with next steps
-            and scheduling shortly. Work begins right away.
+            Your payment of <strong>{amountLine}</strong> for{" "}
+            <strong>{data.proposalTitle}</strong> just came through. A kickoff email with next
+            steps and scheduling is on its way to you, and work begins right away.
           </Paragraph>
-          <FinePrint>Stripe will send a separate receipt for your records.</FinePrint>
+          <FinePrint>
+            Need anything before kickoff? Just reply to this email and it reaches the team.
+          </FinePrint>
         </>
       )}
     </EmailShell>
@@ -216,18 +227,19 @@ export function PaymentFailedEmail({
 }) {
   return (
     <EmailShell preview={`Payment issue: ${data.proposalTitle}`}>
-      <Heading>{isAdmin ? `⚠️ Payment failed: ${data.clientCompany}` : "Your payment didn't go through"}</Heading>
+      <Heading>{isAdmin ? `Payment failed: ${data.clientCompany}` : "Your payment did not go through"}</Heading>
       {isAdmin ? (
         <Paragraph>
-          The payment for <strong>{data.proposalTitle}</strong> failed. The client received a retry
-          link automatically.
+          The payment for <strong>{data.proposalTitle}</strong> failed. The client automatically
+          received a retry link, so nothing is needed from you unless it keeps failing.
         </Paragraph>
       ) : (
         <>
           <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
           <Paragraph>
-            The payment for <strong>{data.proposalTitle}</strong> didn&apos;t process. This happens
-            sometimes with bank verifications. You can retry securely here:
+            The payment for <strong>{data.proposalTitle}</strong> did not process. This happens
+            more often than you would think, usually because of a bank verification or a card
+            limit. Your signature is safe and nothing is lost. Retry whenever you are ready.
           </Paragraph>
           <CtaButton href={paymentUrl}>Retry Payment</CtaButton>
         </>
@@ -242,8 +254,9 @@ export function ProposalVoidedEmail({ data }: { data: ProposalEmailData }) {
       <Heading>Proposal withdrawn</Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        The proposal <strong>{data.proposalTitle}</strong> has been withdrawn and its signing link
-        deactivated. If a revised version is on the way, you&apos;ll receive it in a separate email.
+        The proposal <strong>{data.proposalTitle}</strong> has been withdrawn, and its signing link
+        no longer works. If a revised version is on the way, it will arrive in a separate email
+        shortly.
       </Paragraph>
       <FinePrint>Questions? Just reply to this email.</FinePrint>
     </EmailShell>
@@ -262,8 +275,7 @@ export function ExpiredAdminEmail({
       <Heading>Proposal expired</Heading>
       <Paragraph>
         <strong>{data.proposalTitle}</strong> for {data.clientCompany} passed its validity date (
-        {data.validUntil}) without all signatures. You can revise &amp; resend it from the
-        dashboard.
+        {data.validUntil}) without all signatures. You can revise and resend it from the dashboard.
       </Paragraph>
       <CtaButton href={dashboardUrl}>Open in Dashboard</CtaButton>
     </EmailShell>
@@ -289,6 +301,30 @@ export function DeclinedAdminEmail({
       </Paragraph>
       {reason ? <Paragraph>Reason given: &ldquo;{reason}&rdquo;</Paragraph> : null}
       <CtaButton href={dashboardUrl}>Open in Dashboard</CtaButton>
+    </EmailShell>
+  );
+}
+
+export function SystemAlertEmail({
+  summary,
+  details,
+  healthUrl,
+}: {
+  summary: string;
+  details: { label: string; value: string }[];
+  healthUrl: string;
+}) {
+  return (
+    <EmailShell preview={`System alert: ${summary}`}>
+      <Heading>Something needs your attention</Heading>
+      <Paragraph>{summary}</Paragraph>
+      {details.map((row) => (
+        <DetailRow key={row.label} label={row.label} value={row.value} />
+      ))}
+      <CtaButton href={healthUrl}>Open System Health</CtaButton>
+      <FinePrint>
+        Sent automatically so problems surface the moment they happen instead of days later.
+      </FinePrint>
     </EmailShell>
   );
 }

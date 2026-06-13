@@ -18,6 +18,9 @@ const bodySchema = z.object({
   fontFamily: z.string().max(60).nullable(),
   esignConsent: z.boolean(),
   selectedTierId: z.string().max(80).nullable(),
+  // Two-place ceremony: client-side tap times for each signature placement.
+  stampedProposalAt: z.string().datetime().nullable().optional(),
+  stampedAgreementAt: z.string().datetime().nullable().optional(),
 });
 
 export async function POST(
@@ -49,6 +52,8 @@ export async function POST(
       fontFamily: parsed.fontFamily,
       esignConsent: parsed.esignConsent,
       selectedTierId: parsed.selectedTierId,
+      stampedProposalAt: parsed.stampedProposalAt ?? null,
+      stampedAgreementAt: parsed.stampedAgreementAt ?? null,
       ipAddress: ip,
       userAgent: getUserAgent(request.headers),
     });

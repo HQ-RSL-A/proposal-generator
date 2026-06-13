@@ -66,6 +66,7 @@ async function main() {
           signedAt: "Jun 13, 2026, 9:06 AM EDT",
           ipAddress: "203.0.113.7",
           signatureDataUri: fakeSignaturePng(),
+          placements: "Placed on the proposal acceptance and the agreement execution",
         },
         {
           name: "Rahul Lalia",
@@ -79,6 +80,7 @@ async function main() {
           signedAt: "Jun 13, 2026, 8:00 AM EDT",
           ipAddress: null,
           signatureDataUri: fakeSignaturePng(),
+          placements: null,
         },
       ],
       certificate: {

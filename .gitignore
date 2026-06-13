@@ -27,3 +27,6 @@ next-env.d.ts
 .DS_Store
 *.pem
 npm-debug.log*
+
+# local scratch (auth browser profile, screenshots in flight)
+.tmp/

@@ -68,7 +68,11 @@ describe("buildProposalSections", () => {
     expect(sections.problem.greeting).toBe("Hi Dominique,");
     expect(sections.problem.paragraphs).toHaveLength(2);
     expect(sections.scope.items).toEqual(["Item one", "Item two", "Item three"]);
-    expect(sections.investment.footnote).toContain("July 11, 2026");
+    expect(sections.notes).toHaveLength(4);
+    expect(sections.notes[3].text).toContain("July 11, 2026");
+    expect(sections.notes.every((note) => !note.text.startsWith("*"))).toBe(true);
+    expect(sections.investment.noteNumber).toBe(4);
+    expect(sections.execution.heading).toBe("Agreed and Accepted");
     expect(sections.acceptance.text).toContain("Scorpion Junk Removal");
     expect(sections.msa.blocks.filter((b) => b.type === "heading")).toHaveLength(37);
     // MSA tokens merged

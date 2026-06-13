@@ -17,8 +17,11 @@ Resend (+svix webhooks) · Notion API (raw fetch) · Vitest.
    Rahul's saved signature applied as `PRE_APPLIED` Party+Signature, client parties created
    with hashed tokens, invites emailed (Resend, link = `/sign/<rawToken>`).
 3. Client opens link → `PAGE_VIEWED` audit (status → VIEWED) → picks tier if tiered →
-   signature modal (draw via signature_pad / type via 4 Google handwriting fonts → PNG) +
-   ESIGN consent → `POST /api/sign/[token]`.
+   adopts a signature once (draw via signature_pad / type via 4 Google handwriting fonts →
+   PNG) + ESIGN consent → **places it in two spots** (Proposal Acceptance + the
+   "Agreed and Accepted" block after MSA §37; tap times stored as
+   `Signature.stampedProposalAt/stampedAgreementAt`, migration 0004) →
+   `POST /api/sign/[token]`. Changing the tier after adoption resets the ceremony.
 4. Sign API: serializable transaction — one-shot party claim (`signedAt IS NULL` guard),
    signature row, remaining-signer count; last signer flips status → SIGNED and (unless
    sign-only) gets the Stripe Checkout URL (inline `price_data`; subscription mode when
@@ -38,12 +41,29 @@ Resend (+svix webhooks) · Notion API (raw fetch) · Vitest.
   no settings, no team management). Owner seeded: lalia@rsla.io (ADMIN).
 - Avatar + name sync from Google on each sign-in. Add teammates in /settings; no invite
   email needed.
-- Routes: `/` public landing → `/dashboard` (team) → `/settings` + `/health` (admin).
+- Routes: `/` public landing → `/dashboard` (team) → `/settings` (admin; General + System
+  tabs — System absorbed the old `/health` page, which now redirects to
+  `/settings?tab=system`).
 
 ## Copy rules
 
 All user-facing text follows `myBusiness/brandGuidelines/voiceDna.md`: no em/en dashes
 anywhere, short conversational sentences, no hype or AI-flag words, ranges as "X to Y".
+**No emojis anywhere** (emails, subjects, screens, PDF). Support address on every public
+surface is `team@rsla.io` (`SUPPORT_EMAIL` in `src/lib/constants.ts`; it's a Google group).
+`ADMIN_EMAIL` (lalia@rsla.io) is recipient-only, never displayed.
+
+## Email conventions
+
+- Subjects: client `[Status] {Document} · RSL/A`; admin `[Status] {Company} | {Document}`.
+  No emojis, no amounts, status survives mobile truncation.
+- Reply-to on every send: team@rsla.io. From stays `proposals@rsla.io`.
+- Executed-PDF attachment + token-gated download share
+  `executedPdfFilename()`: `{Title} - Fully Signed - {Company} x RSLA.pdf` (company part
+  dropped when the title already contains it).
+- `sendSystemAlert` (email.tsx): direct Resend send (bypasses the job queue on purpose),
+  deduped via idempotency key. Fires on job DEAD (jobs.ts), cron failure (cronAuth.ts,
+  hour-bucketed), email bounce (resend webhook). Links to `/settings?tab=system`.
 
 ## Status model
 

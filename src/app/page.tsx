@@ -32,26 +32,26 @@ export default async function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-surface">
       <header className="mx-auto flex w-full max-w-4xl items-center justify-between px-6 py-5">
-        <div className="flex items-center gap-2">
-          <Image src="/logomark.svg" alt="RSL/A" width={24} height={24} />
-          <span className="font-heading text-sm font-bold tracking-tight">RSL/A Proposals</span>
+        <div className="flex items-center gap-2.5">
+          <Image src="/logomark.png" alt="RSL/A" width={28} height={28} className="rounded-md" />
+          <span className="font-heading text-base font-bold tracking-tight">RSL/A Proposals</span>
         </div>
         <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/sign-in" />}>
           Sign in
         </Button>
       </header>
 
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-6 pb-20">
+      <main className="dot-pattern mx-auto flex w-full max-w-4xl flex-1 flex-col justify-center px-6 pb-20">
         <div className="max-w-2xl">
           <p className="font-tag text-xs uppercase tracking-widest text-primary">
             Internal tool · RSL/A LLC
           </p>
-          <h1 className="font-heading mt-4 text-4xl font-black leading-tight sm:text-5xl">
+          <h1 className="font-heading mt-4 text-4xl font-black leading-[1.08] tracking-tight sm:text-6xl">
             Send it. They sign.
             <br />
-            You get paid.
+            <span className="text-primary">You get paid.</span>
           </h1>
-          <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
             This is where RSL/A proposals live. A client gets one link, reads everything, signs in
             the browser, and lands straight in checkout. That&apos;s it.
           </p>
@@ -66,8 +66,10 @@ export default async function LandingPage() {
         <div className="mt-16 grid gap-4 sm:grid-cols-3">
           {points.map((point) => (
             <div key={point.title} className="card-hover rounded-xl border border-border bg-white p-5">
-              <point.icon className="h-5 w-5 text-primary" />
-              <p className="font-heading mt-3 text-sm font-bold">{point.title}</p>
+              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-primary">
+                <point.icon className="h-4.5 w-4.5" />
+              </span>
+              <p className="font-heading mt-3.5 text-sm font-bold">{point.title}</p>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{point.text}</p>
             </div>
           ))}
@@ -79,6 +81,10 @@ export default async function LandingPage() {
           RSL/A LLC · New York ·{" "}
           <a href="https://rsla.io" className="underline hover:text-foreground">
             rsla.io
+          </a>{" "}
+          ·{" "}
+          <a href="mailto:team@rsla.io" className="underline hover:text-foreground">
+            team@rsla.io
           </a>
         </p>
       </footer>

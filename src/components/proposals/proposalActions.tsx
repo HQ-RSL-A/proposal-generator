@@ -50,19 +50,31 @@ export function ProposalActions({
   const [notifyParties, setNotifyParties] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
 
-  async function run(action: () => Promise<{ ok: boolean; error?: string }>, success: string) {
+  async function run(
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    success: string,
+    description?: string
+  ) {
     setBusy(true);
     try {
       const result = await action();
       if (!result.ok) {
-        toast.error(result.error ?? "Failed");
+        toast.error("That didn't go through", {
+          description: result.error ?? "Nothing changed. Try again, and if it keeps failing check Settings, System.",
+        });
         return;
       }
-      toast.success(success);
+      toast.success(success, description ? { description } : undefined);
       router.refresh();
     } finally {
       setBusy(false);
     }
+  }
+
+  /** PDF rendering is queued work: refresh the page when it has likely landed. */
+  function scheduleRefresh() {
+    window.setTimeout(() => router.refresh(), 8_000);
+    window.setTimeout(() => router.refresh(), 25_000);
   }
 
   const inFlight = ["SENT", "VIEWED", "PARTIALLY_SIGNED"].includes(status);
@@ -107,7 +119,13 @@ export function ProposalActions({
               size="sm"
               variant="secondary"
               disabled={busy}
-              onClick={() => run(() => regeneratePdf(proposalId), "PDF generation queued")}
+              onClick={() =>
+                run(
+                  () => regeneratePdf(proposalId),
+                  "PDF is rendering",
+                  "It builds in the background and shows up under Documents in about a minute. This page refreshes on its own."
+                ).then(scheduleRefresh)
+              }
             >
               <RefreshCcw className="h-3.5 w-3.5" /> Generate PDF
             </Button>
@@ -117,7 +135,13 @@ export function ProposalActions({
               size="sm"
               variant="ghost"
               disabled={busy}
-              onClick={() => run(() => regeneratePdf(proposalId), "PDF regeneration queued")}
+              onClick={() =>
+                run(
+                  () => regeneratePdf(proposalId),
+                  "Fresh PDF is rendering",
+                  "It replaces the current copy under Documents in about a minute. Executed-copy emails are not re-sent."
+                ).then(scheduleRefresh)
+              }
             >
               <RefreshCcw className="h-3.5 w-3.5" /> Regenerate
             </Button>
@@ -144,7 +168,10 @@ export function ProposalActions({
                 toast.error(result.error);
                 return;
               }
-              toast.success("Revision draft created");
+              toast.success("Revision draft created", {
+                description:
+                  "Edit and send it like a new proposal. The old version gets voided automatically when this one goes out.",
+              });
               router.push(`/proposals/${result.data!.id}/edit`);
             } finally {
               setBusy(false);
@@ -187,7 +214,10 @@ export function ProposalActions({
               onClick={() =>
                 run(
                   () => voidProposal({ id: proposalId, reason: voidReason, notifyParties }),
-                  "Proposal voided"
+                  "Proposal voided",
+                  notifyParties
+                    ? "Signing links are dead and the signers were emailed that it was withdrawn."
+                    : "Signing links are dead. No email went out to the signers."
                 ).then(() => setVoidOpen(false))
               }
             >

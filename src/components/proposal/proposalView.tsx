@@ -5,7 +5,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { ProposalSections } from "@/lib/proposalContent";
 import type { TierConfig } from "@/lib/types";
-import { Check } from "lucide-react";
+import { Check, PenLine } from "lucide-react";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
@@ -28,8 +28,19 @@ function Bullets({ items }: { items: readonly string[] }) {
   );
 }
 
-function FinePrint({ children }: { children: React.ReactNode }) {
-  return <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{children}</p>;
+/** Superscript marker that scrolls to the matching entry in the Notes block. */
+function NoteMark({ n }: { n: number }) {
+  return (
+    <sup className="ml-0.5">
+      <a
+        href={`#note-${n}`}
+        aria-label={`Read note ${n}`}
+        className="font-medium text-primary no-underline hover:underline"
+      >
+        {n}
+      </a>
+    </sup>
+  );
 }
 
 export function TierCards({
@@ -108,11 +119,110 @@ export function TierCards({
   );
 }
 
+export type SignaturePlace = "proposal" | "agreement";
+
 export interface SignerSlot {
   name: string;
   detail: string;
   signedAt: string | null;
   signatureImageUrl: string | null;
+  /** True for the party currently viewing the signing page. */
+  isSelf?: boolean;
+}
+
+/** Wiring for the two-place signing ceremony on the signing page. */
+export interface SigningInteraction {
+  adoptedPngDataUrl: string | null;
+  stamped: Record<SignaturePlace, boolean>;
+  onStamp: (place: SignaturePlace) => void;
+  onRequestAdopt: () => void;
+}
+
+function SignatureSlotBox({
+  slot,
+  place,
+  signing,
+}: {
+  slot: SignerSlot;
+  place: SignaturePlace;
+  signing?: SigningInteraction;
+}) {
+  const interactive = Boolean(slot.isSelf && signing && !slot.signedAt);
+  const stampedHere = interactive && Boolean(signing?.stamped[place]);
+
+  return (
+    <div
+      data-signature-slot={interactive ? place : undefined}
+      className={cn(
+        "rounded-xl border p-4 transition-colors",
+        interactive && !stampedHere ? "border-primary/60 bg-accent/40" : "border-border"
+      )}
+    >
+      <p className="font-semibold">{slot.name}</p>
+      <p className="text-xs text-muted-foreground">{slot.detail}</p>
+      <div className="mt-3 flex h-16 items-center border-b border-border">
+        {slot.signatureImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={slot.signatureImageUrl}
+            alt={`${slot.name} signature`}
+            className="max-h-14 max-w-[200px] object-contain"
+          />
+        ) : stampedHere && signing?.adoptedPngDataUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={signing.adoptedPngDataUrl}
+            alt="Your signature"
+            className="max-h-14 max-w-[200px] object-contain"
+          />
+        ) : interactive ? (
+          <button
+            type="button"
+            onClick={() =>
+              signing?.adoptedPngDataUrl ? signing.onStamp(place) : signing?.onRequestAdopt()
+            }
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary/50 bg-white px-3 py-2.5 text-sm font-medium text-primary transition-colors hover:border-primary hover:bg-accent"
+          >
+            <PenLine className="h-4 w-4" />
+            {signing?.adoptedPngDataUrl ? "Tap to place your signature" : "Sign here"}
+          </button>
+        ) : slot.signedAt ? (
+          <span className="flex items-center gap-1.5 text-sm font-medium text-success">
+            <Check className="h-4 w-4" /> Signed
+          </span>
+        ) : (
+          <span className="text-sm italic text-muted-foreground/60">Awaiting signature</span>
+        )}
+      </div>
+      <p className="mt-2 text-xs text-muted-foreground">
+        {slot.signedAt
+          ? `Signed ${slot.signedAt}`
+          : stampedHere
+            ? "Signed just now"
+            : "Date: ____________"}
+      </p>
+    </div>
+  );
+}
+
+function SignatureGrid({
+  clientSlots,
+  rslaSlot,
+  place,
+  signing,
+}: {
+  clientSlots: SignerSlot[];
+  rslaSlot: SignerSlot;
+  place: SignaturePlace;
+  signing?: SigningInteraction;
+}) {
+  return (
+    <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      {[...clientSlots, rslaSlot].map((slot, i) => (
+        <SignatureSlotBox key={i} slot={slot} place={place} signing={signing} />
+      ))}
+    </div>
+  );
 }
 
 export function ProposalView({
@@ -122,6 +232,7 @@ export function ProposalView({
   tiersReadOnly,
   clientSlots,
   rslaSlot,
+  signing,
 }: {
   sections: ProposalSections;
   selectedTierId: string | null;
@@ -129,12 +240,13 @@ export function ProposalView({
   tiersReadOnly?: boolean;
   clientSlots: SignerSlot[];
   rslaSlot: SignerSlot;
+  signing?: SigningInteraction;
 }) {
   return (
     <article className="document-page mx-auto max-w-3xl rounded-2xl border border-border bg-white px-6 py-10 sm:px-12 sm:py-14">
       {/* Cover */}
       <header className="border-b border-border pb-10">
-        <Image src="/logomark.svg" alt="RSL/A" width={36} height={36} />
+        <Image src="/logomark.png" alt="RSL/A" width={40} height={40} className="rounded-lg" />
         <h1 className="font-heading mt-8 text-3xl font-black leading-tight sm:text-4xl">
           {sections.cover.title}
         </h1>
@@ -185,7 +297,10 @@ export function ProposalView({
 
         {/* Track record */}
         <SectionHeading>{sections.trackRecord.heading}</SectionHeading>
-        <p>{sections.trackRecord.intro}</p>
+        <p>
+          {sections.trackRecord.intro}
+          <NoteMark n={sections.trackRecord.noteNumber} />
+        </p>
         <ul className="mt-3 space-y-2.5">
           {sections.trackRecord.caseStudies.map((cs, i) => (
             <li key={i} className="flex gap-2.5">
@@ -201,7 +316,6 @@ export function ProposalView({
             </li>
           ))}
         </ul>
-        <FinePrint>{sections.trackRecord.disclaimer}</FinePrint>
 
         {/* Scope */}
         <SectionHeading>{sections.scope.heading}</SectionHeading>
@@ -209,8 +323,10 @@ export function ProposalView({
         <div className="mt-3">
           <Bullets items={sections.scope.items} />
         </div>
-        <p className="mt-4">{sections.scope.outro}</p>
-        <FinePrint>{sections.scope.footnote}</FinePrint>
+        <p className="mt-4">
+          {sections.scope.outro}
+          <NoteMark n={sections.scope.noteNumber} />
+        </p>
 
         {/* Timeline */}
         <SectionHeading>{sections.timeline.heading}</SectionHeading>
@@ -218,12 +334,17 @@ export function ProposalView({
         <div className="mt-3">
           <Bullets items={sections.timeline.items} />
         </div>
-        <p className="mt-4">{sections.timeline.outro}</p>
-        <FinePrint>{sections.timeline.footnote}</FinePrint>
+        <p className="mt-4">
+          {sections.timeline.outro}
+          <NoteMark n={sections.timeline.noteNumber} />
+        </p>
 
         {/* Investment */}
         <SectionHeading>{sections.investment.heading}</SectionHeading>
-        <p>{sections.investment.note}</p>
+        <p>
+          {sections.investment.note}
+          <NoteMark n={sections.investment.noteNumber} />
+        </p>
         <div className="mt-4 space-y-1">
           {sections.investment.details
             .split("\n")
@@ -242,7 +363,6 @@ export function ProposalView({
             readOnly={tiersReadOnly}
           />
         ) : null}
-        <FinePrint>{sections.investment.footnote}</FinePrint>
 
         {/* How to proceed */}
         <SectionHeading>{sections.howToProceed.heading}</SectionHeading>
@@ -258,39 +378,33 @@ export function ProposalView({
           ))}
         </ol>
 
-        {/* Acceptance */}
+        {/* Acceptance: first signing place */}
         <SectionHeading>{sections.acceptance.heading}</SectionHeading>
         <p>{sections.acceptance.text}</p>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {[...clientSlots.map((slot) => ({ ...slot, isClient: true })), { ...rslaSlot, isClient: false }].map(
-            (slot, i) => (
-              <div key={i} className="rounded-xl border border-border p-4">
-                <p className="font-semibold">{slot.name}</p>
-                <p className="text-xs text-muted-foreground">{slot.detail}</p>
-                <div className="mt-3 flex h-16 items-center border-b border-border">
-                  {slot.signatureImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={slot.signatureImageUrl}
-                      alt={`${slot.name} signature`}
-                      className="max-h-14 max-w-[200px] object-contain"
-                    />
-                  ) : slot.signedAt ? (
-                    <span className="flex items-center gap-1.5 text-sm font-medium text-success">
-                      <Check className="h-4 w-4" /> Signed
-                    </span>
-                  ) : (
-                    <span className="text-sm italic text-muted-foreground/60">
-                      Awaiting signature
-                    </span>
-                  )}
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {slot.signedAt ? `Signed ${slot.signedAt}` : "Date: ____________"}
-                </p>
-              </div>
-            )
-          )}
+        <SignatureGrid
+          clientSlots={clientSlots}
+          rslaSlot={rslaSlot}
+          place="proposal"
+          signing={signing}
+        />
+
+        {/* Notes: numbered fine print, anchored from the superscripts above */}
+        <div className="mt-12 border-t border-border pt-6">
+          <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+            Notes
+          </p>
+          <ol className="mt-3 space-y-2">
+            {sections.notes.map((note) => (
+              <li
+                key={note.id}
+                id={note.id}
+                className="flex scroll-mt-24 gap-2.5 text-xs leading-relaxed text-muted-foreground"
+              >
+                <span className="font-semibold text-foreground/60">{note.number}.</span>
+                <span>{note.text}</span>
+              </li>
+            ))}
+          </ol>
         </div>
 
         {/* MSA */}
@@ -331,6 +445,21 @@ export function ProposalView({
                 </p>
               );
             })}
+          </div>
+
+          {/* Execution: second signing place, mirrored in the PDF */}
+          <div
+            id="execution-block"
+            className="mt-10 scroll-mt-24 border-t-2 border-foreground pt-6"
+          >
+            <h3 className="font-heading text-lg font-bold">{sections.execution.heading}</h3>
+            <p className="mt-2 text-sm leading-relaxed">{sections.execution.text}</p>
+            <SignatureGrid
+              clientSlots={clientSlots}
+              rslaSlot={rslaSlot}
+              place="agreement"
+              signing={signing}
+            />
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { SigningExperience } from "@/components/signing/signingExperience";
 import { OutcomeCard } from "@/components/signing/outcomeCard";
 import type { SignerSlot } from "@/components/proposal/proposalView";
 import { Button } from "@/components/ui/button";
+import { Archive, CalendarClock, CheckCircle2, Landmark, Link2Off, MailX } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,7 @@ export default async function SigningPage({
   if (!gate.ok) {
     if (gate.reason === "expired") {
       return (
-        <OutcomeCard icon="⌛" title="This proposal has expired">
+        <OutcomeCard icon={CalendarClock} tone="wait" title="This proposal has expired">
           <p>
             The signing window for this proposal has closed. Reach out and we&apos;ll send a fresh
             version if the engagement is still on the table.
@@ -32,20 +33,20 @@ export default async function SigningPage({
     }
     if (gate.reason === "voided") {
       return (
-        <OutcomeCard icon="🗂️" title="This proposal was withdrawn">
+        <OutcomeCard icon={Archive} tone="neutral" title="This proposal was withdrawn">
           <p>This version is no longer active. If a revised proposal is coming, it will arrive by email.</p>
         </OutcomeCard>
       );
     }
     if (gate.reason === "declined") {
       return (
-        <OutcomeCard icon="✉️" title="This proposal was declined">
+        <OutcomeCard icon={MailX} tone="neutral" title="This proposal was declined">
           <p>This proposal has been declined and is no longer open for signing.</p>
         </OutcomeCard>
       );
     }
     return (
-      <OutcomeCard icon="🔗" title="This link isn't valid">
+      <OutcomeCard icon={Link2Off} tone="neutral" title="This link isn't valid">
         <p>
           It may have been replaced by a newer email. Check the most recent message from RSL/A, or
           ask for a fresh link.
@@ -72,8 +73,15 @@ export default async function SigningPage({
     const paymentOpen =
       proposal.status === "SIGNED" &&
       ["AWAITING", "SESSION_EXPIRED", "FAILED"].includes(proposal.paymentStatus);
+    const finalDoc =
+      proposal.status === "SIGNED"
+        ? await prisma.generatedDocument.findFirst({
+            where: { proposalId: proposal.id, isFinal: true },
+            select: { id: true },
+          })
+        : null;
     return (
-      <OutcomeCard icon="✅" title="You've signed this proposal">
+      <OutcomeCard icon={CheckCircle2} tone="success" title="You've signed this proposal">
         <p>
           You signed on {formatDateTime(party.signedAt)}.{" "}
           {proposal.status === "SIGNED"
@@ -87,9 +95,22 @@ export default async function SigningPage({
             </Button>
           </div>
         ) : null}
+        {finalDoc ? (
+          <div className="pt-3">
+            <Button
+              className="w-full"
+              variant={paymentOpen && party.payer ? "outline" : "default"}
+              nativeButton={false}
+              render={<a href={`/api/sign/${token}/document`} />}
+            >
+              Download your signed agreement
+            </Button>
+          </div>
+        ) : null}
         {proposal.paymentStatus === "PROCESSING" && party.payer ? (
-          <p className="font-medium text-foreground">
-            Your bank transfer is processing. No further action needed.
+          <p className="flex items-center justify-center gap-1.5 font-medium text-foreground">
+            <Landmark className="h-4 w-4" /> Your bank transfer is processing. No further action
+            needed.
           </p>
         ) : null}
       </OutcomeCard>
@@ -105,21 +126,26 @@ export default async function SigningPage({
         msaBodyMarkdown: proposal.msaVersion.bodyMarkdown,
       });
 
+  const signedIds = new Set(proposal.signatures.map((sig) => sig.partyId));
   const clientSlots: SignerSlot[] = proposal.parties
     .filter((p) => p.role === "CLIENT_SIGNER")
     .map((p) => ({
       name: p.name,
       detail: p.id === party.id ? "You" : frozenTokens(proposal)["Client.Company"],
       signedAt: p.signedAt ? formatDate(p.signedAt) : null,
-      signatureImageUrl: null,
+      signatureImageUrl: signedIds.has(p.id) ? `/api/sign/${token}/signature/${p.id}` : null,
+      isSelf: p.id === party.id,
     }));
 
   const rslaParty = proposal.parties.find((p) => p.role === "ADMIN_SIGNER");
   const rslaSlot: SignerSlot = {
-    name: "Rahul Lalia",
-    detail: "Managing Member, RSL/A LLC",
+    name: sections.acceptance.rslaName,
+    detail: sections.acceptance.rslaTitle,
     signedAt: rslaParty?.signedAt ? formatDate(rslaParty.signedAt) : null,
-    signatureImageUrl: rslaParty?.signedAt ? `/api/sign/${token}/rsla-signature` : null,
+    signatureImageUrl:
+      rslaParty && signedIds.has(rslaParty.id)
+        ? `/api/sign/${token}/signature/${rslaParty.id}`
+        : null,
   };
 
   return (

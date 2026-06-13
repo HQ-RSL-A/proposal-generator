@@ -165,3 +165,16 @@ main {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Note anchors (superscript markers) glide instead of jump */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Quiet dot-grid backdrop (landing hero, sign-in) */
+.dot-pattern {
+  background-image: radial-gradient(circle, rgba(17, 24, 39, 0.08) 1px, transparent 1px);
+  background-size: 22px 22px;
+}

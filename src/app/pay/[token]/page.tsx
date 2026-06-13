@@ -4,6 +4,8 @@ import { gateToken } from "@/lib/partyTokens";
 import { prisma } from "@/lib/prisma";
 import { ensureCheckoutSession } from "@/lib/signingService";
 import { OutcomeCard } from "@/components/signing/outcomeCard";
+import { SUPPORT_EMAIL } from "@/lib/constants";
+import { AlertTriangle, CheckCircle2, Landmark, Link2Off, PenLine } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +20,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
 
   if (!gate.ok) {
     return (
-      <OutcomeCard icon="🔗" title="This link isn't valid">
+      <OutcomeCard icon={Link2Off} tone="neutral" title="This link isn't valid">
         <p>Check the most recent email from RSL/A, or ask for a fresh payment link.</p>
       </OutcomeCard>
     );
@@ -30,24 +32,24 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
 
   if (proposal.paymentStatus === "PAID") {
     return (
-      <OutcomeCard icon="✅" title="Already paid">
-        <p>This engagement is paid up. Nothing more to do. Your receipt is in your inbox.</p>
+      <OutcomeCard icon={CheckCircle2} tone="success" title="Already paid">
+        <p>This engagement is paid up. Nothing more to do here.</p>
       </OutcomeCard>
     );
   }
   if (proposal.paymentStatus === "PROCESSING") {
     return (
-      <OutcomeCard icon="🏦" title="Payment processing">
+      <OutcomeCard icon={Landmark} tone="wait" title="Your bank transfer is on its way">
         <p>
-          Your bank transfer is in progress. ACH takes 1 to 2 business days, and we&apos;ll email you
-          the moment it clears.
+          ACH takes 1 to 2 business days to clear, and we email you the moment it lands. No
+          further action needed.
         </p>
       </OutcomeCard>
     );
   }
   if (proposal.status !== "SIGNED" || proposal.paymentStatus === "NOT_REQUIRED") {
     return (
-      <OutcomeCard icon="🖊️" title="Signature comes first">
+      <OutcomeCard icon={PenLine} tone="info" title="Signature comes first">
         <p>This proposal isn&apos;t ready for payment yet. Finish signing from your email link first.</p>
       </OutcomeCard>
     );
@@ -62,13 +64,14 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
 
   if (!checkoutUrl) {
     return (
-      <OutcomeCard icon="⚠️" title="Checkout hiccup">
+      <OutcomeCard icon={AlertTriangle} tone="error" title="Checkout didn't open">
         <p>
-          We couldn&apos;t open a payment session just now. Refresh this page to try again, or email{" "}
-          <a className="underline" href="mailto:lalia@rsla.io">
-            lalia@rsla.io
-          </a>
-          .
+          We couldn&apos;t start a payment session just now. Refresh this page to try again, or
+          write to{" "}
+          <a className="underline" href={`mailto:${SUPPORT_EMAIL}`}>
+            {SUPPORT_EMAIL}
+          </a>{" "}
+          and we&apos;ll sort it out.
         </p>
       </OutcomeCard>
     );

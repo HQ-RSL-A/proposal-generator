@@ -20,10 +20,14 @@ import {
   ProposalVoidedEmail,
   SigningInviteEmail,
   SigningReminderEmail,
+  SystemAlertEmail,
   type ProposalEmailData,
 } from "@/emails/templates";
+import { SUPPORT_EMAIL } from "@/emails/base";
 
+/** Where admin notifications are delivered. Never shown to clients. */
 export const ADMIN_EMAIL = "lalia@rsla.io";
+export { SUPPORT_EMAIL };
 
 let resendClient: Resend | null = null;
 function getResend(): Resend {
@@ -91,6 +95,30 @@ function appUrl(path: string): string {
 }
 
 /**
+ * Subject conventions, kept boring on purpose so no inbox filter flinches:
+ *   client-facing  ->  "[Status] {Document} · RSL/A"
+ *   admin-facing   ->  "[Status] {Company} | {Document}"
+ */
+function clientSubject(status: string, data: ProposalEmailData): string {
+  return `[${status}] ${data.proposalTitle} · RSL/A`;
+}
+
+function adminSubject(status: string, data: ProposalEmailData): string {
+  return `[${status}] ${data.clientCompany} | ${data.proposalTitle}`;
+}
+
+/** "Growth Marketing Proposal - Fully Signed - Brightline x RSLA.pdf" */
+export function executedPdfFilename(title: string, company: string): string {
+  const clean = (value: string) => value.replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim();
+  const cleanTitle = clean(title);
+  const cleanCompany = clean(company);
+  const titleCarriesCompany = cleanTitle.toLowerCase().includes(cleanCompany.toLowerCase());
+  return titleCarriesCompany
+    ? `${cleanTitle} - Fully Signed.pdf`
+    : `${cleanTitle} - Fully Signed - ${cleanCompany} x RSLA.pdf`;
+}
+
+/**
  * Builds a template. `context.rawToken` is required for templates that embed a
  * signing/payment link — callers rotate the party token first (pre-signature only).
  */
@@ -115,7 +143,7 @@ export function buildTemplate(
       if (!party || !context.rawToken) throw new Error("invite needs party + token");
       return {
         to: party.email,
-        subject: `Your RSL/A proposal is ready to sign: ${data.proposalTitle}`,
+        subject: clientSubject("Ready to sign", data),
         react: <SigningInviteEmail data={data} signingUrl={signingUrl(context.rawToken)} />,
       };
     }
@@ -123,7 +151,10 @@ export function buildTemplate(
       if (!party || !context.rawToken) throw new Error("reminder needs party + token");
       return {
         to: party.email,
-        subject: `Reminder: your RSL/A proposal expires ${data.validUntil}`,
+        subject:
+          (context.daysLeft ?? 1) <= 1
+            ? clientSubject("Last day", data)
+            : clientSubject(`${context.daysLeft} days left`, data),
         react: (
           <SigningReminderEmail
             data={data}
@@ -137,7 +168,7 @@ export function buildTemplate(
       if (!party || !context.rawToken) throw new Error("co-signer needs party + token");
       return {
         to: party.email,
-        subject: `${context.signedByName ?? "Your co-signer"} signed. You're up.`,
+        subject: clientSubject("Co-signer signed", data),
         react: (
           <CoSignerSignedEmail
             data={data}
@@ -152,7 +183,7 @@ export function buildTemplate(
       const pending = context.paymentPending ?? false;
       return {
         to: party.email,
-        subject: `Fully executed: ${data.proposalTitle}`,
+        subject: clientSubject("Fully signed", data),
         react: (
           <FullySignedClientEmail
             data={data}
@@ -166,7 +197,7 @@ export function buildTemplate(
     case "fully_signed_admin":
       return {
         to: ADMIN_EMAIL,
-        subject: `🎉 Signed: ${data.clientCompany}`,
+        subject: adminSubject("Signed", data),
         react: (
           <FullySignedAdminEmail
             data={data}
@@ -187,7 +218,7 @@ export function buildTemplate(
       if (!party || !context.rawToken) throw new Error("payment_link needs payer + token");
       return {
         to: party.email,
-        subject: `Complete your payment for ${data.proposalTitle}`,
+        subject: clientSubject("Payment pending", data),
         react: <PaymentLinkEmail data={data} paymentUrl={paymentUrl(context.rawToken)} />,
       };
     }
@@ -195,7 +226,7 @@ export function buildTemplate(
       if (!party) throw new Error("payment_received_client needs party");
       return {
         to: party.email,
-        subject: `Payment received for ${data.proposalTitle}`,
+        subject: clientSubject("Payment received", data),
         react: (
           <PaymentReceivedEmail
             data={data}
@@ -208,7 +239,7 @@ export function buildTemplate(
     case "payment_received_admin":
       return {
         to: ADMIN_EMAIL,
-        subject: `💸 Paid: ${data.clientCompany}`,
+        subject: adminSubject("Paid", data),
         react: (
           <PaymentReceivedEmail
             data={data}
@@ -221,7 +252,7 @@ export function buildTemplate(
       if (!party || !context.rawToken) throw new Error("payment_failed_client needs payer + token");
       return {
         to: party.email,
-        subject: `Action needed: payment for ${data.proposalTitle}`,
+        subject: clientSubject("Payment issue", data),
         react: (
           <PaymentFailedEmail data={data} paymentUrl={paymentUrl(context.rawToken)} isAdmin={false} />
         ),
@@ -230,27 +261,27 @@ export function buildTemplate(
     case "payment_failed_admin":
       return {
         to: ADMIN_EMAIL,
-        subject: `⚠️ Payment failed: ${data.clientCompany}`,
+        subject: adminSubject("Payment failed", data),
         react: <PaymentFailedEmail data={data} paymentUrl={dashboardUrl} isAdmin />,
       };
     case "proposal_voided": {
       if (!party) throw new Error("proposal_voided needs party");
       return {
         to: party.email,
-        subject: `Proposal withdrawn: ${data.proposalTitle}`,
+        subject: clientSubject("Withdrawn", data),
         react: <ProposalVoidedEmail data={data} />,
       };
     }
     case "expired_admin":
       return {
         to: ADMIN_EMAIL,
-        subject: `Expired without signature: ${data.clientCompany}`,
+        subject: adminSubject("Expired", data),
         react: <ExpiredAdminEmail data={data} dashboardUrl={dashboardUrl} />,
       };
     case "declined_admin":
       return {
         to: ADMIN_EMAIL,
-        subject: `Declined: ${data.clientCompany}`,
+        subject: adminSubject("Declined", data),
         react: (
           <DeclinedAdminEmail
             data={data}
@@ -303,8 +334,9 @@ export async function sendTemplateEmail(
         orderBy: { generatedAt: "desc" },
       });
       if (!doc) throw new Error("Final PDF not generated yet");
+      const attachData = emailData(proposal, "");
       attachments.push({
-        filename: "RSLA-Executed-Agreement.pdf",
+        filename: executedPdfFilename(attachData.proposalTitle, attachData.clientCompany),
         content: await fetchPrivateBlob(doc.blobUrl),
       });
     }
@@ -313,7 +345,7 @@ export async function sendTemplateEmail(
       {
         from: fromAddress(),
         to: built.to,
-        replyTo: ADMIN_EMAIL,
+        replyTo: SUPPORT_EMAIL,
         subject: built.subject,
         react: built.react,
         attachments: attachments.length > 0 ? attachments : undefined,
@@ -354,5 +386,56 @@ export async function sendTemplateEmail(
       scheduledAt: new Date(Date.now() + 60_000),
     });
     return { ok: false, logId: log.id };
+  }
+}
+
+/**
+ * Direct admin alert for system failures (dead jobs, cron crashes, bounced
+ * invites). Sends outside the job queue on purpose: if the queue itself is the
+ * problem, an enqueued alert would never leave the building. Best-effort and
+ * deduped via the Resend idempotency key; never throws into the caller's
+ * error path.
+ */
+export async function sendSystemAlert(input: {
+  summary: string;
+  details: { label: string; value: string }[];
+  /** Stable key per incident, e.g. "job-<id>-dead" — repeat sends collapse. */
+  dedupeKey: string;
+  proposalId?: string;
+}): Promise<void> {
+  try {
+    const subject = `[System alert] ${input.summary.slice(0, 120)}`;
+    const result = await getResend().emails.send(
+      {
+        from: fromAddress(),
+        to: ADMIN_EMAIL,
+        replyTo: SUPPORT_EMAIL,
+        subject,
+        react: (
+          <SystemAlertEmail
+            summary={input.summary}
+            details={input.details}
+            healthUrl={appUrl("/settings?tab=system")}
+          />
+        ),
+      },
+      { idempotencyKey: `sysalert-${input.dedupeKey}` }
+    );
+    if (result.error) throw new Error(result.error.message);
+    if (input.proposalId) {
+      await prisma.emailLog.create({
+        data: {
+          proposalId: input.proposalId,
+          templateId: "system_alert_admin",
+          recipient: ADMIN_EMAIL,
+          subject,
+          resendMessageId: result.data?.id ?? null,
+          status: "SENT",
+        },
+      });
+    }
+  } catch (error) {
+    // Alerting must never take down the path that triggered it.
+    console.error("sendSystemAlert failed", error);
   }
 }

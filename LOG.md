@@ -1,5 +1,56 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-12 — Design system pass: emails, PDF, two-place signing, footnotes, alerts
+
+Big batch from Rahul's review of the first executed document:
+
+- **Email design system rebuilt**: real logomark.png header (hosted), zero emojis anywhere,
+  flowy conversational copy, reply-to + footer = team@rsla.io (Google group, THE support
+  address; lalia@ stays recipient-only for admin alerts). Subject convention locked:
+  client = `[Status] Document · RSL/A`, admin = `[Status] Company | Document`. Attachment
+  renamed to `{Title} - Fully Signed - {Company} x RSLA.pdf` (company skipped if already in
+  the title).
+- **Two-place signing ceremony** (DocuSign-style, Rahul picked over single-stamp): adopt
+  once → tap the Proposal Acceptance field → tap the Agreed and Accepted field after MSA
+  §37 → Finish. Client-side tap times stored on Signature
+  (`stampedProposalAt/stampedAgreementAt`, migration 0004 applied), certificate prints the
+  placement line. Tier change after adoption resets the ceremony (consent restated the old
+  price). Walked end to end in Chrome on the demo seed; submit path left for the prod
+  rehearsal.
+- **Web document now mirrors the PDF**: "Agreed and Accepted" execution block renders after
+  the MSA on the signing page AND dashboard preview (was PDF-only — that was the missing
+  "second space to sign"). All applied signatures now visible everywhere via token-gated
+  `/api/sign/[token]/signature/[partyId]` + admin `/api/proposals/[id]/signature/[partyId]`;
+  drafts show empty slots built from tokens (parties only exist after send).
+- **Footnotes, product-page style**: the four `*` fine-print lines became numbered
+  superscript anchors (web: smooth-scroll, PDF: internal links) resolving in a Notes block
+  after Acceptance. MSA deliberately untouched (selective emphasis in legal text invites
+  weight arguments; attorney review pending).
+- **PDF redesigned Stripe-clean** (modeled on rslaTools invoice generator): Inter body
+  (statics extracted losslessly from the official Inter.ttc — never convert outlines) +
+  Satoshi headings, hairline At-a-Glance def list, slate headings (blue reserved for
+  links/accents), case-study links now blue + underlined and the footer rsla.io link blue
+  (the "links don't look like links" fix), refined tier cards, certificate kept in the
+  approved industry format. 18 pages, verified visually.
+- **Admin failure alerting**: `sendSystemAlert` (direct Resend, queue-independent, deduped
+  by idempotency key) fires on job DEAD, cron failure (hour-bucketed), and email bounce.
+  Health page moved to Settings → System tab (`/health` redirects, nav entry removed);
+  alert emails deep-link `/settings?tab=system`.
+- **Outcome screens**: paid page is confident now (no "or finishing up"), offers "Download
+  your signed agreement" via new token-gated `/api/sign/[token]/document`, no Stripe-invoice
+  mention; all emoji icons → lucide; support email everywhere.
+- **UI pass**: favicon + navbar + landing + sign-in all use the real logomark (fake
+  icon.svg/logomark.svg deleted), navbar wordmark and mark sized up, queue-backed action
+  toasts now explain what happens next (PDF toast + self-refresh at 8s/25s).
+- **demoSeed.ts renamed to Brightline Test Co** — it still carried the real Scorpion name;
+  completing a signature on it would have re-triggered the Notion CRM overwrite.
+- Verified: tsc, lint, 47 tests, production build, pdfSmoke + visual read, Chrome
+  walkthrough of the full ceremony, zero console errors.
+
+**Open**: Rahul's [TEST] Brightline rehearsal (covers the new submit path + new emails in
+prod), then live-key swap. team@rsla.io group exists (confirmed). Changes uncommitted,
+awaiting Rahul's look.
+
 ## 2026-06-11 — Initial build (full V1 codebase)
 
 Planned and built the PandaDoc-replacement e-signing tool end-to-end in one session:

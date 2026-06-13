@@ -29,6 +29,7 @@ export default async function ProposalDetailPage({
     where: { id },
     include: {
       parties: { orderBy: { orderIndex: "asc" } },
+      signatures: true,
       auditEvents: { orderBy: { occurredAt: "desc" }, take: 200 },
       emailLogs: { orderBy: { sentAt: "desc" } },
       documents: { orderBy: { generatedAt: "desc" } },
@@ -69,6 +70,9 @@ export default async function ProposalDetailPage({
 
   const deadJobs = proposal.jobs.filter((job) => job.status === "DEAD");
   const hasFinalPdf = proposal.documents.some((doc) => doc.isFinal);
+  const clientParties = proposal.parties.filter((p) => p.role === "CLIENT_SIGNER");
+  const rslaParty = proposal.parties.find((p) => p.role === "ADMIN_SIGNER");
+  const signedIds = new Set(proposal.signatures.map((sig) => sig.partyId));
 
   return (
     <div className="space-y-6">
@@ -153,19 +157,35 @@ export default async function ProposalDetailPage({
               sections={sections}
               selectedTierId={proposal.selectedTierId}
               tiersReadOnly
-              clientSlots={proposal.parties
-                .filter((p) => p.role === "CLIENT_SIGNER")
-                .map((p) => ({
-                  name: p.name,
-                  detail: tokens["Client.Company"],
-                  signedAt: p.signedAt ? formatDate(p.signedAt) : null,
-                  signatureImageUrl: null,
-                }))}
+              clientSlots={
+                clientParties.length > 0
+                  ? clientParties.map((p) => ({
+                      name: p.name,
+                      detail: tokens["Client.Company"],
+                      signedAt: p.signedAt ? formatDate(p.signedAt) : null,
+                      signatureImageUrl: signedIds.has(p.id)
+                        ? `/api/proposals/${proposal.id}/signature/${p.id}`
+                        : null,
+                    }))
+                  : [
+                      // Draft: parties exist only after send, so preview the
+                      // signature spaces from the imported tokens.
+                      {
+                        name: `${tokens["Client.FirstName"]} ${tokens["Client.LastName"]}`,
+                        detail: tokens["Client.Company"],
+                        signedAt: null,
+                        signatureImageUrl: null,
+                      },
+                    ]
+              }
               rslaSlot={{
                 name: "Rahul Lalia",
                 detail: "Managing Member, RSL/A LLC",
-                signedAt: proposal.sentAt ? formatDate(proposal.sentAt) : null,
-                signatureImageUrl: null,
+                signedAt: rslaParty?.signedAt ? formatDate(rslaParty.signedAt) : null,
+                signatureImageUrl:
+                  rslaParty && signedIds.has(rslaParty.id)
+                    ? `/api/proposals/${proposal.id}/signature/${rslaParty.id}`
+                    : null,
               }}
             />
           </div>

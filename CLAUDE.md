@@ -27,8 +27,17 @@ Deploys to `proposals.rsla.io`. See `BRAIN.md` for architecture and reference.
   Live keys exist only in Vercel env.
 - **PDF rules:** no dynamic render-callback Texts inside `fixed` elements (corrupts layout
   on long documents); flowing blocks stay `wrap={false}`; Satoshi loads from the original
-  OTFs (never convert). Any PDF change must pass `npx tsx scripts/pdfSmoke.ts` and a visual
-  Read of the output.
+  OTFs and Inter from statics extracted out of the official Inter.ttc (**never convert font
+  outlines** — a TTF conversion once corrupted a glyph). Any PDF change must pass
+  `npx tsx scripts/pdfSmoke.ts` and a visual Read of the output.
+- **No emojis in any client-facing output** (emails, subjects, screens, PDF). Public
+  surfaces show only `SUPPORT_EMAIL` (team@rsla.io, a Google group) from
+  `src/lib/constants.ts`; `ADMIN_EMAIL` (lalia@rsla.io) receives notifications and is never
+  displayed. Subjects: `[Status] Document · RSL/A` (client), `[Status] Company | Document`
+  (admin).
+- **Signing is a two-place ceremony** (adopt once, stamp Proposal Acceptance + the MSA
+  execution block). Don't collapse it to one stamp; the web document and PDF must render
+  the same blocks from the same `ProposalSections`.
 - **Test data uses fake company names only** (e.g. "Brightline Test Co"). The Notion sync
   matches CRM pages by company name and will write to real prospect rows.
 - Dev port: **1235** (expenseVault owns 1234).
