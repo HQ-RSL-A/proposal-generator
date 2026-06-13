@@ -11,7 +11,7 @@ admin failure alerts (dead jobs, cron crashes, bounces).
 test mode** until the live-key swap · **Dev:** `npm run dev` → localhost:1235
 
 Docs: [`CLAUDE.md`](CLAUDE.md) (rules) · [`BRAIN.md`](BRAIN.md) (architecture reference) ·
-[`LOG.md`](LOG.md) (history)
+[`LOG.md`](LOG.md) (history) · [`ROADMAP.md`](ROADMAP.md) (open + planned work, token schema)
 
 ## Everyday commands
 
