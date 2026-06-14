@@ -1,5 +1,39 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-14 — Session wrap (big session, all shipped + pushed)
+
+Everything below from 2026-06-13/14 is committed, pushed to `HQ-RSL-A/proposal-generator`
+(main in sync), and deployed to proposals.rsla.io. Per-feature detail in the entries below;
+this is the cold-start summary.
+
+Shipped this session:
+
+- **Optional add-ons + 50% deposit** (new payment capabilities). Add-ons: global, one-time or
+  recurring, client multi-selects. Deposit: charges only the deposit on the one-time build fee
+  (payment mode), defers the retainer + recurring add-ons; balance collected manually (no
+  payments-schema change). New `effectiveCheckout` resolver, `Proposal.selectedAddOnIds`
+  (migration 0005). See BRAIN.md "Add-ons + deposit".
+- **Signing fixes:** signature pad re-fits on rotation (ink tracks the finger); no more
+  auto-scroll to fields (chip + button lead instead); action bar no longer crushed on mobile.
+- **Mobile pass, whole app:** dashboard (card list), nav (hamburger), and the internal forms /
+  detail tabs / settings are responsive.
+- **`/docs`** documents add-ons + deposit + the `Investment.AddOns`/`DepositPercent` import keys.
+- **Design pass:** bolder landing (centered gradient hero + a browser-framed app snapshot on a
+  glow), a lighter **interactive** sign-in (cursor-tilt proposal card via `motion`, left panel;
+  Google button right), 6-KPI dashboard (win rate, contracted one-time, MRR, signed this month
+  vs last, avg time-to-sign, oldest open).
+- **Admin toasts** unified into a shared `brandToast` helper (`src/lib/toast.tsx`); the signing
+  flow uses it too. The pre-existing `signatureModal` lint error is fixed — `npm run lint` is green.
+
+Decisions: deposit = tool charges deposit only, build-fee only, retainer deferred (minimal, no
+schema change); sign-in went dark-split → then reworked to the lighter interactive split per
+Rahul's 21st.dev reference; dashboard KPIs = all 6.
+
+Left (both Rahul's call): (1) **Stripe live-key swap** — the only revenue blocker (runbook at
+`docs/stripeKeySwapGuide.md`). (2) Clear the **[TEST] "Brightline"** proposal from the prod DB.
+Backlog (ROADMAP): attorney MSA v4, in-app AI generation, tool-driven deposit balance + retainer
+auto-start, orphaned-blob cleanup.
+
 ## 2026-06-13 — Sign-in: lighter interactive split (replaces the dark split)
 
 Rahul linked a 21st.dev "animated characters login" and asked to adapt it lighter, with the

@@ -16,16 +16,19 @@ Resend (+svix webhooks) · Notion API (raw fetch) · Vitest.
 2. Send: content frozen to `frozenContent` + `contentHash` (SHA-256 of stable JSON),
    Rahul's saved signature applied as `PRE_APPLIED` Party+Signature, client parties created
    with hashed tokens, invites emailed (Resend, link = `/sign/<rawToken>`).
-3. Client opens link → `PAGE_VIEWED` audit (status → VIEWED) → picks tier if tiered →
-   adopts a signature once (draw via signature_pad / type via 4 Google handwriting fonts →
-   PNG) + ESIGN consent → **places it in two spots** (Proposal Acceptance + the
-   "Agreed and Accepted" block after MSA §37; tap times stored as
+3. Client opens link → `PAGE_VIEWED` audit (status → VIEWED) → picks tier if tiered +
+   toggles any optional add-ons → adopts a signature once (draw via signature_pad / type via
+   4 Google handwriting fonts → PNG) + ESIGN consent → **places it in two spots** (Proposal
+   Acceptance + the "Agreed and Accepted" block after MSA §37; tap times stored as
    `Signature.stampedProposalAt/stampedAgreementAt`, migration 0004) →
-   `POST /api/sign/[token]`. Changing the tier after adoption resets the ceremony.
+   `POST /api/sign/[token]`. Changing the tier OR the add-on selection after adoption resets
+   the ceremony (price/consent changed). No auto-scroll to fields; a chip + the action-bar
+   button lead the signer there.
 4. Sign API: serializable transaction — one-shot party claim (`signedAt IS NULL` guard),
-   signature row, remaining-signer count; last signer flips status → SIGNED and (unless
-   sign-only) gets the Stripe Checkout URL (inline `price_data`; subscription mode when
-   recurring present; ACH supported; `idempotencyKey` per proposal+generation).
+   signature row, remaining-signer count; persists `selectedTierId` + `selectedAddOnIds`; last
+   signer flips status → SIGNED and (unless sign-only) gets the Stripe Checkout URL built by
+   `effectiveCheckout` (base tier/flat + selected add-ons; inline `price_data`; subscription
+   mode when recurring present; ACH supported; `idempotencyKey` per proposal+generation).
 5. Webhook `checkout.session.completed`/`async_payment_succeeded` → `applyPaidState`
    (guarded) → Payment row, receipts, Notion CRM update, Stripe customer metadata
    (`proposal_url`, `signed_pdf`, `agreement_version`, `content_hash` — MSA §11 chargeback
@@ -33,6 +36,28 @@ Resend (+svix webhooks) · Notion API (raw fetch) · Vitest.
 6. PDF job renders proposal + MSA + signatures + **signature certificate** (signer table
    with IP/UA/consent timestamps, content hash, MSA hash, event log) → private Blob →
    executed-copy emails to all parties.
+
+## Add-ons + deposit
+
+Two optional fields on `PaymentConfig` (both inside the `paymentConfig`/`frozenContent` JSON,
+no schema column of their own):
+
+- **`addOns: AddOn[]`** — a global list the client multi-selects on the signing page (max 10,
+  unique ids). Each is one-time (`intervalMonths: null`) or recurring (1|3|12). The selection
+  is recorded on **`Proposal.selectedAddOnIds`** (jsonb, migration 0005) at sign time, parallel
+  to `selectedTierId`. Importable via the `Investment.AddOns` key.
+- **`deposit: { depositPercent }`** (1-99, default 50) — only meaningful with a one-time build
+  fee. When set, the signing checkout charges **only** the deposit as a single one-time line in
+  `payment` mode; the retainer and any recurring add-ons are **deferred** (no subscription
+  opens at signing). The balance + retainer are collected manually for now — **no
+  payments-schema change**, still one `Payment` row, `amountTotalCents` = the deposit.
+  Importable via `Investment.DepositPercent`.
+
+**`effectiveCheckout(config, tierId, addOnIds)`** (`src/lib/types.ts`) is the charge resolver
+that applies all of this. **`effectiveLineItems` is left untouched** and still returns the full
+base amounts — the Notion CRM sync uses it so it records full contract value (base + add-ons),
+never the deposit. The deposit payment schedule is communicated via `computeDepositSchedule`
+(shown on the proposal, PDF, the `/paid` screen, and the receipt). All documented on `/docs`.
 
 ## Users & roles
 
@@ -116,7 +141,8 @@ resolves the proposal by session id whenever the path token is dead.
   `pg_dump --schema=proposals` to move it to its own project later).
 - Migrations: hand SQL in `prisma/migrations/` — `0001_init.sql` (schema + RLS; PostgREST
   can't reach the schema and RLS is deny-all on top), `0002`/`0003` (users/roles, signer
-  title+company), `0004_signature_stamps.sql` (two-place ceremony timestamps). All applied.
+  title+company), `0004_signature_stamps.sql` (two-place ceremony timestamps),
+  `0005_addons_deposit.sql` (`Proposal.selectedAddOnIds` jsonb). All applied.
 - Apply: `npx prisma db execute --file prisma/migrations/<file>.sql`; fresh DB also needs
   `npx prisma db seed` (MSA v3 + AdminSettings).
 
