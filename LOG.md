@@ -1,5 +1,33 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-14 — Landing + sign-in premium redesign (shipped + deployed)
+
+Rahul flagged the landing + sign-in as generic. Reworked both to "light but premium"
+(his pick over dark / bold-blue). Committed `8a3266a`, pushed to
+`HQ-RSL-A/proposal-generator` main, deployed to prod via `vercel deploy --prod`.
+
+- **Landing** (`page.tsx`): dropped the gradient-text cliche for an oversized Satoshi
+  headline with a single Anchor Blue accent line; a visible spotlight wash; the dashboard
+  screenshot (`docs/mockups/dashboardMockupPro.png` to `public/appPreview.png`, KPI cards with
+  sparkline trends) as a glowing cursor-tilt centerpiece (new client `landing/appPreview.tsx`,
+  spring tilt + entrance, reduced-motion safe); the generic 3-feature grid replaced with
+  editorial 01/02/03 steps that map to the headline (in-view `landing/reveal.tsx`); a trust
+  strip; the white (canonical) Google CTA. Removed the "Internal tool for the RSL/A team" eyebrow.
+- **Sign-in** (`sign-in/page.tsx`): first mirrored the landing; then reworked toward a
+  21st.dev reference (easemize/sign-in default) as a split with a "Welcome" form + art panel,
+  no testimonial. Final per Rahul: LIGHT-themed form (re-unified with the landing) + an
+  on-brand abstract art panel. The art is original, generated via Gemini
+  `gemini-3-pro-image-preview` (glass ribbons in blue/cyan/indigo/violet, 896x1200) to
+  `public/signinArt.png`, `object-cover`. `signInVisual.tsx` (old tilt card) is now unused.
+- **Motion** (emilDesignEng): strong ease-out `cubic-bezier(0.23,1,0.32,1)`, staggered hero
+  entrance, CTA lift/press (`.cta-lift` in `globals.css`, shadow no longer hardcoded blue),
+  tilt spring `{stiffness:150,damping:20,mass:0.5}`; transform/opacity only. New shared
+  `googleG.tsx`.
+
+Verified in Chrome at 1440px + 390px (landing hero/steps, sign-in both themes), lint clean,
+65 tests, production build green. Open follow-up: delete the now-unused `signInVisual.tsx`;
+optionally regenerate the sign-in art.
+
 ## 2026-06-14 — Session wrap (big session, all shipped + pushed)
 
 Everything below from 2026-06-13/14 is committed, pushed to `HQ-RSL-A/proposal-generator`
