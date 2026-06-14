@@ -150,7 +150,7 @@ export async function SystemHealthPanel() {
             <div className="space-y-2">
               {bounces.map((log) => (
                 <div key={log.id} className="rounded-lg border border-border p-3 text-sm">
-                  <p className="font-medium">
+                  <p className="font-medium wrap-break-word">
                     {log.templateId} → {log.recipient}
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -176,9 +176,9 @@ export async function SystemHealthPanel() {
           ) : (
             <div className="space-y-2 text-sm">
               {[...lastCronByPath.values()].map((log) => (
-                <div key={log.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                  <div>
-                    <p className="font-medium">{log.path}</p>
+                <div key={log.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{log.path}</p>
                     <p className="text-xs text-muted-foreground">
                       {formatDateTime(log.ranAt)} · {log.durationMs}ms{log.note ? ` · ${log.note}` : ""}
                     </p>

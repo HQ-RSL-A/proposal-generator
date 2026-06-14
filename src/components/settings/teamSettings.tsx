@@ -57,7 +57,7 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
 
         <div className="divide-y divide-border rounded-xl border border-border">
           {users.map((user) => (
-            <div key={user.id} className="flex items-center justify-between gap-3 p-3">
+            <div key={user.id} className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 {user.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -140,12 +140,12 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
           <p className="flex items-center gap-2 text-sm font-medium">
             <UserPlus className="h-4 w-4 text-primary" /> Add a teammate
           </p>
-          <div className="grid grid-cols-12 items-end gap-2">
-            <div className="col-span-4">
+          <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-12">
+            <div className="col-span-2 sm:col-span-4">
               <Label className="text-xs">Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="First Last" />
             </div>
-            <div className="col-span-4">
+            <div className="col-span-2 sm:col-span-4">
               <Label className="text-xs">rsla.io email</Label>
               <Input
                 type="email"
@@ -154,7 +154,7 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
                 placeholder="name@rsla.io"
               />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <Label className="text-xs">Role</Label>
               <select
                 className="border-input h-9 w-full rounded-md border bg-transparent px-2 text-sm"
@@ -165,7 +165,7 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
                 <option value="ADMIN">Admin</option>
               </select>
             </div>
-            <div className="col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <Button
                 className="w-full"
                 disabled={busy || !name.trim() || !email.trim()}

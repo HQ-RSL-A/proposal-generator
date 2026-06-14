@@ -77,12 +77,12 @@ export function SendForm({
           checkout after the final signature.
         </p>
         {parties.map((party, index) => (
-          <div key={index} className="grid grid-cols-12 items-end gap-2 rounded-lg border border-border p-3">
-            <div className="col-span-4">
+          <div key={index} className="grid grid-cols-2 items-end gap-2 rounded-lg border border-border p-3 sm:grid-cols-12">
+            <div className="col-span-2 sm:col-span-4">
               <Label className="text-xs">Name</Label>
               <Input value={party.name} onChange={(e) => update(index, { name: e.target.value })} />
             </div>
-            <div className="col-span-5">
+            <div className="col-span-2 sm:col-span-5">
               <Label className="text-xs">Email</Label>
               <Input
                 type="email"
@@ -90,7 +90,7 @@ export function SendForm({
                 onChange={(e) => update(index, { email: e.target.value })}
               />
             </div>
-            <div className="col-span-2 flex items-center gap-2 pb-2">
+            <div className="col-span-1 flex items-center gap-2 pb-2 sm:col-span-2">
               <input
                 type="radio"
                 name="payer"

@@ -350,8 +350,8 @@ function MoneyFields({
   const parsed = parseCentsFromDisplayString(value.displayString);
   const mismatch = parsed !== null && Math.abs(parsed - value.amountCents) > 1;
   return (
-    <div className="grid grid-cols-12 items-end gap-2">
-      <div className="col-span-4">
+    <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-12">
+      <div className="col-span-2 sm:col-span-4">
         <Label className="text-xs">Label</Label>
         <Input
           value={value.label}
@@ -359,7 +359,7 @@ function MoneyFields({
           placeholder="Website build"
         />
       </div>
-      <div className="col-span-4">
+      <div className="col-span-2 sm:col-span-4">
         <Label className="text-xs">Shown to client</Label>
         <Input
           value={value.displayString}
@@ -371,7 +371,7 @@ function MoneyFields({
           placeholder="$1,997"
         />
       </div>
-      <div className="col-span-2">
+      <div className="col-span-1 sm:col-span-2">
         <Label className="text-xs">Charged ($)</Label>
         <Input
           type="number"
@@ -384,7 +384,7 @@ function MoneyFields({
         />
       </div>
       {withInterval ? (
-        <div className="col-span-2">
+        <div className="col-span-1 sm:col-span-2">
           <Label className="text-xs">Every</Label>
           <select
             className="border-input h-9 w-full rounded-md border bg-transparent px-2 text-sm"
@@ -400,7 +400,7 @@ function MoneyFields({
         </div>
       ) : null}
       {mismatch ? (
-        <p className="col-span-12 text-xs text-destructive">
+        <p className="col-span-2 text-xs text-destructive sm:col-span-12">
           Display says {value.displayString} but {(value.amountCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} will be charged. Make them match before sending.
         </p>
       ) : null}
@@ -542,7 +542,7 @@ export function ProposalForm({
           <CardHeader>
             <CardTitle className="text-base">{group.heading}</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {group.fields.map((field) => (
               <div
                 key={field.key}
@@ -621,8 +621,8 @@ export function ProposalForm({
             <div className="space-y-4">
               {state.tiers.map((tier, index) => (
                 <div key={index} className="space-y-3 rounded-lg border border-border p-3">
-                  <div className="grid grid-cols-12 items-end gap-2">
-                    <div className="col-span-5">
+                  <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-12">
+                    <div className="col-span-2 sm:col-span-5">
                       <Label className="text-xs">Tier name</Label>
                       <Input
                         value={tier.label}
@@ -638,7 +638,7 @@ export function ProposalForm({
                         placeholder="Growth"
                       />
                     </div>
-                    <div className="col-span-4 flex items-center gap-2 pb-1.5">
+                    <div className="col-span-1 flex items-center gap-2 pb-1.5 sm:col-span-4">
                       <Checkbox
                         checked={tier.recommended}
                         onCheckedChange={(v) => {
@@ -651,7 +651,7 @@ export function ProposalForm({
                       />
                       <Label className="text-xs">Most popular</Label>
                     </div>
-                    <div className="col-span-3 pb-1 text-right">
+                    <div className="col-span-1 pb-1 text-right sm:col-span-3">
                       <Button
                         variant="ghost"
                         size="sm"

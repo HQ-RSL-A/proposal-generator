@@ -1,5 +1,28 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Mobile pass: internal forms + detail + settings (Phase A)
+
+Continued the internal-app mobile pass. The recurring offender was `grid grid-cols-12` (and a
+couple of `grid-cols-2`) that never collapsed, plus right-aligned button clusters crushing the
+left text at 390px. Fixes:
+
+- `proposalForm.tsx` — token field cards `grid-cols-1 sm:grid-cols-2`; `MoneyFields`
+  `grid-cols-2 sm:grid-cols-12` (Label/Shown full-width, Charged + interval share a row on
+  mobile); tier header stacks on mobile. Add-on rows inherit the MoneyFields fix.
+- `sendForm.tsx` — party row `grid-cols-2 sm:grid-cols-12`: name + email full-width, payer +
+  delete share a row on mobile.
+- `teamSettings.tsx` — user rows stack the action buttons under the identity on mobile
+  (`flex-col sm:flex-row`); "Add a teammate" grid responsive.
+- `partyList.tsx` — party rows stack Copy link + Remind under the name on mobile.
+- `systemHealth.tsx` — email-issue row wraps long content; cron row gets `min-w-0` + truncate
+  so long paths don't overflow.
+- `proposals/[id]/page.tsx` — detail `TabsList` is `w-full sm:w-fit` (even full-width tab bar
+  on mobile, fit-content on desktop).
+
+Build + lint clean, 65 tests green. Auth-gated screens, so verified by build; confirm on a
+real phone. Shipped as Phase A of the approved 4-phase plan (mobile -> docs -> design pass ->
+admin toasts).
+
 ## 2026-06-13 — Mobile: nav hamburger + signing action bar no longer crushed
 
 Two phone fixes, both verified at a 390px viewport in Chrome DevTools (signing page loaded

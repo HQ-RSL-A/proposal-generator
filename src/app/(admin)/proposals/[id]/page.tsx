@@ -146,7 +146,7 @@ export default async function ProposalDetailPage({
       ) : null}
 
       <Tabs defaultValue="preview">
-        <TabsList>
+        <TabsList className="w-full sm:w-fit">
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="parties">Parties</TabsTrigger>
           <TabsTrigger value="audit">Audit trail</TabsTrigger>

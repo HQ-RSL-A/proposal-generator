@@ -33,7 +33,7 @@ export function PartyList({
   return (
     <div className="divide-y divide-border rounded-xl border border-border bg-white">
       {parties.map((party) => (
-        <div key={party.id} className="flex items-center justify-between gap-3 p-4">
+        <div key={party.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <p className="font-medium">{party.name}</p>
