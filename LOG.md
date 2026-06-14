@@ -1,5 +1,18 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-14 — Post-ship cleanup (prod proposals + dead component)
+
+- Cleared the prod DB to a clean slate for the real pipeline. Deleted 3 test proposals —
+  "Ongoing SEO Phase II" and "Lauda Lasun" (both SBC, SIGNED/PAID in test-mode Stripe) and the
+  "[TEST] Brightline" rehearsal — plus 33 webhook dedup rows; cascade removed their parties,
+  signatures, audit events, emails, payments, documents, and jobs. **Kept the one real
+  prospect: "Website Stabilization & Refresh for ConnectHealth Staff" (VIEWED).** Script:
+  `.tmp/keepOneProposal.ts` (gitignored) — keep-by-title with a one-keeper safety abort + dry-run.
+- Deleted the now-unused `signInVisual.tsx` (replaced by the sign-in abstract art panel). It was
+  already unimported, so no redeploy was needed.
+- Note: deleting those test proposals orphaned their signature PNGs / executed PDFs in Vercel
+  Blob (harmless, tiny, private) — this is the backlog "orphaned-blob cleanup" item.
+
 ## 2026-06-14 — Landing + sign-in premium redesign (shipped + deployed)
 
 Rahul flagged the landing + sign-in as generic. Reworked both to "light but premium"
