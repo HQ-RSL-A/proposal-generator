@@ -201,7 +201,7 @@ legacy `Client.CaseStudy` field.
 
 **Ready-to-use test token:** [`docs/testProposalTokens.json`](docs/testProposalTokens.json)
 — paste into the "Import from generate-proposal skill" box on `/proposals/new` for an
-instant tiered test proposal (Brightline Test Co, 3 tiers). It deliberately omits the two
+instant tiered test proposal (Brightline Test Co, 3 tiers + 2 add-ons). It deliberately omits the two
 date fields so every import gets fresh dates and is always signable. Add an optional
 `Investment.Structure` block (`type: "tiers"`, `tiers[].name/price/includes/recommended`,
 prices ending `/month` register as recurring) to auto-fill pricing; drop it to import text
@@ -210,5 +210,7 @@ only and set pricing in the form.
 **Pricing is configured separately** (in the form's Checkout section, or inferred from
 extra keys in the import) and stored as `PaymentConfig`: flat (`oneTime`/`recurring`),
 tiered (`tiers[]`, client picks one), or sign-only. Money is always integer
-`amountCents` plus a `displayString`. This is the content the planned `/docs` page should
-render for agents.
+`amountCents` plus a `displayString`. Two optional extras stack on any shape:
+`addOns[]` (client multi-selects; `Investment.AddOns` import key) and `deposit`
+(`depositPercent` 1-99 on the one-time build fee; `Investment.DepositPercent` import key).
+The in-app `/docs` page renders all of this for agents (kept in sync with `src/lib/types.ts`).

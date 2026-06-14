@@ -196,6 +196,37 @@ const INVESTMENT_STRUCTURE = `{
   }
 }`;
 
+const PAYMENT_ADDONS = `{
+  "currency": "usd",
+  "paymentMethods": ["card"],
+  "preferAch": false,
+  "oneTime": { "amountCents": 600000, "displayString": "$6,000", "label": "Website build" },
+  "recurring": null,
+  "tiers": null,
+  "addOns": [
+    { "id": "addon-rush", "label": "Rush delivery (two-week build)", "displayString": "$800", "amountCents": 80000, "intervalMonths": null },
+    { "id": "addon-seo", "label": "Monthly SEO", "displayString": "$500", "amountCents": 50000, "intervalMonths": 1 }
+  ]
+}`;
+
+const PAYMENT_DEPOSIT = `{
+  "currency": "usd",
+  "paymentMethods": ["card"],
+  "preferAch": false,
+  "oneTime": { "amountCents": 600000, "displayString": "$6,000", "label": "Website build" },
+  "recurring": { "amountCents": 50000, "displayString": "$500", "label": "Monthly retainer", "intervalMonths": 1 },
+  "tiers": null,
+  "deposit": { "depositPercent": 50 }
+}`;
+
+const INVESTMENT_ADDONS = `{
+  "Investment.AddOns": [
+    { "name": "Rush delivery (two-week build)", "price": "$800" },
+    { "name": "Monthly SEO", "price": "$500/month" }
+  ],
+  "Investment.DepositPercent": 50
+}`;
+
 function CodeBlock({ children }: { children: string }) {
   return (
     <pre className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs leading-relaxed">
@@ -283,8 +314,10 @@ export default function DocsPage() {
         <h2 className="font-heading text-lg font-semibold">Pricing (PaymentConfig)</h2>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Pricing is set in the form, or inferred from an Investment.Structure block (below). It is
-          stored as a PaymentConfig in one of three shapes. Money is always an integer amountCents
-          plus a matching displayString. At send time the two must agree to the cent.
+          stored as a PaymentConfig in one of three shapes (flat, tiered, sign-only). Money is
+          always an integer amountCents plus a matching displayString. At send time the two must
+          agree to the cent. Two optional fields stack on top of any shape: addOns (extras the
+          client toggles) and deposit (charge only a percentage up front).
         </p>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Flat, one time</h3>
@@ -306,6 +339,25 @@ export default function DocsPage() {
           <h3 className="text-sm font-semibold">Sign only (no payment)</h3>
           <CodeBlock>{PAYMENT_SIGNONLY}</CodeBlock>
         </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Optional add-ons (any shape)</h3>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            A global addOns array the client can toggle on the signing page, on top of the tier or
+            flat price they pick. Each add-on is one time (intervalMonths null) or recurring (1, 3,
+            or 12). Up to ten, each with a unique id.
+          </p>
+          <CodeBlock>{PAYMENT_ADDONS}</CodeBlock>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Deposit (charge a percentage up front)</h3>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            deposit.depositPercent (1 to 99, usually 50) charges only that share of the one-time
+            build fee at signing. The remaining balance and any monthly retainer are deferred, not
+            started at signing, so the signing charge is a single one-time deposit. It needs a
+            one-time amount to apply.
+          </p>
+          <CodeBlock>{PAYMENT_DEPOSIT}</CodeBlock>
+        </div>
       </section>
 
       <section className="space-y-3">
@@ -323,12 +375,28 @@ export default function DocsPage() {
       </section>
 
       <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">Optional: Investment.AddOns and deposit</h2>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Two more top level blocks the import reads and then drops. Investment.AddOns pre-fills the
+          add-on editor (a price with a /mo, /month, /quarter, /yr, or /year suffix becomes a
+          recurring add-on; otherwise one time). Investment.DepositPercent (1 to 99) turns the
+          deposit on.
+        </p>
+        <CodeBlock>{INVESTMENT_ADDONS}</CodeBlock>
+      </section>
+
+      <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold">Gotchas</h2>
         <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
           <li>displayString must match amountCents to the cent, or sending is blocked.</li>
           <li>Tiers: two to four, each with a unique id, and at most one marked recommended.</li>
           <li>Every tier needs at least a one time or a recurring amount.</li>
           <li>Use flat pricing or tiers, not both.</li>
+          <li>Add-ons: up to ten, each with a unique id, each one time or recurring.</li>
+          <li>
+            A deposit needs a one-time build fee (flat or on at least one tier). With a deposit, the
+            retainer and recurring add-ons are deferred, so only the deposit is charged at signing.
+          </li>
           <li>Use generic names in examples and tests. The Notion sync matches real CRM rows by company name.</li>
         </ul>
       </section>

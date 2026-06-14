@@ -1,5 +1,17 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — /docs updated for add-ons + deposit (Phase B)
+
+The agent-facing import-schema page predated add-ons/deposit. `src/app/(admin)/docs/page.tsx`
+now documents both: the **Pricing (PaymentConfig)** section gained an "Optional add-ons" block
+(`addOns[]`, one-time or recurring, multi-select, max 10, unique ids) and a "Deposit" block
+(`deposit.depositPercent` 1-99 on the one-time build fee; retainer + recurring add-ons deferred
+so only the deposit is charged at signing), plus a new "Investment.AddOns and deposit" import
+block (`Investment.AddOns`, `Investment.DepositPercent`) mirroring `Investment.Structure`, and
+two new gotchas. `docs/testProposalTokens.json` gained two add-ons (one one-time, one recurring)
+so the ready-to-use token exercises them; ROADMAP's reference section updated to match. Build +
+lint clean, test token is valid JSON. Phase B of the plan.
+
 ## 2026-06-13 — Mobile pass: internal forms + detail + settings (Phase A)
 
 Continued the internal-app mobile pass. The recurring offender was `grid grid-cols-12` (and a

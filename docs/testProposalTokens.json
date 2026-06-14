@@ -49,5 +49,9 @@
         ]
       }
     ]
-  }
+  },
+  "Investment.AddOns": [
+    { "name": "Logo refresh", "price": "$800" },
+    { "name": "Extra ad channel each month", "price": "$500/month" }
+  ]
 }
