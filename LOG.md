@@ -1,5 +1,21 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Landing snapshot hero + signature-modal lint fix
+
+- **Lint fix.** `signatureModal.tsx` reset-on-open moved off `useEffect` to the
+  "adjust state during render" pattern (track `prevOpen`, reset errors + drawn when it flips).
+  Same behavior, no cascading re-render, and it clears the only `npm run lint` error
+  (pre-existing `react-hooks/set-state-in-effect`). `npm run lint` is now green.
+- **Landing redesign (snapshot hero).** Modeled on the 21st.dev hero Rahul linked: replaced
+  the two-column hero with a centered hero (eyebrow pill + big gradient headline + subtext +
+  single CTA) and a large **browser-framed app snapshot** below it on a glow. The snapshot is
+  div-built (window chrome with a `proposals.rsla.io/sign` URL pill) showing a mock signing
+  doc: logomark + Signed chip, content lines, the 3 tier cards (Growth highlighted +
+  RECOMMENDED), and a cursive signature block + "$3,000 paid" badge. Entrance animation only
+  (removed the now-unused `floaty` keyframe). Verified in Chrome DevTools at 1280px + 390px.
+
+Build + lint + 65 tests green.
+
 ## 2026-06-13 — Admin action toasts: shared branded toast helper (Phase D)
 
 Extracted the signing flow's branded `toast.custom` into `src/lib/toast.tsx` as `brandToast`

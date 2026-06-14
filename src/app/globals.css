@@ -178,19 +178,3 @@ main {
   background-image: radial-gradient(circle, rgba(17, 24, 39, 0.08) 1px, transparent 1px);
   background-size: 22px 22px;
 }
-
-/* Gentle hero float (landing mock card). Motion-safe only. */
-@media (prefers-reduced-motion: no-preference) {
-  @keyframes floaty {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-8px);
-    }
-  }
-  .animate-floaty {
-    animation: floaty 6s ease-in-out infinite;
-  }
-}
