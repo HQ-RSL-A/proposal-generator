@@ -1,5 +1,19 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Sign-in: lighter interactive split (replaces the dark split)
+
+Rahul linked a 21st.dev "animated characters login" and asked to adapt it lighter, with the
+interactive element on one side and just the Google button. Since we have no password field
+(and cartoon characters are off-brand), adapted the concept, not the cartoons: a light split.
+Left (desktop only) is a soft `surface -> accent` gradient + faint dot texture holding an
+interactive proposal card (`signInVisual.tsx`, a client component using `motion`) that tilts
+toward the cursor (spring-smoothed rotateX/rotateY + a glow that drifts behind it), reduced-
+motion safe. Right is the white sign-in: logomark + "RSL/A Proposals" + the Google button +
+trust line. Mobile shows the form only (visual hidden below lg). The `auth()` redirect +
+`signIn("google")` server action are untouched. Verified the layout in Chrome DevTools at
+1280px and confirmed the tilt fires (the card's computed transform is a rotated matrix3d).
+Build + lint clean. Supersedes the dark-split sign-in from the design pass.
+
 ## 2026-06-13 — Landing snapshot hero + signature-modal lint fix
 
 - **Lint fix.** `signatureModal.tsx` reset-on-open moved off `useEffect` to the

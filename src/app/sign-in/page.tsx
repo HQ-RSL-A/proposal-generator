@@ -2,6 +2,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { SignInVisual } from "@/components/signInVisual";
 
 export default async function SignInPage() {
   const session = await auth();
@@ -9,14 +10,10 @@ export default async function SignInPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Left: dark brand panel (desktop only) */}
-      <div className="relative hidden w-2/5 flex-col items-center justify-center overflow-hidden bg-foreground p-12 md:flex">
-        <div className="pointer-events-none absolute -top-1/3 left-1/2 h-112 w-md -translate-x-1/2 rounded-full bg-primary/25 blur-3xl" />
-        <div className="relative flex flex-col items-center text-center">
-          <Image src="/logomark.png" alt="RSL/A" width={56} height={56} className="rounded-xl" />
-          <p className="font-heading mt-6 text-lg font-semibold text-white">RSL/A Proposals</p>
-          <p className="mt-1 text-sm text-white/60">Send it. They sign. You get paid.</p>
-        </div>
+      {/* Left: interactive visual (desktop only) */}
+      <div className="relative hidden w-1/2 items-center justify-center overflow-hidden bg-linear-to-br from-surface to-accent p-12 lg:flex">
+        <div className="dot-pattern pointer-events-none absolute inset-0 opacity-50" />
+        <SignInVisual />
       </div>
 
       {/* Right: sign-in (the only panel on mobile) */}
@@ -27,9 +24,10 @@ export default async function SignInPage() {
             alt="RSL/A"
             width={44}
             height={44}
-            className="mx-auto rounded-lg md:hidden"
+            className="mx-auto rounded-lg"
           />
-          <p className="mt-4 text-sm text-muted-foreground md:mt-0">
+          <h1 className="font-heading mt-4 text-xl font-bold">RSL/A Proposals</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
             RSL/A team. Sign in with your rsla.io Google account.
           </p>
           <form
