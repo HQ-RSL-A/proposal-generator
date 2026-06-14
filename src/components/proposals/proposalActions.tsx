@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -59,12 +59,14 @@ export function ProposalActions({
     try {
       const result = await action();
       if (!result.ok) {
-        toast.error("That didn't go through", {
-          description: result.error ?? "Nothing changed. Try again, and if it keeps failing check Settings, System.",
-        });
+        brandToast(
+          "error",
+          "That didn't go through",
+          result.error ?? "Nothing changed. Try again, and if it keeps failing check Settings, System."
+        );
         return;
       }
-      toast.success(success, description ? { description } : undefined);
+      brandToast("success", success, description);
       router.refresh();
     } finally {
       setBusy(false);
@@ -165,13 +167,14 @@ export function ProposalActions({
             try {
               const result = await reviseProposal(proposalId);
               if (!result.ok) {
-                toast.error(result.error);
+                brandToast("error", result.error ?? "That didn't work");
                 return;
               }
-              toast.success("Revision draft created", {
-                description:
-                  "Edit and send it like a new proposal. The old version gets voided automatically when this one goes out.",
-              });
+              brandToast(
+                "success",
+                "Revision draft created",
+                "Edit and send it like a new proposal. The old version gets voided automatically when this one goes out."
+              );
               router.push(`/proposals/${result.data!.id}/edit`);
             } finally {
               setBusy(false);

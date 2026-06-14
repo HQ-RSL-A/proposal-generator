@@ -2,9 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Check, PenLine, TriangleAlert } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { PenLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,6 +20,7 @@ import {
 import { SignatureModal, type AdoptedSignature } from "@/components/signing/signatureModal";
 import { computeDepositSchedule, type ProposalSections } from "@/lib/proposalContent";
 import type { PaymentConfig } from "@/lib/types";
+import { brandToast } from "@/lib/toast";
 
 const PLACE_ORDER: SignaturePlace[] = ["proposal", "agreement"];
 
@@ -29,40 +28,6 @@ function scrollToSlot(place: SignaturePlace) {
   document
     .querySelector(`[data-signature-slot="${place}"]`)
     ?.scrollIntoView({ behavior: "smooth", block: "center" });
-}
-
-/** Branded, on-brand toast for the signing flow (Anchor Blue for guidance, red for errors). */
-function signToast(
-  tone: "brand" | "error",
-  title: string,
-  description?: string,
-  opts?: { id?: string; duration?: number }
-) {
-  toast.custom(
-    () => (
-      <div
-        className={cn(
-          "flex w-full items-start gap-3 rounded-2xl px-4 py-3 text-white shadow-xl ring-1 ring-black/10",
-          tone === "brand" ? "bg-primary" : "bg-red-600"
-        )}
-      >
-        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-          {tone === "brand" ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : (
-            <TriangleAlert className="h-3.5 w-3.5" />
-          )}
-        </span>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold leading-snug">{title}</p>
-          {description ? (
-            <p className="mt-0.5 text-xs leading-snug text-white/85">{description}</p>
-          ) : null}
-        </div>
-      </div>
-    ),
-    { position: "top-center", duration: opts?.duration ?? 5000, id: opts?.id }
-  );
 }
 
 export function SigningExperience({
@@ -125,7 +90,7 @@ export function SigningExperience({
       setAdopted(null);
       setStamped({ proposal: false, agreement: false });
       stampTimes.current = { proposal: null, agreement: null };
-      signToast(
+      brandToast(
         "brand",
         "Pricing updated",
         "Since the deal changed, please sign again to continue."
@@ -147,7 +112,7 @@ export function SigningExperience({
       setAdopted(null);
       setStamped({ proposal: false, agreement: false });
       stampTimes.current = { proposal: null, agreement: null };
-      signToast("brand", "Selection updated", "Since the deal changed, please sign again to continue.");
+      brandToast("brand", "Selection updated", "Since the deal changed, please sign again to continue.");
     }
   }
 
@@ -159,7 +124,7 @@ export function SigningExperience({
 
   function openSignModal() {
     if (requiresTier && !selectedTierId) {
-      signToast("error", "Select a plan before signing", "It's part of what you're agreeing to.", {
+      brandToast("error", "Select a plan before signing", "It's part of what you're agreeing to.", {
         duration: 6000,
       });
       document
@@ -175,7 +140,7 @@ export function SigningExperience({
     setModalOpen(false);
     // No auto-scroll: the signer scrolls to the box themselves, or taps the action-bar
     // button / the floating chip (both call scrollToSlot) to jump to it.
-    signToast(
+    brandToast(
       "brand",
       "Signature ready",
       "Now place it in the two highlighted boxes. Scroll to them, or tap the button below."
@@ -190,14 +155,14 @@ export function SigningExperience({
     // No auto-advance. The persistent chip + action-bar button lead to the next box.
     const remaining = PLACE_ORDER.find((p) => !next[p]);
     if (remaining) {
-      signToast(
+      brandToast(
         "brand",
         "Signature placed",
         "Scroll to the other box, or tap the button to jump to it.",
         { id: "stamp-progress" }
       );
     } else {
-      signToast("brand", "Both places signed", "Tap Finish at the bottom to submit.", {
+      brandToast("brand", "Both places signed", "Tap Finish at the bottom to submit.", {
         id: "stamp-progress",
       });
     }
@@ -233,7 +198,7 @@ export function SigningExperience({
       if (!response.ok) {
         if (data.code === "expired") router.push(`/sign/${token}/expired`);
         else if (data.code === "already_signed") router.push(`/sign/${token}/signed`);
-        else signToast("error", data.error ?? "Something went wrong", undefined, { id: "sign-submit" });
+        else brandToast("error", data.error ?? "Something went wrong", undefined, { id: "sign-submit" });
         return;
       }
       if (typeof data.redirectUrl === "string" && data.redirectUrl.startsWith("http")) {
@@ -243,7 +208,7 @@ export function SigningExperience({
         router.push(data.redirectUrl ?? `/sign/${token}/signed`);
       }
     } catch {
-      signToast("error", "Could not submit", "Check your connection and try again.", {
+      brandToast("error", "Could not submit", "Check your connection and try again.", {
         id: "sign-submit",
       });
     } finally {
@@ -268,7 +233,7 @@ export function SigningExperience({
       });
       const data = await response.json();
       if (!response.ok) {
-        signToast("error", data.error ?? "Something went wrong");
+        brandToast("error", data.error ?? "Something went wrong");
         return;
       }
       router.push(data.redirectUrl ?? `/sign/${token}/declined`);

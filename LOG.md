@@ -1,5 +1,16 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Admin action toasts: shared branded toast helper (Phase D)
+
+Extracted the signing flow's branded `toast.custom` into `src/lib/toast.tsx` as `brandToast`
+(top-center, icon, tone = brand/success/error/info) and pointed both the signing flow and the
+admin actions at it, so admin feedback reads as deliberate instead of stock sonner.
+`signingExperience.tsx` dropped its local `signToast` (and the now-unused toast/cn/Check/
+TriangleAlert imports) and calls `brandToast` (identical markup, so the verified signing
+behavior is unchanged). `proposalActions.tsx` (the void / revise / delete / PDF-generate /
+regenerate + self-refresh actions all run through `run()`) now uses `brandToast` for its
+success/error toasts. Build + lint clean, 65 tests green. Phase D, the last of the plan.
+
 ## 2026-06-13 — Design pass: bolder landing, dark-split sign-in, 6-KPI dashboard (Phase C)
 
 Decisions: landing = bolder/more visual, sign-in = dark split, dashboard = all 6 KPIs.

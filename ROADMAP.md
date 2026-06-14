@@ -102,18 +102,12 @@ not just responsive breakpoints. Build-time decisions flagged inline.
         affordance looks like (animated chevron vs labeled chip); whether
         placement auto-advances focus to the next field or waits for a tap.
 
-- [ ] **Notification / toast redesign (mobile + desktop).** PARTIAL 2026-06-13: the
-      signing-flow guidance + error toasts are done (branded blue/red via `toast.custom`,
-      top-center, persistent). STILL OPEN: the admin-side action toasts (PDF generating,
-      self-refresh). The cards that tell a
-      signer what to do (e.g. "tap into the fields to add your signature") are
-      getting missed: they sit bottom-right, vanish too fast, and read as
-      low-priority. Make in-flow guidance prominent and persistent: reposition to
-      center (or another clearly visible spot), hold long enough to actually read
-      (action-critical ones may need manual dismissal), and rewrite the copy to
-      state the next action plainly. Tune for both phone and desktop. Covers the
-      signing-flow guidance toasts and the general action toasts (PDF generating,
-      self-refresh, etc.).
+- [x] **Notification / toast redesign (mobile + desktop).** DONE 2026-06-13. The signing-flow
+      guidance + error toasts were branded first (blue/red `toast.custom`, top-center); the
+      admin-side action toasts (void / revise / delete / PDF generate + regenerate +
+      self-refresh, via `proposalActions`) now use the same look. Extracted into a shared
+      `brandToast` helper (`src/lib/toast.tsx`, tones brand/success/error/info) that both the
+      signing flow and admin actions call, so nothing reads as stock sonner.
 
 - [x] **Audit trail: professional icons, no emojis.** DONE 2026-06-13 (lucide icons +
       tone colors; shipped to prod). The audit trail / event log
