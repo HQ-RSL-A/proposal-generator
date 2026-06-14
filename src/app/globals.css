@@ -178,3 +178,29 @@ main {
   background-image: radial-gradient(circle, rgba(17, 24, 39, 0.08) 1px, transparent 1px);
   background-size: 22px 22px;
 }
+
+/* Premium landing/sign-in motion + depth (Emil Kowalski's strong ease-out) */
+:root {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Primary CTA: lifts on hover, presses on click for real feedback */
+.cta-lift {
+  transition:
+    transform 0.2s var(--ease-out-strong),
+    box-shadow 0.2s var(--ease-out-strong);
+}
+@media (hover: hover) and (pointer: fine) {
+  .cta-lift:hover {
+    transform: translateY(-2px);
+  }
+}
+.cta-lift:active {
+  transform: translateY(0) scale(0.98);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-lift:hover,
+  .cta-lift:active {
+    transform: none;
+  }
+}

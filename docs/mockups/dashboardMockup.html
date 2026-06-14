@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RSL/A Proposals — Dashboard Mockup</title>
+<style>
+  /* ---- Real product fonts (loaded from the app's own files) ---- */
+  @font-face { font-family: "Inter"; src: url("../../public/fonts/Inter-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: block; }
+  @font-face { font-family: "Inter"; src: url("../../public/fonts/Inter-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: block; }
+  @font-face { font-family: "Inter"; src: url("../../public/fonts/Inter-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: block; }
+  @font-face { font-family: "Inter"; src: url("../../public/fonts/Inter-Bold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: block; }
+  @font-face { font-family: "Satoshi"; src: url("../../public/fonts/Satoshi-Regular.otf") format("opentype"); font-weight: 400; font-style: normal; font-display: block; }
+  @font-face { font-family: "Satoshi"; src: url("../../public/fonts/Satoshi-Medium.otf") format("opentype"); font-weight: 500; font-style: normal; font-display: block; }
+  @font-face { font-family: "Satoshi"; src: url("../../public/fonts/Satoshi-Bold.otf") format("opentype"); font-weight: 700; font-style: normal; font-display: block; }
+  @font-face { font-family: "Satoshi"; src: url("../../public/fonts/Satoshi-Black.otf") format("opentype"); font-weight: 900; font-style: normal; font-display: block; }
+
+  /* ---- Tokens (mirrors src/app/globals.css) ---- */
+  :root {
+    --background:#FFFFFF; --foreground:#111827; --surface:#F9FAFB; --card:#FFFFFF;
+    --primary:#0070F3; --primary-foreground:#FFFFFF; --muted:#F4F4F5; --muted-foreground:#6B7280;
+    --accent:#F0F4FF; --accent-foreground:#0070F3; --border:#E5E7EB;
+    --emerald-50:#ECFDF5; --emerald-100:#D1FAE5; --emerald-600:#059669; --emerald-700:#047857;
+    --amber-50:#FFFBEB; --amber-600:#D97706;
+    --indigo-100:#E0E7FF; --indigo-700:#4338CA; --blue-100:#DBEAFE; --blue-700:#1D4ED8;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  }
+  .font-heading { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.022em; }
+  .font-tag { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  svg { display: block; }
+
+  /* ---- Stage / premium backdrop (echoes the dark reference, in RSL/A brand blues) ---- */
+  .stage {
+    width: 1472px;
+    padding: 76px 96px 104px;
+    display: flex; align-items: center; justify-content: center;
+    background:
+      radial-gradient(115% 80% at 50% -12%, rgba(0,112,243,0.34), rgba(0,112,243,0) 56%),
+      radial-gradient(80% 60% at 84% 8%, rgba(0,194,255,0.16), rgba(0,194,255,0) 52%),
+      radial-gradient(120% 120% at 50% 130%, rgba(0,112,243,0.10), rgba(0,112,243,0) 60%),
+      #070B14;
+    position: relative;
+  }
+  /* corner vignette for depth */
+  .stage::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 40%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.55) 100%);
+  }
+
+  /* ---- Transparent mode: just the framed window with a soft, neutral shadow ---- */
+  body[data-bg="transparent"] .stage { background: transparent; padding: 70px 96px 96px; }
+  body[data-bg="transparent"] .stage::after { display: none; }
+  body[data-bg="transparent"] .window::before { display: none; }
+  body[data-bg="transparent"] .window {
+    box-shadow:
+      0 1px 3px rgba(17,24,39,0.08),
+      0 20px 44px -14px rgba(17,24,39,0.22),
+      0 54px 100px -44px rgba(17,24,39,0.32);
+  }
+
+  /* ---- Browser window (mirrors landing AppSnapshot frame) ---- */
+  .window {
+    position: relative; width: 1280px; border-radius: 18px; overflow: hidden;
+    background: #fff; border: 1px solid var(--border);
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.05),
+      0 2px 6px rgba(0,0,0,0.30),
+      0 50px 120px -24px rgba(0,0,0,0.78),
+      0 18px 50px -16px rgba(0,0,0,0.55);
+  }
+  .window::before {
+    content: ""; position: absolute; inset: -8% 6% auto 6%; height: 220px; top: -70px; z-index: -1;
+    background: rgba(0,112,243,0.32); filter: blur(80px); border-radius: 9999px;
+  }
+  .chrome {
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border); background: var(--surface);
+    padding: 12px 16px;
+  }
+  .dot { height: 12px; width: 12px; border-radius: 9999px; }
+  .dot.r { background: rgba(248,113,113,0.7); } .dot.y { background: rgba(251,191,36,0.7); } .dot.g { background: rgba(52,211,153,0.7); }
+  .url {
+    margin-left: 8px; flex: 1; display: flex; justify-content: center;
+  }
+  .url span {
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 8px; background: #fff; padding: 5px 12px; font-size: 11px; color: var(--muted-foreground);
+    box-shadow: 0 0 0 1px var(--border);
+  }
+  .url svg { width: 11px; height: 11px; opacity: .75; }
+
+  /* ---- App shell ---- */
+  .app { background: var(--surface); }
+  .appHeader {
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);
+  }
+  .headInner {
+    margin: 0 auto; max-width: 1152px; height: 56px;
+    display: flex; align-items: center; justify-content: space-between; padding: 0 16px;
+  }
+  .headLeft { display: flex; align-items: center; gap: 24px; }
+  .logo { width: 28px; height: 28px; border-radius: 8px; display: block; }
+  nav { display: flex; align-items: center; gap: 4px; }
+  .navItem {
+    display: inline-flex; align-items: center; gap: 6px; border-radius: 8px;
+    padding: 6px 12px; font-size: 14px; line-height: 20px; text-decoration: none; color: var(--muted-foreground);
+  }
+  .navItem svg { width: 14px; height: 14px; }
+  .navItem.active { background: var(--accent); color: var(--accent-foreground); font-weight: 500; }
+  .headRight { display: flex; align-items: center; gap: 12px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+    height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid transparent;
+    background: var(--primary); color: #fff; font-size: 12.8px; font-weight: 500; white-space: nowrap;
+    font-family: inherit; cursor: default;
+  }
+  .btn svg { width: 14px; height: 14px; }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 9999px; background: var(--primary);
+    color: #fff; font-weight: 700; font-size: 12px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid var(--border);
+  }
+
+  .appMain { margin: 0 auto; max-width: 1152px; padding: 32px 16px; }
+  .stack > * + * { margin-top: 24px; }
+
+  .titleRow { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  h1.title { font-size: 24px; line-height: 1.15; font-weight: 700; margin: 0; }
+
+  /* ---- KPI grid ---- */
+  .kpiGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card {
+    background: var(--card); border-radius: 14px; overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(17,24,39,0.10);
+    padding: 16px 0;
+  }
+  .card .content { padding: 16px 16px 0; }
+  .kpiTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .kpiLabel { font-size: 12px; line-height: 16px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.025em; color: var(--muted-foreground); margin: 0; }
+  .kpiIcon { flex: none; color: #9CA3AF; display: inline-flex; align-items: center; justify-content: center; }
+  .kpiIcon svg { width: 16px; height: 16px; }
+  .kpiValue { margin: 9px 0 0; font-size: 26px; line-height: 1.1; font-weight: 700; }
+  .kpiSub { margin: 2px 0 0; font-size: 11px; line-height: 15px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpiDelta { margin: 7px 0 0; font-size: 11.5px; line-height: 15px; display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+  .kpiDelta svg { width: 9px; height: 9px; flex: none; }
+  .kpiDelta .d { font-weight: 600; }
+  .kpiDelta .ctx { color: var(--muted-foreground); font-weight: 400; }
+  .kpiDelta.pos { color: var(--emerald-600); }
+  .kpiDelta.neutral { color: var(--muted-foreground); }
+
+  .count { font-size: 12px; line-height: 16px; color: var(--muted-foreground); margin: 36px 0 30px; }
+
+  /* ---- Table ---- */
+  .tableCard { background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: 0 0 0 1px rgba(17,24,39,0.10); padding: 16px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead tr { border-bottom: 1px solid var(--border); }
+  th { height: 40px; padding: 0 8px; text-align: left; vertical-align: middle; font-weight: 500; color: var(--foreground); white-space: nowrap; }
+  th.right { text-align: right; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: 0; }
+  td { padding: 8px; vertical-align: middle; white-space: nowrap; }
+  td.prop { font-weight: 500; color: var(--foreground); }
+  td.muted { font-size: 14px; color: var(--muted-foreground); }
+  td.deal { font-size: 14px; }
+  td.right { text-align: right; font-size: 14px; color: var(--muted-foreground); }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+  .chip {
+    display: inline-flex; align-items: center; justify-content: center; height: 20px;
+    border-radius: 26px; padding: 2px 8px; font-size: 12px; font-weight: 500; white-space: nowrap;
+  }
+  .chip.viewed { background: var(--indigo-100); color: var(--indigo-700); }
+  .chip.sent { background: var(--blue-100); color: var(--blue-700); }
+  .chip.signed { background: var(--emerald-100); color: var(--emerald-700); }
+  .chip.paid { background: var(--emerald-600); color: #fff; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="window">
+      <!-- Browser chrome -->
+      <div class="chrome">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      </div>
+
+      <!-- App -->
+      <div class="app">
+        <header class="appHeader">
+          <div class="headInner">
+            <div class="headLeft">
+              <img class="logo" src="../../public/logomark.png" alt="RSL/A" />
+              <nav>
+                <a class="navItem active" href="#">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.364 13.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 0 0-3.004-3.004z"/><path d="M14.487 7.858A1 1 0 0 1 14 7V2"/><path d="M20 19.645V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l2.516 2.516"/><path d="M8 18h1"/></svg>
+                  Proposals
+                </a>
+                <a class="navItem" href="#">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+                  Docs
+                </a>
+                <a class="navItem" href="#">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg>
+                  Settings
+                </a>
+              </nav>
+            </div>
+            <div class="headRight">
+              <span class="btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+                New Proposal
+              </span>
+              <span class="avatar">J</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="appMain">
+          <div class="stack">
+            <!-- Title -->
+            <div class="titleRow">
+              <h1 class="title font-heading">Proposals</h1>
+            </div>
+
+            <!-- KPI grid -->
+            <div class="kpiGrid">
+              <div class="card"><div class="content">
+                <div class="kpiTop">
+                  <p class="kpiLabel font-tag">Win rate</p>
+                  <span class="kpiIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978"/><path d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978"/><path d="M18 9h1.5a1 1 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6 9H4.5a1 1 0 0 1 0-5H6"/></svg></span>
+                </div>
+                <p class="kpiValue font-heading tnum">67%</p>
+                <p class="kpiDelta pos"><svg viewBox="0 0 10 10"><path d="M5 1.5 9 8.5 1 8.5Z" fill="currentColor"/></svg><span class="d">5 pts</span><span class="ctx">vs last month</span></p>
+              </div></div>
+
+              <div class="card"><div class="content">
+                <div class="kpiTop">
+                  <p class="kpiLabel font-tag">Contracted one-time</p>
+                  <span class="kpiIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span>
+                </div>
+                <p class="kpiValue font-heading tnum">$18,700</p>
+                <p class="kpiDelta pos"><svg viewBox="0 0 10 10"><path d="M5 1.5 9 8.5 1 8.5Z" fill="currentColor"/></svg><span class="d">23%</span><span class="ctx">vs last month</span></p>
+              </div></div>
+
+              <div class="card"><div class="content">
+                <div class="kpiTop">
+                  <p class="kpiLabel font-tag">MRR</p>
+                  <span class="kpiIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg></span>
+                </div>
+                <p class="kpiValue font-heading tnum">$6,600</p>
+                <p class="kpiDelta pos"><svg viewBox="0 0 10 10"><path d="M5 1.5 9 8.5 1 8.5Z" fill="currentColor"/></svg><span class="d">$900</span><span class="ctx">this month</span></p>
+              </div></div>
+
+              <div class="card"><div class="content">
+                <div class="kpiTop">
+                  <p class="kpiLabel font-tag">Signed this month</p>
+                  <span class="kpiIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span>
+                </div>
+                <p class="kpiValue font-heading tnum">4</p>
+                <p class="kpiDelta pos"><svg viewBox="0 0 10 10"><path d="M5 1.5 9 8.5 1 8.5Z" fill="currentColor"/></svg><span class="d">2</span><span class="ctx">vs last month</span></p>
+              </div></div>
+
+              <div class="card"><div class="content">
+                <div class="kpiTop">
+                  <p class="kpiLabel font-tag">Avg time to sign</p>
+                  <span class="kpiIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+                </div>
+                <p class="kpiValue font-heading tnum">6m</p>
+                <p class="kpiDelta pos"><svg viewBox="0 0 10 10"><path d="M5 8.5 1 1.5 9 1.5Z" fill="currentColor"/></svg><span class="d">3m</span><span class="ctx">faster</span></p>
+              </div></div>
+
+              <div class="card"><div class="content">
+                <div class="kpiTop">
+                  <p class="kpiLabel font-tag">Oldest open</p>
+                  <span class="kpiIcon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg></span>
+                </div>
+                <p class="kpiValue font-heading tnum">18h</p>
+                <p class="kpiDelta neutral"><span class="ctx">since it was sent</span></p>
+              </div></div>
+            </div>
+
+            <!-- Count -->
+            <p class="count">6 proposals</p>
+
+            <!-- Table -->
+            <div class="tableCard">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Proposal</th>
+                    <th>Client</th>
+                    <th>Deal</th>
+                    <th>Status</th>
+                    <th class="right">Valid until</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="prop">Website Redesign &amp; Local SEO</td>
+                    <td class="muted">Maya Chen · Northwind Outdoors</td>
+                    <td class="deal tnum">2 options</td>
+                    <td><div class="chips"><span class="chip viewed">Viewed</span></div></td>
+                    <td class="right">Jun 27</td>
+                  </tr>
+                  <tr>
+                    <td class="prop">Q3 Paid Social Launch</td>
+                    <td class="muted">Daniel Brooks · Lumen Dental</td>
+                    <td class="deal tnum">$1,200/mo</td>
+                    <td><div class="chips"><span class="chip sent">Sent</span></div></td>
+                    <td class="right">Jun 26</td>
+                  </tr>
+                  <tr>
+                    <td class="prop">Brand Refresh + Website Build</td>
+                    <td class="muted">Priya Anand · Cedarwood Interiors</td>
+                    <td class="deal tnum">$8,500 + $2,400/mo</td>
+                    <td><div class="chips"><span class="chip signed">Signed</span><span class="chip paid">Paid</span></div></td>
+                    <td class="right">Jun 20</td>
+                  </tr>
+                  <tr>
+                    <td class="prop">SEO Growth Retainer</td>
+                    <td class="muted">Marcus Webb · Harbor Point Realty</td>
+                    <td class="deal tnum">$1,800/mo</td>
+                    <td><div class="chips"><span class="chip signed">Signed</span><span class="chip paid">Paid</span></div></td>
+                    <td class="right">Jun 20</td>
+                  </tr>
+                  <tr>
+                    <td class="prop">Conversion Optimization Sprint</td>
+                    <td class="muted">Elena Ruiz · Brightline Coffee</td>
+                    <td class="deal tnum">$4,200 + $900/mo</td>
+                    <td><div class="chips"><span class="chip signed">Signed</span><span class="chip paid">Paid</span></div></td>
+                    <td class="right">Jun 18</td>
+                  </tr>
+                  <tr>
+                    <td class="prop">Full-Funnel Growth System</td>
+                    <td class="muted">Tom Sullivan · Vega Fitness</td>
+                    <td class="deal tnum">$6,000 + $1,500/mo</td>
+                    <td><div class="chips"><span class="chip signed">Signed</span><span class="chip paid">Paid</span></div></td>
+                    <td class="right">Jun 18</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
