@@ -126,8 +126,21 @@ not just responsive breakpoints. Build-time decisions flagged inline.
 
 - [ ] **Attorney MSA review → v4.** When revised text lands, seed a new `MsaVersion`
       v4 row (no code change). Signed docs keep their signed version.
-- [ ] **In-app AI proposal generation.** The V1 fast-follow: generate the token JSON
-      from a transcript inside the app instead of via the external skill.
+- [ ] **In-app AI proposal generation** (planned; V1 fast-follow). Move the AI step inside the
+      app. Today the external `/generate-proposal` skill turns a Circleback transcript into a
+      tokens JSON that you paste into `/proposals/new`; instead, a "Generate with AI" panel on
+      `/proposals/new` takes a pasted transcript (later: a Circleback meeting picker), a server
+      route calls Claude with the skill's prompt using `TokensJson` (`src/lib/types.ts`) as a
+      structured-output / tool-use schema (forced-valid, can't drift from app types;
+      `validation.ts` re-checks), and the result flows through the existing
+      `normalizeImportedTokens` path to pre-fill the form. Always generate -> pre-fill ->
+      human edits -> send (never auto-send).
+      - Open decisions: (1) input source — paste vs upload vs direct Circleback pull (pull needs
+        Circleback creds in app env); (2) scope — narrative only, or also propose pricing
+        (tiers / flat / add-ons / deposit); (3) model + Anthropic key on Vercel (Opus for
+        quality vs Sonnet for cost).
+      - Cleanest first cut: paste transcript -> narrative only -> pre-fill, pricing still set by
+        hand; layer in the Circleback pull + AI-suggested pricing after the core feels right.
 - [ ] **Tool-driven deposit balance + retainer start.** The automated version of the deposit
       feature: a "Request balance" action that opens a second Stripe checkout for the remaining
       build fee, and a one-click retainer start when the build completes. Needs a payments-schema
