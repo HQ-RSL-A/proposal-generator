@@ -15,7 +15,16 @@ import {
 } from "@/components/ui/table";
 import { PaymentChip, StatusChip } from "@/components/dashboard/statusChip";
 import { Button } from "@/components/ui/button";
-import { Banknote, FileSignature, Hourglass, PenLine, Plus } from "lucide-react";
+import {
+  AlarmClock,
+  Banknote,
+  Clock,
+  FileSignature,
+  PenLine,
+  Plus,
+  Repeat,
+  Trophy,
+} from "lucide-react";
 import type { PaymentStatus, ProposalStatus } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -32,17 +41,21 @@ interface ProposalRow {
   validUntil: string | null;
 }
 
-/** Compact stat: 3-up strip on mobile (icon hidden), roomy card on desktop. */
+/** Compact stat: 2-up on mobile, 3-up on desktop. Icon hidden on mobile to save room. */
 function StatCard({
   label,
   value,
+  sub,
   icon,
   tint,
+  tone = "default",
 }: {
   label: string;
   value: string;
+  sub: string;
   icon: ReactNode;
   tint: string;
+  tone?: "default" | "warn";
 }) {
   return (
     <Card className="card-hover">
@@ -60,7 +73,15 @@ function StatCard({
             {icon}
           </span>
         </div>
-        <p className="font-heading mt-1 text-xl font-bold tabular-nums sm:text-2xl">{value}</p>
+        <p
+          className={cn(
+            "font-heading mt-1 text-xl font-bold tabular-nums sm:text-2xl",
+            tone === "warn" && "text-amber-600"
+          )}
+        >
+          {value}
+        </p>
+        <p className="mt-0.5 truncate text-[11px] text-muted-foreground">{sub}</p>
       </CardContent>
     </Card>
   );
@@ -102,21 +123,67 @@ function MobileProposalCard({ row }: { row: ProposalRow }) {
   );
 }
 
+/** Sent-to-signed / age durations, rounded to the most readable unit. */
+function formatDuration(ms: number): string {
+  const mins = Math.round(ms / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
+}
+
+const OPEN_STATUSES: ProposalStatus[] = ["SENT", "VIEWED", "PARTIALLY_SIGNED"];
+
 export default async function DashboardPage() {
   const proposals = await prisma.proposal.findMany({
     orderBy: { createdAt: "desc" },
     include: { parties: true, payment: true },
   });
 
-  const open = proposals.filter((p) =>
-    ["SENT", "VIEWED", "PARTIALLY_SIGNED"].includes(p.status)
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+  // Win rate: signed out of everything that reached a client and resolved or is live.
+  const decided = proposals.filter((p) =>
+    ["SENT", "VIEWED", "PARTIALLY_SIGNED", "SIGNED", "DECLINED", "EXPIRED"].includes(p.status)
+  );
+  const signedAll = proposals.filter((p) => p.status === "SIGNED");
+  const winRate = decided.length > 0 ? Math.round((signedAll.length / decided.length) * 100) : 0;
+
+  // Contracted one-time + MRR, both from signed deals (incl. their selected add-ons).
+  let contractedCents = 0;
+  let mrrCents = 0;
+  for (const p of signedAll) {
+    const config = p.paymentConfig as unknown as PaymentConfig;
+    const { oneTime, recurring } = effectiveLineItems(config, p.selectedTierId);
+    const selectedAddOnIds = (p.selectedAddOnIds as unknown as string[] | null) ?? [];
+    const addOns = (config.addOns ?? []).filter((a) => selectedAddOnIds.includes(a.id));
+    contractedCents +=
+      (oneTime?.amountCents ?? 0) +
+      addOns.filter((a) => a.intervalMonths === null).reduce((s, a) => s + a.amountCents, 0);
+    if (recurring && recurring.intervalMonths === 1) mrrCents += recurring.amountCents;
+    mrrCents += addOns.filter((a) => a.intervalMonths === 1).reduce((s, a) => s + a.amountCents, 0);
+  }
+
+  const signedThisMonth = signedAll.filter(
+    (p) => p.completedAt && p.completedAt >= monthStart
   ).length;
-  const signedAwaiting = proposals.filter(
-    (p) => p.status === "SIGNED" && p.paymentStatus !== "PAID" && p.paymentStatus !== "NOT_REQUIRED"
+  const signedLastMonth = signedAll.filter(
+    (p) => p.completedAt && p.completedAt >= lastMonthStart && p.completedAt < monthStart
   ).length;
-  const paidCents = proposals
-    .filter((p) => p.payment?.amountTotalCents)
-    .reduce((sum, p) => sum + (p.payment?.amountTotalCents ?? 0), 0);
+
+  const signTimes = signedAll
+    .filter((p) => p.completedAt && p.sentAt)
+    .map((p) => p.completedAt!.getTime() - p.sentAt!.getTime());
+  const avgSignMs = signTimes.length
+    ? signTimes.reduce((a, b) => a + b, 0) / signTimes.length
+    : null;
+
+  const openWithSent = proposals.filter((p) => OPEN_STATUSES.includes(p.status) && p.sentAt);
+  const oldestOpenMs = openWithSent.length
+    ? Math.max(...openWithSent.map((p) => now.getTime() - p.sentAt!.getTime()))
+    : null;
 
   const rows: ProposalRow[] = proposals.map((proposal) => {
     const tokens = proposal.tokens as unknown as TokensJson;
@@ -147,36 +214,56 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="font-heading text-2xl font-bold">Proposals</h1>
-          <p className="text-sm text-muted-foreground">
-            Send, e-sign, and collect payment in one flow.
-          </p>
-        </div>
+        <h1 className="font-heading text-2xl font-bold">Proposals</h1>
         <Button size="sm" nativeButton={false} render={<Link href="/proposals/new" />}>
           <Plus className="h-4 w-4" />
           <span className="max-sm:sr-only">New proposal</span>
         </Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3">
         <StatCard
-          label="Awaiting signature"
-          value={String(open)}
+          label="Win rate"
+          value={`${winRate}%`}
+          sub={`${signedAll.length} signed of ${decided.length} sent`}
           tint="bg-accent text-primary"
-          icon={<Hourglass className="h-3.5 w-3.5" />}
+          icon={<Trophy className="h-3.5 w-3.5" />}
         />
         <StatCard
-          label="Signed, unpaid"
-          value={String(signedAwaiting)}
+          label="Contracted one-time"
+          value={formatCents(contractedCents)}
+          sub="build fees on signed deals"
+          tint="bg-emerald-50 text-emerald-600"
+          icon={<Banknote className="h-3.5 w-3.5" />}
+        />
+        <StatCard
+          label="MRR"
+          value={formatCents(mrrCents)}
+          sub="from signed recurring deals"
+          tint="bg-accent text-primary"
+          icon={<Repeat className="h-3.5 w-3.5" />}
+        />
+        <StatCard
+          label="Signed this month"
+          value={String(signedThisMonth)}
+          sub={`vs ${signedLastMonth} last month`}
           tint="bg-amber-50 text-amber-600"
           icon={<PenLine className="h-3.5 w-3.5" />}
         />
         <StatCard
-          label="Collected via checkout"
-          value={formatCents(paidCents)}
-          tint="bg-emerald-50 text-emerald-600"
-          icon={<Banknote className="h-3.5 w-3.5" />}
+          label="Avg time to sign"
+          value={avgSignMs != null ? formatDuration(avgSignMs) : "-"}
+          sub="sent to signed"
+          tint="bg-accent text-primary"
+          icon={<Clock className="h-3.5 w-3.5" />}
+        />
+        <StatCard
+          label="Oldest open"
+          value={oldestOpenMs != null ? formatDuration(oldestOpenMs) : "-"}
+          sub={oldestOpenMs != null ? "since it was sent" : "nothing waiting"}
+          tint="bg-amber-50 text-amber-600"
+          icon={<AlarmClock className="h-3.5 w-3.5" />}
+          tone={oldestOpenMs != null && oldestOpenMs > 14 * 86_400_000 ? "warn" : "default"}
         />
       </div>
 
@@ -198,6 +285,10 @@ export default async function DashboardPage() {
         </Card>
       ) : (
         <>
+          <p className="text-xs text-muted-foreground">
+            {rows.length} proposal{rows.length === 1 ? "" : "s"}
+          </p>
+
           {/* Desktop: full table */}
           <Card className="hidden md:block">
             <Table>

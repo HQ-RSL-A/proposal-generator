@@ -1,5 +1,30 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Design pass: bolder landing, dark-split sign-in, 6-KPI dashboard (Phase C)
+
+Decisions: landing = bolder/more visual, sign-in = dark split, dashboard = all 6 KPIs.
+Verified the two public pages in Chrome DevTools at 1280px + 390px; dashboard is auth-gated
+(build-verified).
+
+- **Landing (`app/page.tsx`)** — soft radial glows behind the hero, a big display headline
+  with the last line in `.gradient-text`, a two-column hero with a floating div-built mock
+  proposal card (logomark, Signed chip, a cursive signature, a "$3,000 paid" badge;
+  `.animate-floaty` 6s, motion-safe; entrance via tw-animate-css), and bolder feature cards
+  with gradient-blue icon chips. Logomark-only header kept.
+- **Sign-in (`app/sign-in/page.tsx`)** — full-bleed two-panel: left Deep Slate panel with a
+  blue radial glow + logomark + tagline, right white panel with the subtitle + Google button +
+  a trust line. Mobile collapses to the white panel. The `auth()` redirect and the
+  `signIn("google")` server action are untouched.
+- **Dashboard (`app/(admin)/dashboard/page.tsx`)** — replaced the 3 ops stats with the 6-KPI
+  set (win rate, contracted one-time, MRR, signed this month vs last, avg time to sign, oldest
+  open), responsive `grid-cols-2 lg:grid-cols-3`. `StatCard` gained a context sub-line and an
+  amber tone for an oldest-open over 14 days. All computed from the already-fetched array (+
+  `new Date()`); MRR counts signed recurring deals + recurring add-ons, contracted counts
+  one-time build fees + one-time add-ons. Added a count line above the list.
+
+Added a motion-safe `floaty` keyframe to globals.css. Build + lint clean, 65 tests green.
+Phase C of the plan.
+
 ## 2026-06-13 — /docs updated for add-ons + deposit (Phase B)
 
 The agent-facing import-schema page predated add-ons/deposit. `src/app/(admin)/docs/page.tsx`

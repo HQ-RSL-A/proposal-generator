@@ -54,13 +54,12 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       collapse into one hamburger. STILL OPEN: the proposal form, the detail tabs, and
       settings. Audit each breakpoint.
 
-- [ ] **Landing + sign-in + dashboard design pass (NEXT UP).** Push all three past the
-      current clean-but-plain state. Per-page direction is drafted in
-      [`docs/plans/visualRedesign.md`](docs/plans/visualRedesign.md) and the dashboard KPI
-      set is DECIDED (all 6: win rate, contracted value, MRR, signed this month vs last,
-      avg time-to-sign, oldest open — all computable from current data, no schema change).
-      Ready to build; confirm the visual direction per page first. Build runs through the
-      design skills (emilDesignEng / frontend-design / `/ui`).
+- [x] **Landing + sign-in + dashboard design pass.** DONE 2026-06-13. Landing rebuilt
+      bolder (gradient display headline, floating mock proposal card, radial glows, gradient
+      feature chips); sign-in is now a dark split panel (Deep Slate left + logomark, white
+      right, white-only on mobile); dashboard expanded to the 6 KPIs (win rate, contracted
+      one-time, MRR, signed this month vs last, avg time-to-sign, oldest open), all computed
+      from current data. Public pages verified in Chrome DevTools at 1280px + 390px.
 
 - [x] **Token-schema docs page (in-app, agent-friendly).** DONE 2026-06-13 — built as
       team-gated `/docs`, generic examples, field table auto-derived from `TOKEN_KEYS`
