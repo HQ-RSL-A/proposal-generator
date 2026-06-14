@@ -74,13 +74,17 @@ export function SignatureModal({
   const [errors, setErrors] = React.useState<FieldErrors>({});
   const padRef = React.useRef<SignaturePadHandle>(null);
 
-  // Reset transient state each time the modal opens.
-  React.useEffect(() => {
+  // Reset transient state when the modal opens. Done during render (not in an effect) so it
+  // resets in the same pass without a cascading re-render. React's documented pattern for
+  // resetting state on a prop change.
+  const [prevOpen, setPrevOpen] = React.useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
     if (open) {
       setErrors({});
       setDrawn(false);
     }
-  }, [open]);
+  }
 
   // Everything the signer must provide before the CTA lights up.
   const signatureReady = tab === "type" ? name.trim().length > 0 : drawn;
