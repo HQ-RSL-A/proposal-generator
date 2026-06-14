@@ -1,5 +1,24 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-13 — Mobile: nav hamburger + signing action bar no longer crushed
+
+Two phone fixes, both verified at a 390px viewport in Chrome DevTools (signing page loaded
+via demoSeed; desktop re-checked at 1280px; demo proposal deleted from prod after).
+
+- **Nav (`appShell.tsx`).** The header crammed logo + 3 text nav links + a full "New Proposal"
+  button + avatar into one row and overflowed on mobile. Now: the horizontal nav + New Proposal
+  button + avatar menu are `hidden md:*`, and below md a single hamburger (Menu icon) dropdown
+  holds New proposal + the nav links + account + sign out. Desktop unchanged.
+- **Signing action bar (`signingExperience.tsx`).** The bar's left block (signer name + status)
+  got crushed to nothing by the buttons on a phone (what read as the "name cut off"). On mobile
+  that block is now `hidden sm:block` and the buttons own the bar (`flex-1`), so the primary CTA
+  is a full-width tap target; "Finish & continue to payment" shortens to "Finish & pay" on
+  mobile. The floating chip + toasts already carry the guidance the status line gave. Desktop
+  keeps name + status + buttons.
+
+Build + lint clean. The nav fix is auth-gated so it was verified by code + build (the signing
+bar was verified visually); confirm the nav hamburger on a real phone.
+
 ## 2026-06-13 — Dashboard mobile: card list instead of the wide table
 
 Rahul: the dashboard should be simpler to use on mobile. The 5-column proposals table

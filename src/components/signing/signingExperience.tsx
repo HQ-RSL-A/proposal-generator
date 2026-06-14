@@ -322,14 +322,16 @@ export function SigningExperience({
       {/* Floating action bar, lifted off the document */}
       <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-3 pt-2">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-border bg-white px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(17,24,39,0.18),0_12px_34px_-6px_rgba(17,24,39,0.30)] ring-1 ring-black/5">
-          <div className="min-w-0">
+          {/* Signer + status: desktop only. On mobile the buttons crushed this text to
+              nothing, so the bar is buttons-only there (the floating chip + toasts guide). */}
+          <div className="hidden min-w-0 sm:block">
             <p className="truncate text-sm font-medium">{partyName}</p>
             <p className="truncate text-xs text-muted-foreground">{statusLine}</p>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
             {adopted ? (
               <Button variant="ghost" size="sm" onClick={handleRedo} disabled={submitting}>
-                Redo signature
+                Redo
               </Button>
             ) : (
               <Button variant="ghost" size="sm" onClick={() => setDeclineOpen(true)}>
@@ -337,12 +339,18 @@ export function SigningExperience({
               </Button>
             )}
             {!adopted ? (
-              <Button size="lg" onClick={openSignModal} disabled={submitting}>
+              <Button
+                size="lg"
+                className="flex-1 sm:flex-none"
+                onClick={openSignModal}
+                disabled={submitting}
+              >
                 Ready to sign
               </Button>
             ) : !allStamped ? (
               <Button
                 size="lg"
+                className="flex-1 sm:flex-none"
                 onClick={() => {
                   if (activePlace) scrollToSlot(activePlace);
                 }}
@@ -350,12 +358,22 @@ export function SigningExperience({
                 Review and sign
               </Button>
             ) : (
-              <Button size="lg" onClick={handleSubmit} disabled={submitting}>
-                {submitting
-                  ? "Submitting…"
-                  : willCheckout
-                    ? "Finish & continue to payment"
-                    : "Finish & Submit"}
+              <Button
+                size="lg"
+                className="flex-1 sm:flex-none"
+                onClick={handleSubmit}
+                disabled={submitting}
+              >
+                {submitting ? (
+                  "Submitting…"
+                ) : willCheckout ? (
+                  <>
+                    <span className="sm:hidden">Finish &amp; pay</span>
+                    <span className="hidden sm:inline">Finish &amp; continue to payment</span>
+                  </>
+                ) : (
+                  "Finish & Submit"
+                )}
               </Button>
             )}
           </div>

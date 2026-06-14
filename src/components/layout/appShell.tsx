@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BookOpen, FileSignature, LogOut, Plus, Settings } from "lucide-react";
+import { BookOpen, FileSignature, LogOut, Menu, Plus, Settings } from "lucide-react";
 
 export interface ShellUser {
   name: string;
@@ -39,7 +39,7 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
             <Link href="/dashboard" className="flex items-center">
               <Image src="/logomark.png" alt="RSL/A" width={28} height={28} className="rounded-md" />
             </Link>
-            <nav className="flex items-center gap-1">
+            <nav className="hidden items-center gap-1 md:flex">
               {nav.map((item) => {
                 const active = pathname.startsWith(item.href);
                 return (
@@ -61,12 +61,19 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            <Button size="sm" nativeButton={false} render={<Link href="/proposals/new" />}>
+            <Button
+              size="sm"
+              className="hidden md:inline-flex"
+              nativeButton={false}
+              render={<Link href="/proposals/new" />}
+            >
               <Plus className="h-4 w-4" />
               New Proposal
             </Button>
+
+            {/* Desktop: avatar account menu */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="rounded-full outline-none ring-ring/50 focus-visible:ring-2">
+              <DropdownMenuTrigger className="hidden rounded-full outline-none ring-ring/50 focus-visible:ring-2 md:block">
                 {user.avatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -94,6 +101,37 @@ export function AppShell({ user, children }: { user: ShellUser; children: React.
                     <Settings className="h-4 w-4" /> Settings
                   </DropdownMenuItem>
                 ) : null}
+                <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
+                  <LogOut className="h-4 w-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Mobile: one hamburger holds nav + new proposal + account */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label="Menu"
+                className="rounded-md p-1.5 text-muted-foreground outline-none ring-ring/50 hover:text-foreground focus-visible:ring-2 md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuItem render={<Link href="/proposals/new" />}>
+                  <Plus className="h-4 w-4" /> New proposal
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {nav.map((item) => (
+                  <DropdownMenuItem key={item.href} render={<Link href={item.href} />}>
+                    <item.icon className="h-4 w-4" /> {item.label}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <div className="px-1.5 py-1.5">
+                  <p className="text-sm font-medium">{user.name}</p>
+                  <p className="text-xs font-normal text-muted-foreground">
+                    {user.email} · {user.role === "ADMIN" ? "Admin" : "Member"}
+                  </p>
+                </div>
                 <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/" })}>
                   <LogOut className="h-4 w-4" /> Sign out
                 </DropdownMenuItem>

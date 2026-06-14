@@ -49,8 +49,10 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
 - [ ] **Mobile optimization, internal app.** The client-facing surfaces (signing
       ceremony, signature modal, tier cards, outcome/pay screens) were made mobile-clean
       2026-06-13. The **dashboard** is now mobile-clean too (2026-06-13): the wide table
-      becomes a tappable card list below md, plus a compact KPI strip. STILL OPEN: the
-      proposal form, the detail tabs, and settings. Audit each breakpoint.
+      becomes a tappable card list below md, plus a compact KPI strip. The **app nav/shell**
+      is mobile-friendly too (2026-06-13): below md the nav links + New Proposal + account
+      collapse into one hamburger. STILL OPEN: the proposal form, the detail tabs, and
+      settings. Audit each breakpoint.
 
 - [ ] **Landing + sign-in + dashboard design pass (NEXT UP).** Push all three past the
       current clean-but-plain state. Per-page direction is drafted in
