@@ -1,6 +1,6 @@
 # LOG.md — proposalGenerator
 
-## 2026-06-15 — Dashboard visual upgrade (worktree `worktree-dashboard-upgrade`, NOT yet merged/deployed)
+## 2026-06-15 — Dashboard visual upgrade (deployed to prod; merged into main alongside the PDF rebuild)
 
 Executed the Claude Design "Insightful" dashboard upgrade in an isolated git worktree. Turned out
 to be **~90% a visual/layout job, not a data project** — the old dashboard already computed every
@@ -33,10 +33,37 @@ time-to-sign, oldest-open). Two decisions were Rahul's: **Satoshi + Inter** font
   (the authed `/dashboard` needs a Google session, so it wasn't screenshotted directly).
 - **Design source** archived to `docs/mockups/dashboardUpgrade/` (camelCased; `support.js` kept so
   the `.dc.html` files still render; Downloads folder cleared).
-- **Status:** committed (`5b59a4d`), pushed, fast-forward **merged to `main`**, and **deployed to
-  production** — live at `proposals.rsla.io` (deployment `dpl_7ccVDmbU2yyXjDDbymUx5BCodWLJ`).
-  Deployed from the worktree (clean tree), so prod and `main` match. Unrelated PDF WIP
-  (`ProposalPdf.tsx`, pdfSmoke PDFs) stayed uncommitted on the main checkout.
+- **Status:** committed + pushed. My first prod deploy (`dpl_7ccVDmbU2yyXjDDbymUx5BCodWLJ`) shipped
+  the dashboard from a branch point (`da33518`) that predated the PDF rebuild below — which had
+  already landed on `main` + been deployed — so it briefly reverted the PDF rebuild on prod. Fixed by
+  merging the PDF rebuild into this branch and redeploying the combined build, then fast-forwarding
+  `main`. End state: `main` = prod = dashboard + PDF rebuild.
+
+## 2026-06-15 — Executed PDF rebuilt as a paginated replica of the web signing doc
+
+Rahul: the emailed/downloaded PDF didn't match the web signing document. Rewrote the PDF renderer
+(`src/components/pdf/ProposalPdf.tsx`, **presentational only** — no data/logic change; the shared
+`ProposalSections` builder and the web `ProposalView` are untouched) into a faithful, paginated
+replica of the web doc.
+
+- **Parity:** section headings + all MSA sub-headings are now Anchor Blue (`#0070F3`) with blue
+  bullets; At-a-Glance is a bordered rounded table (surface label column, sentence-case labels);
+  signatures are rounded bordered cards; tier cards carry a filled "Recommended" pill + a
+  selected white-check; add-ons are checkboxes; the deposit schedule is an accent box;
+  How-to-Proceed steps are numbered blue circles. Spacing/type matched to the web tokens
+  (Satoshi `-0.02em`, 10pt body).
+- **Pagination:** collapsed the 6 hard page-groups into a continuous flow — 3 logical `<Page>`s
+  (proposal body flows cover→acceptance→notes, MSA on a fresh page, then the certificate).
+  `wrap={false}` on short atomic blocks + `minPresenceAhead` ~72pt on headings -> no section splits
+  across a page and no orphaned headings (the Acceptance heading + its signature cards no longer
+  split across pages 4/5; page 1 is no longer ~60% blank). Validated against the `@react-pdf/layout`
+  engine; the footer stays a static `fixed` element (no render-callback -> no `-9.6e21` corruption).
+- **Cosmetic pass (Rahul's review):** At-a-Glance corners now round (`overflow: hidden` clips the
+  label fill); step numbers center + the tier/add-on white checkmarks render (`lineHeight: 1`);
+  footer `rsla.io` confirmed live + canonical. The green signature blocks in the smoke render are
+  fixture placeholders (`fakeSignaturePng`) — real signed PDFs use the actual signature.
+- **Verified:** `pdfSmoke` both variants render with no overflow warnings + visually read;
+  production build green; 74 tests pass. Plan: `~/.claude/plans/cozy-jingling-pudding.md`.
 
 ## 2026-06-15 — Recurring + ACH + renewal verification (local sandbox, PASSED)
 

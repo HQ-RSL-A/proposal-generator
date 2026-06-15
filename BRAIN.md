@@ -190,13 +190,19 @@ resolves the proposal by session id whenever the path token is dead.
 - Verify any PDF change with `npx tsx scripts/pdfSmoke.ts` and Read the output.
 - Fonts: Satoshi (headings, original OTFs) + Inter (body, statics extracted losslessly from
   the official Inter.ttc into `public/fonts/`). Same pairing as the web app.
-- Signed PDF layout: cover (logomark.png) → narrative → scope/timeline → investment +
-  How to Proceed + Acceptance signatures → numbered Notes block (destinations for the
-  superscript note markers; internal links) → MSA + "Agreed and Accepted" execution block
-  after §37 (second signing place) → E-Signature Certificate (bordered, industry format:
-  reference, sent/viewed/signed timestamps, placement line, IP, signature images,
-  completion line, ESIGN statement + SHA-256). No user-agent strings or raw event logs in
-  the client-facing document. Links render blue (case studies underlined; footer rsla.io).
+- Signed PDF is a **paginated replica of the web signing document** (`ProposalView`): the same
+  design tokens (Anchor Blue headings + bullets, Satoshi/Inter, accent cards), a bordered
+  At-a-Glance table, rounded signature cards, tier "Recommended" pill + selected white-check,
+  add-on checkboxes, an accent payment-schedule box, and numbered step circles. Three logical
+  `<Page>`s: the proposal body flows continuously (cover → At a Glance → narrative →
+  scope/timeline → investment → How to Proceed → Acceptance signatures → numbered Notes), the MSA
+  + "Agreed and Accepted" execution block (after §37) on a fresh page, then the E-Signature
+  Certificate (bordered, industry format: reference, sent/viewed/signed timestamps, placement
+  line, IP, signature images, completion line, ESIGN statement + SHA-256). Pagination uses
+  `wrap={false}` on short atomic blocks + `minPresenceAhead` (~72pt) on headings so no section
+  splits across a page and no heading orphans (Acceptance heading + signatures stay together).
+  No user-agent strings or raw event logs in the client-facing document. Links render blue
+  (case studies underlined; footer rsla.io).
 - Attachment + token-gated download share `executedPdfFilename()`:
   `{Title} - Fully Signed - {Company} x RSLA.pdf`.
 

@@ -43,14 +43,23 @@ Font.register({
 // No hyphenation: cleaner line breaks for legal text.
 Font.registerHyphenationCallback((word) => [word]);
 
+// Palette mirrors the web design tokens in globals.css exactly:
+// --primary #0070F3 (Anchor Blue), --foreground #111827, --muted-foreground
+// #6B7280, --border #E5E7EB, --accent #F0F4FF, --surface #F9FAFB, --success.
 const BLUE = "#0070F3";
-const SLATE = "#111827";
-const BODY = "#1F2937";
-const MUTED = "#6B7280";
+const SLATE = "#111827"; // --foreground
+const BODY = "#111827"; // body text == foreground on the web
+const MUTED = "#6B7280"; // --muted-foreground
 const FAINT = "#9CA3AF";
-const BORDER = "#E5E7EB";
+const BORDER = "#E5E7EB"; // --border
 const HAIRLINE = "#F0F1F3";
-const SELECTED_BG = "#F5F9FF";
+const ACCENT = "#F0F4FF"; // --accent (selected cards, step badges, deposit box)
+const ACCENT_BORDER = "#C7DBFB"; // accent box / selected hairline (primary @ ~30%)
+const SURFACE = "#F9FAFB"; // --surface (glance label column)
+
+// Orphan control: a section heading relocates to the next page when fewer than
+// this many points remain, so a heading never strands alone at a page bottom.
+const HEADING_PRESENCE = 72;
 
 const s = StyleSheet.create({
   page: {
@@ -59,11 +68,17 @@ const s = StyleSheet.create({
     paddingHorizontal: 60,
     fontFamily: "Inter",
     fontWeight: 400,
-    fontSize: 9.5,
+    fontSize: 10,
     color: BODY,
     lineHeight: 1.55,
   },
   logo: { width: 30, height: 30, borderRadius: 6 },
+  coverHeader: {
+    borderBottomWidth: 0.75,
+    borderBottomColor: BORDER,
+    paddingBottom: 24,
+    marginBottom: 4,
+  },
   footer: {
     position: "absolute",
     bottom: 28,
@@ -79,15 +94,18 @@ const s = StyleSheet.create({
     fontWeight: 900,
     fontSize: 25,
     lineHeight: 1.2,
+    letterSpacing: -0.5,
     color: SLATE,
-    marginBottom: 12,
+    marginBottom: 10,
   },
+  // Section headings: Anchor Blue, like every heading on the web document.
   h2: {
     fontFamily: "Satoshi",
     fontWeight: 700,
-    fontSize: 13,
-    color: SLATE,
-    marginTop: 26,
+    fontSize: 13.5,
+    letterSpacing: -0.3,
+    color: BLUE,
+    marginTop: 24,
     marginBottom: 8,
   },
   microLabel: {
@@ -103,36 +121,82 @@ const s = StyleSheet.create({
   semibold: { fontWeight: 600 },
   noteMark: { fontSize: 6, color: BLUE, verticalAlign: "super" },
   bulletRow: { flexDirection: "row", marginBottom: 5, paddingRight: 8 },
-  bulletDot: { width: 13, color: FAINT },
-  glanceRow: {
-    flexDirection: "row",
-    borderBottomWidth: 0.75,
-    borderBottomColor: HAIRLINE,
-    paddingVertical: 7,
+  bulletDot: { width: 13, color: BLUE }, // blue dots, like the web
+  // At a Glance: bordered, rounded table with a surface label column.
+  glanceTable: {
+    marginTop: 10,
+    borderWidth: 0.75,
+    borderColor: BORDER,
+    borderRadius: 8,
+    // Clip the surface label-cell fill to the rounded corners (like the web's
+    // overflow-hidden); without this the left corners render square/broken.
+    overflow: "hidden",
   },
-  glanceLabel: {
-    width: 130,
+  glanceRow: { flexDirection: "row", borderBottomWidth: 0.75, borderBottomColor: BORDER },
+  glanceLabelCell: {
+    width: 150,
+    backgroundColor: SURFACE,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     fontFamily: "Inter",
     fontWeight: 600,
-    fontSize: 7,
-    color: MUTED,
-    textTransform: "uppercase",
-    letterSpacing: 0.9,
-    paddingTop: 1.5,
+    fontSize: 9,
+    color: SLATE,
   },
-  glanceValue: { flex: 1, fontSize: 9.5, color: SLATE },
+  glanceValueCell: { flex: 1, paddingVertical: 8, paddingHorizontal: 12, fontSize: 9, color: BODY },
   link: { color: BLUE, textDecoration: "underline" },
+  // Signature cards: bordered, rounded, mirrors the web SignatureSlotBox.
   sigGrid: { flexDirection: "row", marginTop: 14 },
-  sigCol: {
+  sigCard: {
     flex: 1,
-    borderTopWidth: 0.75,
-    borderTopColor: BORDER,
-    paddingTop: 10,
-    marginRight: 18,
+    borderWidth: 0.75,
+    borderColor: BORDER,
+    borderRadius: 8,
+    padding: 12,
+    marginRight: 12,
   },
   sigName: { fontWeight: 600, fontSize: 10, color: SLATE },
-  sigImage: { height: 40, width: 150, objectFit: "contain", objectPosition: "left" },
-  sigLine: { fontSize: 8.5, color: MUTED, marginTop: 2 },
+  sigDetail: { fontSize: 8, color: MUTED, marginTop: 1.5 },
+  sigImageLine: {
+    marginTop: 10,
+    height: 44,
+    borderBottomWidth: 0.75,
+    borderBottomColor: BORDER,
+    justifyContent: "flex-end",
+    paddingBottom: 2,
+  },
+  sigImage: { height: 38, width: 150, objectFit: "contain", objectPosition: "left" },
+  sigDate: { fontSize: 8, color: MUTED, marginTop: 6 },
+  // How to proceed: numbered circle badges (accent fill, blue number).
+  stepRow: { flexDirection: "row", marginBottom: 7, alignItems: "flex-start" },
+  stepBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: ACCENT,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 9,
+  },
+  // lineHeight 1 + centered text seat the digit dead-center in the circle
+  // (react-pdf otherwise drops it low on the baseline).
+  stepNum: {
+    fontFamily: "Satoshi",
+    fontWeight: 700,
+    fontSize: 8,
+    color: BLUE,
+    lineHeight: 1,
+    textAlign: "center",
+  },
+  // Deposit payment schedule: bordered accent box.
+  payBox: {
+    marginTop: 14,
+    borderWidth: 0.75,
+    borderColor: ACCENT_BORDER,
+    backgroundColor: ACCENT,
+    borderRadius: 8,
+    padding: 12,
+  },
   notesBlock: {
     marginTop: 22,
     borderTopWidth: 0.75,
@@ -142,6 +206,64 @@ const s = StyleSheet.create({
   noteRow: { flexDirection: "row", marginBottom: 4, paddingRight: 8 },
   noteNum: { width: 13, fontSize: 7.5, color: FAINT, fontWeight: 600 },
   noteText: { flex: 1, fontSize: 7.5, color: MUTED, lineHeight: 1.5 },
+  // Tier cards.
+  tierGrid: { flexDirection: "row", marginTop: 14 },
+  tierPill: {
+    alignSelf: "flex-start",
+    backgroundColor: BLUE,
+    borderRadius: 7,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    marginBottom: 7,
+  },
+  tierPillText: {
+    fontFamily: "Inter",
+    fontWeight: 700,
+    fontSize: 6.5,
+    color: "#FFFFFF",
+    textTransform: "uppercase",
+    letterSpacing: 0.7,
+  },
+  checkCircle: {
+    width: 13,
+    height: 13,
+    borderRadius: 6.5,
+    backgroundColor: BLUE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkGlyph: {
+    fontSize: 7.5,
+    color: "#FFFFFF",
+    fontFamily: "Inter",
+    fontWeight: 700,
+    lineHeight: 1,
+    textAlign: "center",
+  },
+  // Add-on rows: checkbox squares, like the web AddOnPicker.
+  addOnRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 0.75,
+    borderColor: BORDER,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 6,
+  },
+  addOnRowSel: { borderColor: BLUE, backgroundColor: ACCENT },
+  checkbox: {
+    width: 13,
+    height: 13,
+    borderRadius: 3,
+    borderWidth: 0.75,
+    borderColor: BORDER,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  checkboxSel: { backgroundColor: BLUE, borderColor: BLUE },
   // E-signature certificate
   certFrame: {
     borderWidth: 1.2,
@@ -155,6 +277,7 @@ const s = StyleSheet.create({
     fontWeight: 900,
     fontSize: 21,
     lineHeight: 1.15,
+    letterSpacing: -0.4,
     color: SLATE,
     marginBottom: 6,
   },
@@ -197,6 +320,15 @@ function NoteMark({ n }: { n: number }) {
   );
 }
 
+/** Section heading in Anchor Blue with orphan control, mirroring the web h2. */
+function H2({ children }: { children: React.ReactNode }) {
+  return (
+    <Text style={s.h2} minPresenceAhead={HEADING_PRESENCE}>
+      {children}
+    </Text>
+  );
+}
+
 function Bullets({ items }: { items: readonly string[] }) {
   return (
     <View>
@@ -224,12 +356,29 @@ function PageFooter({ left }: { left: string }) {
   );
 }
 
+/** At a Glance: bordered table, surface label column, sentence-case labels. */
+function GlanceTable({ rows }: { rows: { label: string; value: string }[] }) {
+  return (
+    <View style={s.glanceTable} wrap={false}>
+      {rows.map((row, i) => (
+        <View
+          key={i}
+          style={[s.glanceRow, i === rows.length - 1 ? { borderBottomWidth: 0 } : {}]}
+        >
+          <Text style={s.glanceLabelCell}>{row.label}</Text>
+          <Text style={s.glanceValueCell}>{row.value}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTierId: string | null }) {
   return (
-    <View style={{ flexDirection: "row", marginTop: 12 }}>
+    <View style={s.tierGrid} wrap={false}>
       {tiers.map((tier) => {
         const isSelected = tier.id === selectedTierId;
-        // Match the web: only the chosen tier highlights; recommended is a label.
+        // Match the web: only the chosen tier highlights; recommended is a badge.
         const highlight = isSelected;
         return (
           <View
@@ -241,15 +390,16 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
               borderRadius: 8,
               padding: 11,
               marginRight: 8,
-              backgroundColor: highlight ? SELECTED_BG : "#FFFFFF",
+              backgroundColor: highlight ? ACCENT : "#FFFFFF",
             }}
           >
+            {tier.recommended ? (
+              <View style={s.tierPill}>
+                <Text style={s.tierPillText}>Recommended</Text>
+              </View>
+            ) : null}
             <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
+              style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
             >
               <Text
                 style={{
@@ -262,9 +412,9 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
                 {tier.label}
               </Text>
               {isSelected ? (
-                <Text style={[s.microLabel, { color: BLUE }]}>Selected</Text>
-              ) : tier.recommended ? (
-                <Text style={s.microLabel}>Recommended</Text>
+                <View style={s.checkCircle}>
+                  <Text style={s.checkGlyph}>✓</Text>
+                </View>
               ) : null}
             </View>
             <View style={{ marginTop: 5 }}>
@@ -281,7 +431,7 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
               style={{
                 marginTop: 7,
                 borderTopWidth: 0.75,
-                borderTopColor: highlight ? "#D6E6FD" : HAIRLINE,
+                borderTopColor: highlight ? ACCENT_BORDER : HAIRLINE,
                 paddingTop: 6,
               }}
             >
@@ -298,23 +448,21 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
   );
 }
 
-/** Global add-ons, with the chosen ones marked. Mirrors the web AddOnPicker. */
+/** Global add-ons as checkbox rows, with the chosen ones marked. Mirrors the web AddOnPicker. */
 function AddOnsTable({ addOns, selectedIds }: { addOns: AddOn[]; selectedIds: string[] }) {
   if (addOns.length === 0) return null;
   return (
-    <View style={{ marginTop: 12 }} wrap={false}>
-      <Text style={[s.microLabel, { marginBottom: 5 }]}>Optional add-ons</Text>
+    <View style={{ marginTop: 14 }} wrap={false}>
+      <Text style={[s.microLabel, { marginBottom: 6 }]}>Optional add-ons</Text>
       {addOns.map((addOn) => {
         const selected = selectedIds.includes(addOn.id);
         return (
-          <View key={addOn.id} style={s.bulletRow}>
-            <Text style={[s.bulletDot, { color: selected ? BLUE : FAINT }]}>
-              {selected ? "+" : "-"}
-            </Text>
-            <Text style={{ flex: 1, color: selected ? BODY : MUTED }}>{addOn.label}</Text>
-            <Text style={{ color: selected ? BODY : MUTED, fontWeight: selected ? 600 : 400 }}>
-              {addOn.displayString}
-            </Text>
+          <View key={addOn.id} style={[s.addOnRow, selected ? s.addOnRowSel : {}]}>
+            <View style={[s.checkbox, selected ? s.checkboxSel : {}]}>
+              {selected ? <Text style={s.checkGlyph}>✓</Text> : null}
+            </View>
+            <Text style={{ flex: 1, fontWeight: 500 }}>{addOn.label}</Text>
+            <Text style={{ fontWeight: 700, color: SLATE }}>{addOn.displayString}</Text>
           </View>
         );
       })}
@@ -322,7 +470,7 @@ function AddOnsTable({ addOns, selectedIds }: { addOns: AddOn[]; selectedIds: st
   );
 }
 
-/** Payment-schedule block shown when a deposit is taken. */
+/** Payment-schedule block shown when a deposit is taken: bordered accent box. */
 function DepositScheduleBlock({ schedule }: { schedule: DepositScheduleInfo }) {
   const lines: string[] = [];
   if (schedule.depositAmountCents != null && schedule.remainingCents != null) {
@@ -341,13 +489,10 @@ function DepositScheduleBlock({ schedule }: { schedule: DepositScheduleInfo }) {
     lines.push(`Your ${schedule.deferredRecurring.displayString} retainer starts when work begins.`);
   }
   return (
-    <View
-      style={{ marginTop: 10, borderTopWidth: 0.75, borderTopColor: HAIRLINE, paddingTop: 8 }}
-      wrap={false}
-    >
-      <Text style={[s.microLabel, { marginBottom: 3 }]}>Payment schedule</Text>
+    <View style={s.payBox} wrap={false}>
+      <Text style={[s.microLabel, { color: BLUE, marginBottom: 4 }]}>Payment schedule</Text>
       {lines.map((line, i) => (
-        <Text key={i} style={{ fontSize: 9, marginBottom: 1.5 }}>
+        <Text key={i} style={{ fontSize: 9.5, marginBottom: 1.5 }}>
           {line}
         </Text>
       ))}
@@ -380,8 +525,8 @@ export interface CertificateInfo {
   completedAt: string;
 }
 
-/** Signature block used on the Acceptance section and the MSA execution block. */
-function SignatureBlock({
+/** Signature card used on the Acceptance section and the MSA execution block. Mirrors the web SignatureSlotBox. */
+function SignatureCard({
   signer,
   fallbackName,
   fallbackDetail,
@@ -391,20 +536,62 @@ function SignatureBlock({
   fallbackDetail: string;
 }) {
   return (
-    <View style={s.sigCol} wrap={false}>
+    <View style={s.sigCard} wrap={false}>
       <Text style={s.sigName}>{signer?.name ?? fallbackName}</Text>
-      <Text style={s.sigLine}>
+      <Text style={s.sigDetail}>
         {signer ? `${signer.signerTitle}, ${signer.signerCompany}` : fallbackDetail}
       </Text>
-      {signer?.signatureDataUri ? (
-        <Image src={signer.signatureDataUri} style={[s.sigImage, { marginTop: 8 }]} />
-      ) : (
-        <Text style={[s.sigLine, { marginTop: 26 }]}>Signature: ____________________</Text>
-      )}
-      <Text style={s.sigLine}>
+      <View style={s.sigImageLine}>
+        {signer?.signatureDataUri ? (
+          <Image src={signer.signatureDataUri} style={s.sigImage} />
+        ) : null}
+      </View>
+      <Text style={s.sigDate}>
         {signer?.signedAt ? `Signed ${signer.signedAt}` : "Date: ____________________"}
       </Text>
     </View>
+  );
+}
+
+/** The two-column signature grid (clients + RSL/A), kept together on one page. */
+function SignatureGrid({
+  firstClient,
+  admin,
+  extraClients,
+  sections,
+}: {
+  firstClient: SignerCertInfo | undefined;
+  admin: SignerCertInfo | undefined;
+  extraClients: SignerCertInfo[];
+  sections: ProposalSections;
+}) {
+  return (
+    <>
+      <View style={s.sigGrid} wrap={false}>
+        <SignatureCard
+          signer={firstClient}
+          fallbackName={sections.acceptance.clientName}
+          fallbackDetail={sections.acceptance.clientCompany}
+        />
+        <SignatureCard
+          signer={admin}
+          fallbackName={sections.acceptance.rslaName}
+          fallbackDetail={sections.acceptance.rslaTitle}
+        />
+      </View>
+      {extraClients.length > 0 ? (
+        <View style={[s.sigGrid, { marginTop: 10 }]} wrap={false}>
+          {extraClients.map((signer, i) => (
+            <SignatureCard
+              key={i}
+              signer={signer}
+              fallbackName={signer.name}
+              fallbackDetail={signer.signerCompany}
+            />
+          ))}
+        </View>
+      ) : null}
+    </>
   );
 }
 
@@ -424,7 +611,12 @@ export function ProposalPdf({
   const admin = signers.find((p) => p.role === "ADMIN_SIGNER");
   const clientSigners = signers.filter((p) => p.role === "CLIENT_SIGNER");
   const firstClient = clientSigners[0];
+  const extraClients = clientSigners.slice(1);
   const footerLeft = `${sections.acceptance.clientCompany} · Proposal & Service Agreement`;
+
+  const investmentDetailLines = sections.investment.details
+    .split("\n")
+    .filter((l) => l.trim());
 
   return (
     <Document
@@ -432,34 +624,25 @@ export function ProposalPdf({
       author="RSL/A LLC"
       subject="Proposal + Master Services Agreement"
     >
-      {/* Cover + At a Glance */}
+      {/* The whole proposal flows continuously, paginating itself; sections stay
+          intact via wrap={false} atoms + heading minPresenceAhead. */}
       <Page size="LETTER" style={s.page}>
-        <Image src={logoPath} style={[s.logo, { marginBottom: 50 }]} />
-        <Text style={s.h1}>{sections.cover.title}</Text>
-        <Text style={[s.para, { color: MUTED, fontSize: 10 }]}>{sections.cover.subtitle}</Text>
-
-        <Text style={s.h2}>At a Glance</Text>
-        <Text style={s.para}>{sections.atGlance.intro}</Text>
-        <View style={{ marginTop: 4 }}>
-          {sections.atGlance.rows.map((row, i) => (
-            <View
-              key={i}
-              style={[
-                s.glanceRow,
-                i === sections.atGlance.rows.length - 1 ? { borderBottomWidth: 0 } : {},
-              ]}
-            >
-              <Text style={s.glanceLabel}>{row.label}</Text>
-              <Text style={s.glanceValue}>{row.value}</Text>
-            </View>
-          ))}
+        {/* Cover */}
+        <View style={s.coverHeader}>
+          <Image src={logoPath} style={[s.logo, { marginBottom: 44 }]} />
+          <Text style={s.h1}>{sections.cover.title}</Text>
+          <Text style={{ color: MUTED, fontSize: 10.5, lineHeight: 1.5 }}>
+            {sections.cover.subtitle}
+          </Text>
         </View>
-        <PageFooter left={footerLeft} />
-      </Page>
 
-      {/* Narrative */}
-      <Page size="LETTER" style={s.page}>
-        <Text style={s.h2}>{sections.problem.title}</Text>
+        {/* At a Glance */}
+        <H2>At a Glance</H2>
+        <Text style={s.para}>{sections.atGlance.intro}</Text>
+        <GlanceTable rows={sections.atGlance.rows} />
+
+        {/* Problem */}
+        <H2>{sections.problem.title}</H2>
         <Text style={s.para}>{sections.problem.greeting}</Text>
         {sections.problem.paragraphs.map((p, i) => (
           <Text key={i} style={s.para} wrap={false}>
@@ -473,7 +656,8 @@ export function ProposalPdf({
           </Text>
         ))}
 
-        <Text style={s.h2}>{sections.solution.title}</Text>
+        {/* Solution */}
+        <H2>{sections.solution.title}</H2>
         <Text style={[s.para, { color: MUTED }]}>{sections.solution.intro}</Text>
         {sections.solution.paragraphs.map((p, i) => (
           <Text key={i} style={s.para} wrap={false}>
@@ -482,12 +666,13 @@ export function ProposalPdf({
         ))}
         <Text style={s.para}>{sections.solution.outro}</Text>
 
+        {/* Track record */}
         {sections.trackRecord ? (
           <>
-            <Text style={s.h2}>
+            <H2>
               {sections.trackRecord.heading}
               <NoteMark n={sections.trackRecord.noteNumber} />
-            </Text>
+            </H2>
             {sections.trackRecord.intro ? (
               <Text style={s.para}>{sections.trackRecord.intro}</Text>
             ) : null}
@@ -505,12 +690,9 @@ export function ProposalPdf({
             ))}
           </>
         ) : null}
-        <PageFooter left={footerLeft} />
-      </Page>
 
-      {/* Scope + Timeline */}
-      <Page size="LETTER" style={s.page}>
-        <Text style={s.h2}>{sections.scope.heading}</Text>
+        {/* Scope */}
+        <H2>{sections.scope.heading}</H2>
         <Text style={s.para}>{sections.scope.intro}</Text>
         <Bullets items={sections.scope.items} />
         <Text style={[s.para, { marginTop: 6 }]}>
@@ -518,31 +700,26 @@ export function ProposalPdf({
           <NoteMark n={sections.scope.noteNumber} />
         </Text>
 
-        <Text style={s.h2}>{sections.timeline.heading}</Text>
+        {/* Timeline */}
+        <H2>{sections.timeline.heading}</H2>
         <Text style={s.para}>{sections.timeline.intro}</Text>
         <Bullets items={sections.timeline.items} />
         <Text style={[s.para, { marginTop: 6 }]}>
           {sections.timeline.outro}
           <NoteMark n={sections.timeline.noteNumber} />
         </Text>
-        <PageFooter left={footerLeft} />
-      </Page>
 
-      {/* Investment + How to Proceed + Acceptance + Notes */}
-      <Page size="LETTER" style={s.page}>
-        <Text style={s.h2}>{sections.investment.heading}</Text>
+        {/* Investment */}
+        <H2>{sections.investment.heading}</H2>
         <Text style={s.para}>
           {sections.investment.note}
           <NoteMark n={sections.investment.noteNumber} />
         </Text>
-        {sections.investment.details
-          .split("\n")
-          .filter((l) => l.trim())
-          .map((line, i) => (
-            <Text key={i} style={[s.para, { fontWeight: 600, marginBottom: 3 }]}>
-              {line}
-            </Text>
-          ))}
+        {investmentDetailLines.map((line, i) => (
+          <Text key={i} style={[s.para, { fontWeight: 600, marginBottom: 3 }]}>
+            {line}
+          </Text>
+        ))}
         {sections.investment.tiers ? (
           <TierTable tiers={sections.investment.tiers} selectedTierId={selectedTierId} />
         ) : null}
@@ -553,43 +730,33 @@ export function ProposalPdf({
           <DepositScheduleBlock schedule={sections.investment.depositSchedule} />
         ) : null}
 
-        <Text style={s.h2}>{sections.howToProceed.heading}</Text>
-        <Text style={s.para}>{sections.howToProceed.intro}</Text>
-        {sections.howToProceed.steps.map((step, i) => (
-          <View key={i} style={s.bulletRow} wrap={false}>
-            <Text style={[s.bulletDot, { width: 18, color: BLUE, fontWeight: 600 }]}>{i + 1}.</Text>
-            <Text style={{ flex: 1 }}>{step}</Text>
-          </View>
-        ))}
+        {/* How to proceed */}
+        <View wrap={false}>
+          <H2>{sections.howToProceed.heading}</H2>
+          <Text style={s.para}>{sections.howToProceed.intro}</Text>
+          {sections.howToProceed.steps.map((step, i) => (
+            <View key={i} style={s.stepRow}>
+              <View style={s.stepBadge}>
+                <Text style={s.stepNum}>{i + 1}</Text>
+              </View>
+              <Text style={{ flex: 1 }}>{step}</Text>
+            </View>
+          ))}
+        </View>
 
-        <Text style={s.h2}>{sections.acceptance.heading}</Text>
-        <Text style={s.para}>{sections.acceptance.text}</Text>
-        <View style={s.sigGrid} wrap={false}>
-          <SignatureBlock
-            signer={firstClient}
-            fallbackName={sections.acceptance.clientName}
-            fallbackDetail={sections.acceptance.clientCompany}
-          />
-          <SignatureBlock
-            signer={admin}
-            fallbackName={sections.acceptance.rslaName}
-            fallbackDetail={sections.acceptance.rslaTitle}
+        {/* Acceptance: first signing place — heading, text and signatures stay together */}
+        <View wrap={false}>
+          <H2>{sections.acceptance.heading}</H2>
+          <Text style={s.para}>{sections.acceptance.text}</Text>
+          <SignatureGrid
+            firstClient={firstClient}
+            admin={admin}
+            extraClients={extraClients}
+            sections={sections}
           />
         </View>
-        {clientSigners.length > 1 ? (
-          <View style={[s.sigGrid, { marginTop: 10 }]} wrap={false}>
-            {clientSigners.slice(1).map((signer, i) => (
-              <SignatureBlock
-                key={i}
-                signer={signer}
-                fallbackName={signer.name}
-                fallbackDetail={signer.signerCompany}
-              />
-            ))}
-          </View>
-        ) : null}
 
-        {/* Numbered fine print, the destinations for the superscript markers */}
+        {/* Notes: numbered fine print, destinations for the superscript markers */}
         <View style={s.notesBlock} wrap={false}>
           <Text style={[s.microLabel, { marginBottom: 6 }]}>Notes</Text>
           {sections.notes.map((note) => (
@@ -602,7 +769,7 @@ export function ProposalPdf({
         <PageFooter left={footerLeft} />
       </Page>
 
-      {/* MSA */}
+      {/* MSA — starts on a fresh page; blocks flow and relocate whole. */}
       <Page size="LETTER" style={s.page}>
         <Text style={s.h1}>{sections.msa.heading}</Text>
         <Text style={s.para}>
@@ -611,7 +778,11 @@ export function ProposalPdf({
         {sections.msa.blocks.map((block, i) => {
           if (block.type === "heading") {
             return (
-              <Text key={i} style={[s.h2, { fontSize: 11, marginTop: 18 }]}>
+              <Text
+                key={i}
+                style={[s.h2, { fontSize: 11, marginTop: 18 }]}
+                minPresenceAhead={HEADING_PRESENCE}
+              >
                 {block.text}
               </Text>
             );
@@ -625,12 +796,12 @@ export function ProposalPdf({
             return (
               <View key={i} style={s.bulletRow} wrap={false}>
                 <Text style={s.bulletDot}>•</Text>
-                <Text style={{ flex: 1, fontSize: 9 }}>{runs}</Text>
+                <Text style={{ flex: 1, fontSize: 9.5 }}>{runs}</Text>
               </View>
             );
           }
           return (
-            <Text key={i} style={[s.para, { fontSize: 9 }]} wrap={false}>
+            <Text key={i} style={[s.para, { fontSize: 9.5 }]} wrap={false}>
               {runs}
             </Text>
           );
@@ -641,22 +812,16 @@ export function ProposalPdf({
           wrap={false}
           style={{ marginTop: 26, borderTopWidth: 1.2, borderTopColor: SLATE, paddingTop: 14 }}
         >
-          <Text style={[s.bold, { fontSize: 12, fontFamily: "Satoshi", color: SLATE }]}>
+          <Text style={[s.bold, { fontSize: 13, fontFamily: "Satoshi", letterSpacing: -0.3, color: SLATE }]}>
             {sections.execution.heading}
           </Text>
           <Text style={[s.para, { marginTop: 4 }]}>{sections.execution.text}</Text>
-          <View style={s.sigGrid}>
-            <SignatureBlock
-              signer={firstClient}
-              fallbackName={sections.acceptance.clientName}
-              fallbackDetail={sections.acceptance.clientCompany}
-            />
-            <SignatureBlock
-              signer={admin}
-              fallbackName={sections.acceptance.rslaName}
-              fallbackDetail={sections.acceptance.rslaTitle}
-            />
-          </View>
+          <SignatureGrid
+            firstClient={firstClient}
+            admin={admin}
+            extraClients={extraClients}
+            sections={sections}
+          />
         </View>
         <PageFooter left={footerLeft} />
       </Page>
