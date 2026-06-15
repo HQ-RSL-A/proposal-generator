@@ -3,7 +3,14 @@ import { blobPaths, putPrivate } from "@/lib/blob";
 import { logEvent } from "@/lib/audit";
 import { gateToken } from "@/lib/partyTokens";
 import { createCheckoutSession, findOrCreateCustomer } from "@/lib/stripe";
-import { effectiveCheckout, isSignOnly, type PaymentConfig, type TokensJson } from "@/lib/types";
+import {
+  effectiveCheckout,
+  isSignOnly,
+  type PaymentConfig,
+  type TokensJson,
+  type TrackRecordConfig,
+} from "@/lib/types";
+import { resolveTrackRecord } from "@/lib/trackRecord";
 import type { Proposal, SignatureType } from "@/generated/prisma/client";
 
 export class SigningError extends Error {
@@ -340,4 +347,9 @@ export function frozenPaymentConfig(proposal: Proposal): PaymentConfig {
 export function frozenTokens(proposal: Proposal): TokensJson {
   const frozen = proposal.frozenContent as { tokens?: TokensJson } | null;
   return (frozen?.tokens ?? proposal.tokens) as TokensJson;
+}
+
+export function frozenTrackRecord(proposal: Proposal): TrackRecordConfig {
+  const frozen = proposal.frozenContent as { trackRecord?: unknown } | null;
+  return resolveTrackRecord(frozen?.trackRecord ?? proposal.trackRecord);
 }

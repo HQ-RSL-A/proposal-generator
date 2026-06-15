@@ -6,7 +6,7 @@ import React from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { buildProposalSections } from "../src/lib/proposalContent";
 import { ProposalPdf } from "../src/components/pdf/ProposalPdf";
-import type { PaymentConfig, TokensJson } from "../src/lib/types";
+import type { PaymentConfig, TokensJson, TrackRecordConfig } from "../src/lib/types";
 
 const msa = fs.readFileSync(path.join(__dirname, "../prisma/content/msaV3.md"), "utf8");
 
@@ -47,66 +47,92 @@ const paymentConfig: PaymentConfig = {
   deposit: { depositPercent: 50 },
 };
 
+const trackRecord: TrackRecordConfig = {
+  intro:
+    "We build marketing infrastructure for service businesses, designed to run with minimal upkeep.",
+  caseStudies: [
+    {
+      text: "A local restaurant went from 14 to 132 reviews in 60 days, about $25K in new revenue.",
+      href: "https://rsla.io/work/local-seo-reputation-management",
+    },
+    {
+      text: "A Manhattan salon turned $600 of Meta ads into $36K in three months.",
+      href: "https://rsla.io/work/salon-marketing-automation-roi",
+    },
+    {
+      text: "A software company reached #1 on Google for 7+ keywords after a rebuild (no link, plain text).",
+      href: "",
+    },
+  ],
+};
+
 // A valid 1x1 PNG: enough for layout verification (real signatures come from the app).
 function fakeSignaturePng(): string {
   return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 }
 
-async function main() {
+const pdfProps = {
+  selectedTierId: "tier-growth",
+  selectedAddOnIds: ["addon-rush"],
+  signers: [
+    {
+      name: "Dominique Norris",
+      email: "dominique@brightline.example",
+      role: "CLIENT_SIGNER",
+      method: "Typed electronic signature (Caveat)",
+      adoptedName: "Dominique Norris",
+      signerTitle: "Owner",
+      signerCompany: "Brightline Test Co",
+      viewedAt: "Jun 13, 2026, 8:51 AM EDT",
+      signedAt: "Jun 13, 2026, 9:06 AM EDT",
+      ipAddress: "203.0.113.7",
+      signatureDataUri: fakeSignaturePng(),
+      placements: "Placed on the proposal acceptance and the agreement execution",
+    },
+    {
+      name: "Rahul Lalia",
+      email: "lalia@rsla.io",
+      role: "ADMIN_SIGNER",
+      method: "Pre-applied by sender at send time",
+      adoptedName: "Rahul Lalia",
+      signerTitle: "Managing Member",
+      signerCompany: "RSL/A LLC",
+      viewedAt: null,
+      signedAt: "Jun 13, 2026, 8:00 AM EDT",
+      ipAddress: null,
+      signatureDataUri: fakeSignaturePng(),
+      placements: null,
+    },
+  ],
+  certificate: {
+    referenceId: "CMQAKLJWC0000RRRMPHYQ4EBX",
+    versionNumber: 1,
+    contentHash: "7eeaad51d07af9319ea38c7fc293c514aabbccddeeff00112233445566778899",
+    agreementVersion: "v3",
+    sentAt: "Jun 13, 2026, 8:00 AM EDT",
+    completedAt: "Jun 13, 2026, 9:06 AM EDT",
+  },
+};
+
+async function renderVariant(trackRecordVariant: TrackRecordConfig, outName: string) {
   const sections = buildProposalSections({
     tokens,
     paymentConfig,
+    trackRecord: trackRecordVariant,
     msaBodyMarkdown: msa,
     selectedTierId: "tier-growth",
   });
   const buffer = await renderToBuffer(
-    React.createElement(ProposalPdf, {
-      sections,
-      selectedTierId: "tier-growth",
-      selectedAddOnIds: ["addon-rush"],
-      signers: [
-        {
-          name: "Dominique Norris",
-          email: "dominique@brightline.example",
-          role: "CLIENT_SIGNER",
-          method: "Typed electronic signature (Caveat)",
-          adoptedName: "Dominique Norris",
-          signerTitle: "Owner",
-          signerCompany: "Brightline Test Co",
-          viewedAt: "Jun 13, 2026, 8:51 AM EDT",
-          signedAt: "Jun 13, 2026, 9:06 AM EDT",
-          ipAddress: "203.0.113.7",
-          signatureDataUri: fakeSignaturePng(),
-          placements: "Placed on the proposal acceptance and the agreement execution",
-        },
-        {
-          name: "Rahul Lalia",
-          email: "lalia@rsla.io",
-          role: "ADMIN_SIGNER",
-          method: "Pre-applied by sender at send time",
-          adoptedName: "Rahul Lalia",
-          signerTitle: "Managing Member",
-          signerCompany: "RSL/A LLC",
-          viewedAt: null,
-          signedAt: "Jun 13, 2026, 8:00 AM EDT",
-          ipAddress: null,
-          signatureDataUri: fakeSignaturePng(),
-          placements: null,
-        },
-      ],
-      certificate: {
-        referenceId: "CMQAKLJWC0000RRRMPHYQ4EBX",
-        versionNumber: 1,
-        contentHash: "7eeaad51d07af9319ea38c7fc293c514aabbccddeeff00112233445566778899",
-        agreementVersion: "v3",
-        sentAt: "Jun 13, 2026, 8:00 AM EDT",
-        completedAt: "Jun 13, 2026, 9:06 AM EDT",
-      },
-    }) as Parameters<typeof renderToBuffer>[0]
+    React.createElement(ProposalPdf, { sections, ...pdfProps }) as Parameters<typeof renderToBuffer>[0]
   );
-  const out = path.join(__dirname, "../docs/pdfSmoke.pdf");
+  const out = path.join(__dirname, `../docs/${outName}`);
   fs.writeFileSync(out, buffer);
   console.log(`PDF OK: ${out} (${(buffer.length / 1024).toFixed(0)} KB)`);
+}
+
+async function main() {
+  await renderVariant(trackRecord, "pdfSmoke.pdf");
+  await renderVariant({ intro: "", caseStudies: [] }, "pdfSmoke-empty.pdf");
 }
 
 main().catch((error) => {

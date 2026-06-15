@@ -53,5 +53,13 @@
   "Investment.AddOns": [
     { "name": "Logo refresh", "price": "$800" },
     { "name": "Extra ad channel each month", "price": "$500/month" }
-  ]
+  ],
+  "Content.TrackRecord": {
+    "intro": "We build marketing infrastructure for service businesses. Everything we build is designed to run on its own with minimal upkeep.",
+    "caseStudies": [
+      { "text": "A local restaurant went from 14 to 132 Google reviews in 60 days. That translated to $25K in new revenue.", "url": "https://rsla.io/work/local-seo-reputation-management" },
+      { "text": "A salon owner in Manhattan put $600 into Meta ads and pulled $36K in income within 3 months. 60X return.", "url": "https://rsla.io/work/salon-marketing-automation-roi" },
+      { "text": "We rebuilt a software company's site and repositioned their search strategy. Six months later they were #1 on Google for 7+ keywords.", "url": "https://rsla.io/work/fieldshare-seo-website-rebrand" }
+    ]
+  }
 }

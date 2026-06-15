@@ -408,26 +408,34 @@ export function ProposalView({
         <p>{sections.solution.outro}</p>
 
         {/* Track record */}
-        <SectionHeading>{sections.trackRecord.heading}</SectionHeading>
-        <p>
-          {sections.trackRecord.intro}
-          <NoteMark n={sections.trackRecord.noteNumber} />
-        </p>
-        <ul className="mt-3 space-y-2.5">
-          {sections.trackRecord.caseStudies.map((cs, i) => (
-            <li key={i} className="flex gap-2.5">
-              <span className="mt-0.5 text-primary">•</span>
-              <a
-                href={cs.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline decoration-border underline-offset-4 hover:text-primary hover:decoration-primary"
-              >
-                {cs.text}
-              </a>
-            </li>
-          ))}
-        </ul>
+        {sections.trackRecord ? (
+          <>
+            <SectionHeading>
+              {sections.trackRecord.heading}
+              <NoteMark n={sections.trackRecord.noteNumber} />
+            </SectionHeading>
+            {sections.trackRecord.intro ? <p>{sections.trackRecord.intro}</p> : null}
+            <ul className="mt-3 space-y-2.5">
+              {sections.trackRecord.caseStudies.map((cs, i) => (
+                <li key={i} className="flex gap-2.5">
+                  <span className="mt-0.5 text-primary">•</span>
+                  {cs.href ? (
+                    <a
+                      href={cs.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline decoration-border underline-offset-4 hover:text-primary hover:decoration-primary"
+                    >
+                      {cs.text}
+                    </a>
+                  ) : (
+                    <span>{cs.text}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
 
         {/* Scope */}
         <SectionHeading>{sections.scope.heading}</SectionHeading>

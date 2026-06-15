@@ -59,6 +59,20 @@ base amounts — the Notion CRM sync uses it so it records full contract value (
 never the deposit. The deposit payment schedule is communicated via `computeDepositSchedule`
 (shown on the proposal, PDF, the `/paid` screen, and the receipt). All documented on `/docs`.
 
+## Track Record
+
+"Our Track Record" is per-proposal editable: `Proposal.trackRecord` jsonb column
+(`TrackRecordConfig { intro, caseStudies: [{ text, href }] }` in `src/lib/types.ts`), frozen into
+`frozenContent.trackRecord` at send and covered by the content hash like tokens/paymentConfig. The
+fixed heading + results-vary disclaimer live in `src/lib/trackRecord.ts` alongside `SUGGESTED_*`
+reference data, `LEGACY_TRACK_RECORD`, and `resolveTrackRecord()` (null = legacy/pre-migration ->
+the original 3 case studies; an explicit, even empty, config is respected). Editable = intro + case
+studies (URL optional -> link when set, plain text when blank; max 6). **An empty case-study list
+hides the whole section**, and footnote numbering is computed in `buildProposalSections` so the
+disclaimer is note 1 only when the section shows (otherwise scope/timeline/investment renumber).
+Read frozen-first via `frozenTrackRecord(proposal)` (`signingService.ts`). Importable via the
+`Content.TrackRecord` key (`{ intro, caseStudies: [{ text, url }] }`).
+
 ## Users & roles
 
 - `User` table is the sign-in allowlist (rsla.io Google accounts only; no passwords by
@@ -142,7 +156,8 @@ resolves the proposal by session id whenever the path token is dead.
 - Migrations: hand SQL in `prisma/migrations/` — `0001_init.sql` (schema + RLS; PostgREST
   can't reach the schema and RLS is deny-all on top), `0002`/`0003` (users/roles, signer
   title+company), `0004_signature_stamps.sql` (two-place ceremony timestamps),
-  `0005_addons_deposit.sql` (`Proposal.selectedAddOnIds` jsonb). All applied.
+  `0005_addons_deposit.sql` (`Proposal.selectedAddOnIds` jsonb),
+  `0006_track_record.sql` (`Proposal.trackRecord` jsonb). All applied.
 - Apply: `npx prisma db execute --file prisma/migrations/<file>.sql`; fresh DB also needs
   `npx prisma db seed` (MSA v3 + AdminSettings).
 

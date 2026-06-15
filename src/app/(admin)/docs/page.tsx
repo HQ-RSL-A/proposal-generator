@@ -227,6 +227,16 @@ const INVESTMENT_ADDONS = `{
   "Investment.DepositPercent": 50
 }`;
 
+const CONTENT_TRACK_RECORD = `{
+  "Content.TrackRecord": {
+    "intro": "We build marketing infrastructure for service businesses, designed to run with minimal upkeep.",
+    "caseStudies": [
+      { "text": "A local restaurant went from 14 to 132 reviews in 60 days.", "url": "https://rsla.io/work/local-seo-reputation-management" },
+      { "text": "A salon owner turned $600 in Meta ads into $36K in 3 months.", "url": "https://rsla.io/work/salon-marketing-automation-roi" }
+    ]
+  }
+}`;
+
 function CodeBlock({ children }: { children: string }) {
   return (
     <pre className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs leading-relaxed">
@@ -386,6 +396,25 @@ export default function DocsPage() {
       </section>
 
       <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">Optional: Content.TrackRecord</h2>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          A top level block that pre-fills the Our Track Record editor. intro is an optional
+          lead-in; caseStudies is the list shown to the client. The section heading and the
+          results-vary disclaimer are added for you. Drop the block (or send no case studies) to
+          hide the whole section.
+        </p>
+        <CodeBlock>{CONTENT_TRACK_RECORD}</CodeBlock>
+        <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
+          <li>
+            Each case study needs text. url is optional: with a url it renders as a link, without
+            one it is plain text.
+          </li>
+          <li>Up to six case studies. Extra ones are dropped on import.</li>
+          <li>Leave it out to hide Our Track Record on this proposal.</li>
+        </ul>
+      </section>
+
+      <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold">Gotchas</h2>
         <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
           <li>displayString must match amountCents to the cent, or sending is blocked.</li>
@@ -397,6 +426,7 @@ export default function DocsPage() {
             A deposit needs a one-time build fee (flat or on at least one tier). With a deposit, the
             retainer and recurring add-ons are deferred, so only the deposit is charged at signing.
           </li>
+          <li>Track Record: up to six case studies, each with text and an optional url. No case studies hides the section.</li>
           <li>Use generic names in examples and tests. The Notion sync matches real CRM rows by company name.</li>
         </ul>
       </section>

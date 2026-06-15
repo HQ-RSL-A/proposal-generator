@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ProposalForm } from "@/components/proposals/proposalForm";
 import type { PaymentConfig } from "@/lib/types";
+import { resolveTrackRecord } from "@/lib/trackRecord";
 
 export default async function EditProposalPage({
   params,
@@ -22,6 +23,7 @@ export default async function EditProposalPage({
         initialTitle={proposal.title}
         initialTokens={proposal.tokens as Record<string, string>}
         initialConfig={proposal.paymentConfig as unknown as PaymentConfig}
+        initialTrackRecord={resolveTrackRecord(proposal.trackRecord)}
       />
     </div>
   );

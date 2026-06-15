@@ -3,6 +3,7 @@ import {
   normalizeImportedTokens,
   paymentConfigSchema,
   partiesSchema,
+  trackRecordConfigSchema,
   validatePaymentConfigForSend,
 } from "@/lib/validation";
 import type { PaymentConfig } from "@/lib/types";
@@ -188,6 +189,41 @@ describe("paymentConfigSchema add-ons and deposit", () => {
     const errors = validatePaymentConfigForSend(drifted);
     expect(errors).toHaveLength(1);
     expect(errors[0]).toContain("$800");
+  });
+});
+
+describe("trackRecordConfigSchema", () => {
+  it("accepts an intro plus case studies with and without a URL", () => {
+    const ok = {
+      intro: "We build systems for service businesses.",
+      caseStudies: [
+        { text: "A restaurant tripled its reviews.", href: "https://rsla.io/work/a" },
+        { text: "A salon 60x'd its ad spend.", href: "" },
+      ],
+    };
+    expect(trackRecordConfigSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it("accepts an empty config (hidden section)", () => {
+    expect(trackRecordConfigSchema.safeParse({ intro: "", caseStudies: [] }).success).toBe(true);
+  });
+
+  it("rejects a case study with empty text", () => {
+    const bad = { intro: "", caseStudies: [{ text: "", href: "https://rsla.io" }] };
+    expect(trackRecordConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects a non-URL link", () => {
+    const bad = { intro: "", caseStudies: [{ text: "A result", href: "not a url" }] };
+    expect(trackRecordConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects more than six case studies", () => {
+    const many = {
+      intro: "",
+      caseStudies: Array.from({ length: 7 }, (_, i) => ({ text: `Result ${i}`, href: "" })),
+    };
+    expect(trackRecordConfigSchema.safeParse(many).success).toBe(false);
   });
 });
 

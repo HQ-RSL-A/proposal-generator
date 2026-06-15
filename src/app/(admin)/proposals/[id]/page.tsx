@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/authGuard";
 import { prisma } from "@/lib/prisma";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { buildProposalSections, sectionsFromFrozen } from "@/lib/proposalContent";
-import { frozenPaymentConfig, frozenTokens } from "@/lib/signingService";
+import { frozenPaymentConfig, frozenTokens, frozenTrackRecord } from "@/lib/signingService";
 import type { FrozenContent } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +50,7 @@ export default async function ProposalDetailPage({
     : buildProposalSections({
         tokens,
         paymentConfig: config,
+        trackRecord: frozenTrackRecord(proposal),
         msaBodyMarkdown: proposal.msaVersion.bodyMarkdown,
         selectedTierId: proposal.selectedTierId,
       });

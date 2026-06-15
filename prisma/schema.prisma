@@ -157,6 +157,8 @@ model Proposal {
   // Editable until send; frozen snapshot is the legal record after send
   tokens        Json
   paymentConfig Json
+  // Per-proposal Track Record (intro + case studies); null = legacy default. Frozen at send.
+  trackRecord   Json?
   msaVersionId  String
   msaVersion    MsaVersion     @relation(fields: [msaVersionId], references: [id])
 

@@ -482,19 +482,29 @@ export function ProposalPdf({
         ))}
         <Text style={s.para}>{sections.solution.outro}</Text>
 
-        <Text style={s.h2}>{sections.trackRecord.heading}</Text>
-        <Text style={s.para}>
-          {sections.trackRecord.intro}
-          <NoteMark n={sections.trackRecord.noteNumber} />
-        </Text>
-        {sections.trackRecord.caseStudies.map((cs, i) => (
-          <View key={i} style={s.bulletRow} wrap={false}>
-            <Text style={s.bulletDot}>•</Text>
-            <Link src={cs.href} style={[s.link, { flex: 1 }]}>
-              {cs.text}
-            </Link>
-          </View>
-        ))}
+        {sections.trackRecord ? (
+          <>
+            <Text style={s.h2}>
+              {sections.trackRecord.heading}
+              <NoteMark n={sections.trackRecord.noteNumber} />
+            </Text>
+            {sections.trackRecord.intro ? (
+              <Text style={s.para}>{sections.trackRecord.intro}</Text>
+            ) : null}
+            {sections.trackRecord.caseStudies.map((cs, i) => (
+              <View key={i} style={s.bulletRow} wrap={false}>
+                <Text style={s.bulletDot}>•</Text>
+                {cs.href ? (
+                  <Link src={cs.href} style={[s.link, { flex: 1 }]}>
+                    {cs.text}
+                  </Link>
+                ) : (
+                  <Text style={{ flex: 1 }}>{cs.text}</Text>
+                )}
+              </View>
+            ))}
+          </>
+        ) : null}
         <PageFooter left={footerLeft} />
       </Page>
 

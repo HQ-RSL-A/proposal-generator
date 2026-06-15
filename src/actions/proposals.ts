@@ -22,9 +22,11 @@ import {
   paymentConfigSchema,
   partiesSchema,
   tokensJsonSchema,
+  trackRecordConfigSchema,
   validatePaymentConfigForSend,
 } from "@/lib/validation";
 import type { FrozenContent, PaymentConfig, TokensJson } from "@/lib/types";
+import { EMPTY_TRACK_RECORD, resolveTrackRecord } from "@/lib/trackRecord";
 
 export type ActionResult<T = undefined> =
   | { ok: true; data?: T }
@@ -40,17 +42,20 @@ export async function createProposal(input: {
   title: string;
   tokens: unknown;
   paymentConfig: unknown;
+  trackRecord?: unknown;
 }): Promise<ActionResult<{ id: string }>> {
   await requireAuth();
   try {
     const tokens = tokensJsonSchema.parse(input.tokens);
     const paymentConfig = paymentConfigSchema.parse(input.paymentConfig);
+    const trackRecord = trackRecordConfigSchema.parse(input.trackRecord ?? EMPTY_TRACK_RECORD);
     const msa = await prisma.msaVersion.findFirstOrThrow({ orderBy: { createdAt: "desc" } });
     const proposal = await prisma.proposal.create({
       data: {
         title: input.title.trim() || tokens["Client.ProposalTitle"],
         tokens: tokens as object,
         paymentConfig: paymentConfig as object,
+        trackRecord: trackRecord as object,
         msaVersionId: msa.id,
       },
     });
@@ -67,6 +72,7 @@ export async function updateProposal(input: {
   title: string;
   tokens: unknown;
   paymentConfig: unknown;
+  trackRecord?: unknown;
 }): Promise<ActionResult> {
   await requireAuth();
   try {
@@ -76,12 +82,14 @@ export async function updateProposal(input: {
     }
     const tokens = tokensJsonSchema.parse(input.tokens);
     const paymentConfig = paymentConfigSchema.parse(input.paymentConfig);
+    const trackRecord = trackRecordConfigSchema.parse(input.trackRecord ?? EMPTY_TRACK_RECORD);
     await prisma.proposal.update({
       where: { id: input.id },
       data: {
         title: input.title.trim() || tokens["Client.ProposalTitle"],
         tokens: tokens as object,
         paymentConfig: paymentConfig as object,
+        trackRecord: trackRecord as object,
       },
     });
     revalidatePath(`/proposals/${input.id}`);
@@ -128,6 +136,7 @@ export async function sendProposal(input: {
 
     const tokens = tokensJsonSchema.parse(proposal.tokens);
     const paymentConfig = paymentConfigSchema.parse(proposal.paymentConfig) as PaymentConfig;
+    const trackRecord = trackRecordConfigSchema.parse(resolveTrackRecord(proposal.trackRecord));
     const parties = partiesSchema.parse(input.parties);
 
     // Money guardrail: display strings must match structured cents.
@@ -169,6 +178,7 @@ export async function sendProposal(input: {
       versionNumber: proposal.versionNumber,
       tokens: tokens as TokensJson,
       paymentConfig,
+      trackRecord,
       msaVersionId: proposal.msaVersionId,
       msaVersionLabel: proposal.msaVersion.version,
       msaSha256: proposal.msaVersion.sha256,
@@ -334,6 +344,7 @@ export async function reviseProposal(id: string): Promise<ActionResult<{ id: str
           title: old.title,
           tokens: old.tokens as object,
           paymentConfig: old.paymentConfig as object,
+          trackRecord: (old.trackRecord ?? undefined) as object | undefined,
           msaVersionId: old.msaVersionId,
           versionNumber: old.versionNumber + 1,
           parentId: old.id,

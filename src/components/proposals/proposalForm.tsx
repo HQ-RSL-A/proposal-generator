@@ -21,13 +21,22 @@ import {
   type PaymentConfig,
   type TierConfig,
   type TokensJson,
+  type TrackRecordConfig,
 } from "@/lib/types";
+import {
+  MAX_CASE_STUDIES,
+  SUGGESTED_CASE_STUDIES,
+  SUGGESTED_INTRO,
+} from "@/lib/trackRecord";
 
 type PricingMode = "flat" | "tiers" | "signOnly";
 
 interface FormState {
   title: string;
   tokens: Record<string, string>;
+  /** Per-proposal "Our Track Record" - intro + case studies. Empty hides the section. */
+  trackRecordIntro: string;
+  caseStudies: CaseStudyDraft[];
   pricingMode: PricingMode;
   oneTimeEnabled: boolean;
   oneTime: { label: string; displayString: string; amountCents: number };
@@ -54,6 +63,11 @@ interface AddOnDraft {
   amountCents: number;
   isRecurring: boolean;
   intervalMonths: 1 | 3 | 12;
+}
+
+interface CaseStudyDraft {
+  text: string;
+  href: string;
 }
 
 interface TierDraft {
@@ -83,6 +97,10 @@ function blankAddOn(): AddOnDraft {
     isRecurring: false,
     intervalMonths: 1,
   };
+}
+
+function blankCaseStudy(): CaseStudyDraft {
+  return { text: "", href: "" };
 }
 
 function slugifyAddOn(label: string, index: number): string {
@@ -166,6 +184,14 @@ function configToState(config: PaymentConfig | null): Partial<FormState> {
   };
 }
 
+function trackRecordToState(tr: TrackRecordConfig | null | undefined): Partial<FormState> {
+  if (!tr) return {};
+  return {
+    trackRecordIntro: tr.intro,
+    caseStudies: tr.caseStudies.map((cs) => ({ text: cs.text, href: cs.href })),
+  };
+}
+
 function stateToConfig(state: FormState): PaymentConfig {
   const methods: PaymentConfig["paymentMethods"] = [];
   if (state.methods.card) methods.push("card");
@@ -239,6 +265,13 @@ function stateToConfig(state: FormState): PaymentConfig {
   };
 }
 
+function stateToTrackRecord(state: FormState): TrackRecordConfig {
+  const caseStudies = state.caseStudies
+    .map((cs) => ({ text: cs.text.trim(), href: cs.href.trim() }))
+    .filter((cs) => cs.text.length > 0);
+  return { intro: state.trackRecordIntro.trim(), caseStudies };
+}
+
 /** Best-effort mapping of the skill's Investment.Structure to tier drafts. */
 function inferTiersFromImport(raw: Record<string, unknown>): TierDraft[] | null {
   const structure = raw["Investment.Structure"] as
@@ -291,6 +324,22 @@ function inferDepositFromImport(raw: Record<string, unknown>): number | null {
   if (!Number.isFinite(num)) return null;
   const pct = Math.round(num);
   return pct >= 1 && pct <= 99 ? pct : null;
+}
+
+/** Optional Content.TrackRecord from the import: an intro plus case studies (text + url). */
+function inferTrackRecordFromImport(
+  raw: Record<string, unknown>
+): { intro: string; caseStudies: CaseStudyDraft[] } | null {
+  const block = raw["Content.TrackRecord"] as
+    | { intro?: string; caseStudies?: { text?: string; url?: string; href?: string }[] }
+    | undefined;
+  if (!block || !Array.isArray(block.caseStudies)) return null;
+  const caseStudies = block.caseStudies
+    .map((cs) => ({ text: (cs.text ?? "").trim(), href: (cs.url ?? cs.href ?? "").trim() }))
+    .filter((cs) => cs.text.length > 0)
+    .slice(0, MAX_CASE_STUDIES);
+  if (caseStudies.length === 0) return null;
+  return { intro: (block.intro ?? "").trim(), caseStudies };
 }
 
 const tokenFieldGroups: { heading: string; fields: { key: keyof TokensJson; label: string; multiline?: boolean }[] }[] = [
@@ -414,12 +463,14 @@ export function ProposalForm({
   initialTitle,
   initialTokens,
   initialConfig,
+  initialTrackRecord,
 }: {
   mode: "create" | "edit";
   proposalId?: string;
   initialTitle?: string;
   initialTokens?: Record<string, string>;
   initialConfig?: PaymentConfig | null;
+  initialTrackRecord?: TrackRecordConfig | null;
 }) {
   const router = useRouter();
   const [saving, setSaving] = React.useState(false);
@@ -427,6 +478,8 @@ export function ProposalForm({
   const [state, setState] = React.useState<FormState>(() => ({
     title: initialTitle ?? "",
     tokens: initialTokens ?? blankTokens(),
+    trackRecordIntro: "",
+    caseStudies: [],
     pricingMode: "flat",
     oneTimeEnabled: false,
     oneTime: { ...emptyMoney, label: "One-time build" },
@@ -439,6 +492,7 @@ export function ProposalForm({
     methods: { card: true, ach: false },
     preferAch: false,
     ...configToState(initialConfig ?? null),
+    ...trackRecordToState(initialTrackRecord ?? null),
   }));
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
@@ -466,6 +520,7 @@ export function ProposalForm({
     const inferredTiers = inferTiersFromImport(rawObj);
     const inferredAddOns = inferAddOnsFromImport(rawObj);
     const inferredDeposit = inferDepositFromImport(rawObj);
+    const inferredTrackRecord = inferTrackRecordFromImport(rawObj);
     setState((prev) => ({
       ...prev,
       title: tokens["Client.ProposalTitle"],
@@ -475,11 +530,18 @@ export function ProposalForm({
         : {}),
       ...(inferredAddOns ? { addOns: inferredAddOns } : {}),
       ...(inferredDeposit ? { depositEnabled: true, depositPercent: inferredDeposit } : {}),
+      ...(inferredTrackRecord
+        ? {
+            trackRecordIntro: inferredTrackRecord.intro,
+            caseStudies: inferredTrackRecord.caseStudies,
+          }
+        : {}),
     }));
     const extras = [
       inferredTiers ? `${inferredTiers.length} pricing tiers` : null,
       inferredAddOns ? `${inferredAddOns.length} add-ons` : null,
       inferredDeposit ? `${inferredDeposit}% deposit` : null,
+      inferredTrackRecord ? `${inferredTrackRecord.caseStudies.length} case studies` : null,
     ].filter(Boolean);
     toast.success(
       extras.length
@@ -495,6 +557,7 @@ export function ProposalForm({
         title: state.title || state.tokens["Client.ProposalTitle"] || "Untitled proposal",
         tokens: state.tokens,
         paymentConfig: stateToConfig(state),
+        trackRecord: stateToTrackRecord(state),
       };
       const result =
         mode === "create"
@@ -570,6 +633,98 @@ export function ProposalForm({
           </CardContent>
         </Card>
       ))}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Our Track Record</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">
+            Case studies shown on the proposal. Leave it empty to hide the whole section. The
+            heading and the results-vary disclaimer are added for you.
+          </p>
+          <div className="space-y-1">
+            <Label className="text-xs">Intro (optional lead-in above the case studies)</Label>
+            <Textarea
+              value={state.trackRecordIntro}
+              onChange={(e) => set("trackRecordIntro", e.target.value)}
+              className="min-h-20"
+              placeholder="We build marketing infrastructure for service businesses..."
+            />
+          </div>
+          {state.caseStudies.map((cs, index) => (
+            <div key={index} className="space-y-2 rounded-lg border border-border p-3">
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs">Case study {index + 1}</Label>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive"
+                  onClick={() =>
+                    set("caseStudies", state.caseStudies.filter((_, i) => i !== index))
+                  }
+                >
+                  Remove
+                </Button>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Result</Label>
+                <Textarea
+                  value={cs.text}
+                  onChange={(e) => {
+                    const caseStudies = [...state.caseStudies];
+                    caseStudies[index] = { ...cs, text: e.target.value };
+                    set("caseStudies", caseStudies);
+                  }}
+                  className="min-h-16"
+                  placeholder="A local restaurant went from 14 to 132 reviews in 60 days."
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Link URL (optional)</Label>
+                <Input
+                  value={cs.href}
+                  onChange={(e) => {
+                    const caseStudies = [...state.caseStudies];
+                    caseStudies[index] = { ...cs, href: e.target.value };
+                    set("caseStudies", caseStudies);
+                  }}
+                  placeholder="https://rsla.io/work/..."
+                />
+              </div>
+            </div>
+          ))}
+          <div className="flex flex-wrap gap-2">
+            {state.caseStudies.length < MAX_CASE_STUDIES ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => set("caseStudies", [...state.caseStudies, blankCaseStudy()])}
+              >
+                Add case study
+              </Button>
+            ) : null}
+            {state.caseStudies.length === 0 ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  setState((prev) => ({
+                    ...prev,
+                    trackRecordIntro: prev.trackRecordIntro || SUGGESTED_INTRO,
+                    caseStudies: SUGGESTED_CASE_STUDIES.map((cs) => ({
+                      text: cs.text,
+                      href: cs.href,
+                    })),
+                  }))
+                }
+              >
+                Load suggested examples
+              </Button>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

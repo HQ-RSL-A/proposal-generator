@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TOKEN_KEYS, type PaymentConfig, type TokensJson } from "@/lib/types";
 import { displayMatchesCents } from "@/lib/currency";
+import { MAX_CASE_STUDIES } from "@/lib/trackRecord";
 
 // ---------- Tokens JSON ----------
 
@@ -50,6 +51,27 @@ export function normalizeImportedTokens(raw: unknown): {
   }
   return { tokens: result.data, errors: [] };
 }
+
+// ---------- Track record ----------
+
+// A case study link is optional: blank renders as plain text, otherwise it must be a full URL.
+const caseStudyHrefSchema = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || z.url().safeParse(v).success, {
+    message: "Each case study link must be a full URL or left blank.",
+  });
+
+const trackRecordCaseStudySchema = z.object({
+  text: nonEmpty,
+  href: caseStudyHrefSchema,
+});
+
+/** Per-proposal Track Record. Intro may be empty; an empty caseStudies list hides the section. */
+export const trackRecordConfigSchema = z.object({
+  intro: z.string().trim(),
+  caseStudies: z.array(trackRecordCaseStudySchema).max(MAX_CASE_STUDIES),
+});
 
 // ---------- Payment config ----------
 

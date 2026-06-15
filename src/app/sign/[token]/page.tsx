@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { gateToken } from "@/lib/partyTokens";
 import { sectionsFromFrozen, buildProposalSections } from "@/lib/proposalContent";
-import { frozenPaymentConfig, frozenTokens } from "@/lib/signingService";
+import { frozenPaymentConfig, frozenTokens, frozenTrackRecord } from "@/lib/signingService";
 import { formatDate, formatDateTime } from "@/lib/dates";
 import { isSignOnly, type FrozenContent } from "@/lib/types";
 import { SigningExperience } from "@/components/signing/signingExperience";
@@ -123,6 +123,7 @@ export default async function SigningPage({
     : buildProposalSections({
         tokens: frozenTokens(proposal),
         paymentConfig: config,
+        trackRecord: frozenTrackRecord(proposal),
         msaBodyMarkdown: proposal.msaVersion.bodyMarkdown,
         selectedTierId: proposal.selectedTierId,
       });

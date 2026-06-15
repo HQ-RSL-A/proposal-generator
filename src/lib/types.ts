@@ -96,12 +96,28 @@ export interface PaymentConfig {
   deposit?: DepositConfig | null;
 }
 
+export interface TrackRecordCaseStudy {
+  /** Display text for the result. */
+  text: string;
+  /** Link to the case study. Optional: renders as a link when set, plain text when "". */
+  href: string;
+}
+
+/** Per-proposal "Our Track Record". Heading + disclaimer stay fixed; these two are editable. */
+export interface TrackRecordConfig {
+  /** Optional lead-in line; rendered only when non-empty. */
+  intro: string;
+  /** Empty = the section (and its disclaimer footnote) is hidden. */
+  caseStudies: TrackRecordCaseStudy[];
+}
+
 /** Immutable snapshot taken at send time. The legal record. */
 export interface FrozenContent {
   proposalId: string;
   versionNumber: number;
   tokens: TokensJson;
   paymentConfig: PaymentConfig;
+  trackRecord: TrackRecordConfig;
   msaVersionId: string;
   msaVersionLabel: string;
   msaSha256: string;

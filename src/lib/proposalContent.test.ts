@@ -2,7 +2,8 @@ import fs from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { buildProposalSections, splitBulletString, splitParagraphs } from "@/lib/proposalContent";
-import type { PaymentConfig, TokensJson } from "@/lib/types";
+import { LEGACY_TRACK_RECORD, resolveTrackRecord } from "@/lib/trackRecord";
+import type { PaymentConfig, TokensJson, TrackRecordConfig } from "@/lib/types";
 
 const msa = fs.readFileSync(path.join(__dirname, "../../prisma/content/msaV3.md"), "utf8");
 
@@ -40,6 +41,15 @@ const paidConfig: PaymentConfig = {
   oneTime: { amountCents: 99700, displayString: "$997", label: "Build" },
 };
 
+const trackRecord: TrackRecordConfig = {
+  intro: "We build systems for service businesses.",
+  caseStudies: [
+    { text: "A restaurant tripled its reviews.", href: "https://rsla.io/work/a" },
+    { text: "A salon 60x'd its ad spend.", href: "" },
+  ],
+};
+const emptyTrackRecord: TrackRecordConfig = { intro: "", caseStudies: [] };
+
 describe("splitBulletString", () => {
   it("handles •, -, and – prefixes", () => {
     expect(splitBulletString("• a\n- b\n– c\nplain")).toEqual(["a", "b", "c", "plain"]);
@@ -60,6 +70,7 @@ describe("buildProposalSections", () => {
     const sections = buildProposalSections({
       tokens,
       paymentConfig: paidConfig,
+      trackRecord,
       msaBodyMarkdown: msa,
     });
     expect(sections.cover.title).toBe("Test System");
@@ -81,13 +92,57 @@ describe("buildProposalSections", () => {
   });
 
   it("adapts How to Proceed copy to the payment mode", () => {
-    const paid = buildProposalSections({ tokens, paymentConfig: paidConfig, msaBodyMarkdown: msa });
+    const paid = buildProposalSections({ tokens, paymentConfig: paidConfig, trackRecord, msaBodyMarkdown: msa });
     const signOnly = buildProposalSections({
       tokens,
       paymentConfig: signOnlyConfig,
+      trackRecord,
       msaBodyMarkdown: msa,
     });
     expect(paid.howToProceed.steps[1]).toContain("secure checkout");
     expect(signOnly.howToProceed.steps[1]).toContain("invoice or payment link");
+  });
+
+  it("shows the track record section and disclaimer note when case studies exist", () => {
+    const sections = buildProposalSections({
+      tokens,
+      paymentConfig: paidConfig,
+      trackRecord,
+      msaBodyMarkdown: msa,
+    });
+    expect(sections.trackRecord).not.toBeNull();
+    expect(sections.trackRecord?.noteNumber).toBe(1);
+    expect(sections.trackRecord?.caseStudies).toHaveLength(2);
+    expect(sections.notes).toHaveLength(4);
+    expect(sections.notes[0].text).toContain("Results vary");
+    expect(sections.scope.noteNumber).toBe(2);
+  });
+
+  it("hides the track record and renumbers notes when there are no case studies", () => {
+    const sections = buildProposalSections({
+      tokens,
+      paymentConfig: paidConfig,
+      trackRecord: emptyTrackRecord,
+      msaBodyMarkdown: msa,
+    });
+    expect(sections.trackRecord).toBeNull();
+    expect(sections.notes).toHaveLength(3);
+    expect(sections.notes[0].text).not.toContain("Results vary");
+    expect(sections.scope.noteNumber).toBe(1);
+    expect(sections.timeline.noteNumber).toBe(2);
+    expect(sections.investment.noteNumber).toBe(3);
+    expect(sections.notes[2].text).toContain("July 11, 2026");
+  });
+});
+
+describe("resolveTrackRecord", () => {
+  it("falls back to the legacy case studies for null/undefined (pre-migration rows)", () => {
+    expect(resolveTrackRecord(null)).toBe(LEGACY_TRACK_RECORD);
+    expect(resolveTrackRecord(undefined)).toBe(LEGACY_TRACK_RECORD);
+    expect(LEGACY_TRACK_RECORD.caseStudies.length).toBeGreaterThan(0);
+  });
+  it("respects an explicit, even empty, config", () => {
+    const empty = { intro: "", caseStudies: [] };
+    expect(resolveTrackRecord(empty)).toBe(empty);
   });
 });

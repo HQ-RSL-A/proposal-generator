@@ -9,6 +9,8 @@ import type {
   RecurringItem,
   TierConfig,
   TokensJson,
+  TrackRecordCaseStudy,
+  TrackRecordConfig,
 } from "@/lib/types";
 import { effectiveLineItems, isSignOnly } from "@/lib/types";
 import {
@@ -16,7 +18,11 @@ import {
   replaceTokensInBlocks,
   type MsaBlock,
 } from "@/lib/parseMsa";
-import { TRACK_RECORD } from "@/lib/trackRecord";
+import {
+  TRACK_RECORD_DISCLAIMER,
+  TRACK_RECORD_HEADING,
+  resolveTrackRecord,
+} from "@/lib/trackRecord";
 
 /**
  * A numbered fine-print note. Sections carry a `noteNumber` superscript marker
@@ -85,7 +91,12 @@ export interface ProposalSections {
     signOff: string[];
   };
   solution: { title: string; intro: string; paragraphs: string[]; outro: string };
-  trackRecord: typeof TRACK_RECORD & { noteNumber: number };
+  trackRecord: {
+    heading: string;
+    intro: string;
+    caseStudies: TrackRecordCaseStudy[];
+    noteNumber: number;
+  } | null;
   scope: {
     heading: string;
     intro: string;
@@ -143,11 +154,12 @@ export function splitParagraphs(value: string): string[] {
 export function buildProposalSections(input: {
   tokens: TokensJson;
   paymentConfig: PaymentConfig;
+  trackRecord: TrackRecordConfig;
   msaBodyMarkdown: string;
   /** When known (post-sign, or a live tier pick), resolves exact deposit amounts. */
   selectedTierId?: string | null;
 }): ProposalSections {
-  const { tokens, paymentConfig, msaBodyMarkdown, selectedTierId = null } = input;
+  const { tokens, paymentConfig, trackRecord, msaBodyMarkdown, selectedTierId = null } = input;
   const clientFull = `${tokens["Client.FirstName"]} ${tokens["Client.LastName"]}`;
   const clientLine = `${clientFull}, ${tokens["Client.Company"]}`;
 
@@ -159,19 +171,24 @@ export function buildProposalSections(input: {
   const signOnly = isSignOnly(paymentConfig);
   const depositSchedule = computeDepositSchedule(paymentConfig, selectedTierId);
 
-  // Numbered in order of appearance in the document. The leading "*" of the
-  // legacy footnote strings is dropped: markers are superscript numbers now.
-  const noteTexts = [
-    TRACK_RECORD.disclaimer,
-    "This scope does not include items not explicitly listed above.",
-    "Ongoing monthly services (Ads, GBP Optimization, SEO) operate on a rolling basis and are not bound to fixed delivery dates. Fixed timelines above apply to project and build deliverables in this proposal.",
-    `This proposal and the pricing in it are valid until ${tokens["Client.ValidUntil"]}. After that date, pricing and availability may change.`,
-  ].map((text) => text.replace(/^\*/, ""));
-  const notes: ProposalNote[] = noteTexts.map((text, i) => ({
-    id: `note-${i + 1}`,
-    number: i + 1,
-    text,
-  }));
+  // Numbered in order of appearance in the document. The track-record disclaimer only exists
+  // when that section is shown, so numbering is computed rather than hardcoded. The leading "*"
+  // of the legacy footnote strings is dropped: markers are superscript numbers now.
+  const trackRecordPresent = trackRecord.caseStudies.length > 0;
+  const notes: ProposalNote[] = [];
+  const addNote = (text: string): number => {
+    const number = notes.length + 1;
+    notes.push({ id: `note-${number}`, number, text: text.replace(/^\*/, "") });
+    return number;
+  };
+  const trackRecordNoteNumber = trackRecordPresent ? addNote(TRACK_RECORD_DISCLAIMER) : 0;
+  const scopeNoteNumber = addNote("This scope does not include items not explicitly listed above.");
+  const timelineNoteNumber = addNote(
+    "Ongoing monthly services (Ads, GBP Optimization, SEO) operate on a rolling basis and are not bound to fixed delivery dates. Fixed timelines above apply to project and build deliverables in this proposal."
+  );
+  const investmentNoteNumber = addNote(
+    `This proposal and the pricing in it are valid until ${tokens["Client.ValidUntil"]}. After that date, pricing and availability may change.`
+  );
 
   return {
     cover: {
@@ -203,13 +220,20 @@ export function buildProposalSections(input: {
       outro:
         "I've built systems like this before, and I know what works here. If I didn't, I wouldn't have put this proposal together.",
     },
-    trackRecord: { ...TRACK_RECORD, noteNumber: 1 },
+    trackRecord: trackRecordPresent
+      ? {
+          heading: TRACK_RECORD_HEADING,
+          intro: trackRecord.intro,
+          caseStudies: trackRecord.caseStudies,
+          noteNumber: trackRecordNoteNumber,
+        }
+      : null,
     scope: {
       heading: "Scope of Work",
       intro: "Here's what you're getting:",
       items: splitBulletString(tokens["Client.ScopeItems"]),
       outro: "With your input and our execution, this gets done right.",
-      noteNumber: 2,
+      noteNumber: scopeNoteNumber,
     },
     timeline: {
       heading: "Timelines",
@@ -218,7 +242,7 @@ export function buildProposalSections(input: {
       items: splitBulletString(tokens["Client.TimelineItems"]),
       outro:
         "I'd rather underpromise and overdeliver. This gives me the room to make sure every piece is done right.",
-      noteNumber: 3,
+      noteNumber: timelineNoteNumber,
     },
     investment: {
       heading: "Your Investment",
@@ -227,7 +251,7 @@ export function buildProposalSections(input: {
       tiers: paymentConfig.tiers,
       addOns: paymentConfig.addOns ?? null,
       depositSchedule,
-      noteNumber: 4,
+      noteNumber: investmentNoteNumber,
     },
     howToProceed: {
       heading: "How to Proceed",
@@ -279,6 +303,7 @@ export function sectionsFromFrozen(
   return buildProposalSections({
     tokens: frozen.tokens,
     paymentConfig: frozen.paymentConfig,
+    trackRecord: resolveTrackRecord(frozen.trackRecord),
     msaBodyMarkdown,
     selectedTierId,
   });

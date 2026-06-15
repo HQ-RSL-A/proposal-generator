@@ -1,5 +1,35 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-15 — Per-proposal editable Track Record (text + URL)
+
+"Our Track Record" was a hardcoded constant shown identically on every proposal (the restaurant /
+salon / software case studies). Made it per-proposal editable, mirroring the add-ons lifecycle.
+
+- **Data model:** new `Proposal.trackRecord` jsonb column (`0006_track_record.sql`, applied to
+  prod), `TrackRecordConfig { intro, caseStudies: [{ text, href }] }` in types.ts, added to
+  `FrozenContent` so it freezes + hashes at send like tokens/paymentConfig. `trackRecord.ts` now
+  exports the fixed heading + disclaimer, `SUGGESTED_*` reference data, `LEGACY_TRACK_RECORD`, and
+  `resolveTrackRecord()` (null -> legacy 3, explicit/even-empty -> as-is). `frozenTrackRecord()`
+  helper in signingService.ts.
+- **Decisions (Rahul):** editable = intro + case studies (text + optional URL); heading +
+  disclaimer stay fixed; new proposals **start blank** and zero case studies **hides the whole
+  section**. Legacy/pre-migration rows fall back to the original 3 so the one in-flight proposal
+  (ConnectHealth) is unchanged.
+- **Dynamic footnotes:** numbering is now computed in `buildProposalSections` — the disclaimer is
+  note 1 only when the section shows; otherwise scope/timeline/investment renumber 1/2/3. The
+  disclaimer marker moved onto the section heading (robust to an empty intro).
+- **Form:** new "Our Track Record" card (intro + repeatable text/URL rows, max 6, add/remove,
+  "Load suggested examples"); `Content.TrackRecord` import key (accepts `url` or `href`); threaded
+  through create/update/send/revise + the edit page.
+- **Renderers:** web + PDF guard the block (hidden when empty), render link-or-plain per row; no
+  style changes (links already blue/underlined). `/docs` gained a Content.TrackRecord section;
+  testProposalTokens.json carries a block.
+- **Verified:** 74 tests (was 65; +9 — schema, present/absent renumber, legacy fallback), pdfSmoke
+  rendered both states to docs/pdfSmoke.pdf + pdfSmoke-empty.pdf and visually read (links, heading
+  marker, plain-text bullet, renumbering all correct), lint clean, production build green, migration
+  applied + Prisma client regenerated. NOT committed/deployed; in-app click-through (auth-gated)
+  left for Rahul.
+
 ## 2026-06-14 — Post-ship cleanup (prod proposals + dead component)
 
 - Cleared the prod DB to a clean slate for the real pipeline. Deleted 3 test proposals —
