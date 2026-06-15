@@ -1,15 +1,16 @@
 "use client";
 
 import { toast } from "sonner";
-import { Check, Info, TriangleAlert } from "lucide-react";
+import { Check, Info, OctagonX, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type BrandToastTone = "brand" | "success" | "error" | "info";
+type BrandToastTone = "brand" | "success" | "error" | "warning" | "info";
 
 const TONE: Record<BrandToastTone, { bg: string; Icon: typeof Check }> = {
   brand: { bg: "bg-primary", Icon: Check },
   success: { bg: "bg-emerald-600", Icon: Check },
-  error: { bg: "bg-red-600", Icon: TriangleAlert },
+  error: { bg: "bg-red-600", Icon: OctagonX },
+  warning: { bg: "bg-amber-500", Icon: TriangleAlert },
   info: { bg: "bg-foreground", Icon: Info },
 };
 
@@ -29,12 +30,12 @@ export function brandToast(
     () => (
       <div
         className={cn(
-          "flex w-full items-start gap-3 rounded-2xl px-4 py-3 text-white shadow-xl ring-1 ring-black/10",
+          "flex w-full items-start gap-2.5 rounded-xl px-3.5 py-2.5 text-white shadow-lg ring-1 ring-black/10",
           bg
         )}
       >
-        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20">
-          <Icon className="h-3.5 w-3.5" />
+        <span className="mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-white/20">
+          <Icon className="h-3 w-3" />
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold leading-snug">{title}</p>

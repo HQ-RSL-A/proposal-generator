@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { brandToast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getFreshSigningLink, remindParty } from "@/actions/proposals";
@@ -75,9 +75,9 @@ export function PartyList({
                     setBusyId(party.id);
                     try {
                       const result = await getFreshSigningLink(party.id);
-                      if (!result.ok) return void toast.error(result.error);
+                      if (!result.ok) return void brandToast("error", result.error);
                       await navigator.clipboard.writeText(result.data!.url);
-                      toast.success("Fresh link copied. Earlier emailed links are now invalid.");
+                      brandToast("success", "Fresh link copied. Earlier emailed links are now invalid.");
                     } finally {
                       setBusyId(null);
                     }
@@ -93,11 +93,12 @@ export function PartyList({
                     setBusyId(party.id);
                     try {
                       const result = await remindParty(party.id);
-                      if (!result.ok) return void toast.error(result.error);
-                      toast.success("Reminder sent", {
-                        description:
-                          "It carries a fresh signing link, so links in earlier emails no longer work.",
-                      });
+                      if (!result.ok) return void brandToast("error", result.error);
+                      brandToast(
+                        "success",
+                        "Reminder sent",
+                        "It carries a fresh signing link, so links in earlier emails no longer work."
+                      );
                       router.refresh();
                     } finally {
                       setBusyId(null);

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { brandToast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,10 +34,10 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
     try {
       const result = await action();
       if (!result.ok) {
-        toast.error(result.error ?? "That didn't work.");
+        brandToast("error", result.error ?? "That didn't work.");
         return;
       }
-      toast.success(success);
+      brandToast("success", success);
       router.refresh();
     } finally {
       setBusy(false);

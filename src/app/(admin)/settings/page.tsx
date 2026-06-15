@@ -34,7 +34,7 @@ export default async function SettingsPage({
   }));
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-5">
       <h1 className="font-heading text-2xl font-bold">Settings</h1>
 
       <Tabs defaultValue={tab === "system" ? "system" : "general"}>
@@ -43,7 +43,7 @@ export default async function SettingsPage({
           <TabsTrigger value="system">System</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-6 pt-4">
+        <TabsContent value="general" className="space-y-5 pt-4">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Your profile</CardTitle>

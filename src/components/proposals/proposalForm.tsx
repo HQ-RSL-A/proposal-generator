@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -508,12 +508,12 @@ export function ProposalForm({
     try {
       raw = JSON.parse(importText);
     } catch {
-      toast.error("That isn't valid JSON.");
+      brandToast("error", "That isn't valid JSON.");
       return;
     }
     const { tokens, errors } = normalizeImportedTokens(raw);
     if (!tokens) {
-      toast.error(`Import failed: ${errors[0]}`);
+      brandToast("error", `Import failed: ${errors[0]}`);
       return;
     }
     const rawObj = raw as Record<string, unknown>;
@@ -543,7 +543,8 @@ export function ProposalForm({
       inferredDeposit ? `${inferredDeposit}% deposit` : null,
       inferredTrackRecord ? `${inferredTrackRecord.caseStudies.length} case studies` : null,
     ].filter(Boolean);
-    toast.success(
+    brandToast(
+      "success",
       extras.length
         ? `Imported with ${extras.join(", ")}. Review the amounts.`
         : "Imported. Set up pricing below."
@@ -564,10 +565,10 @@ export function ProposalForm({
           ? await createProposal(payload)
           : await updateProposal({ id: proposalId!, ...payload });
       if (!result.ok) {
-        toast.error(result.error);
+        brandToast("error", result.error);
         return;
       }
-      toast.success(mode === "create" ? "Proposal created" : "Saved");
+      brandToast("success", mode === "create" ? "Proposal created" : "Saved");
       router.push(
         mode === "create" && result.data
           ? `/proposals/${(result.data as { id: string }).id}`
@@ -580,7 +581,7 @@ export function ProposalForm({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {mode === "create" ? (
         <Card>
           <CardHeader>
@@ -591,7 +592,7 @@ export function ProposalForm({
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
               placeholder='Paste the tokens JSON ({"Client.ProposalTitle": ...})'
-              className="min-h-28 font-mono text-xs"
+              className="min-h-24 font-mono text-xs"
             />
             <Button variant="secondary" size="sm" onClick={handleImport} disabled={!importText.trim()}>
               Parse &amp; fill form
@@ -609,7 +610,7 @@ export function ProposalForm({
             {group.fields.map((field) => (
               <div
                 key={field.key}
-                className={field.multiline ? "col-span-2 space-y-1" : "space-y-1"}
+                className={field.multiline ? "col-span-2 space-y-1.5" : "space-y-1.5"}
               >
                 <Label className="text-xs">{field.label}</Label>
                 {field.multiline ? (
@@ -643,7 +644,7 @@ export function ProposalForm({
             Case studies shown on the proposal. Leave it empty to hide the whole section. The
             heading and the results-vary disclaimer are added for you.
           </p>
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <Label className="text-xs">Intro (optional lead-in above the case studies)</Label>
             <Textarea
               value={state.trackRecordIntro}
@@ -667,7 +668,7 @@ export function ProposalForm({
                   Remove
                 </Button>
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label className="text-xs">Result</Label>
                 <Textarea
                   value={cs.text}
@@ -680,7 +681,7 @@ export function ProposalForm({
                   placeholder="A local restaurant went from 14 to 132 reviews in 60 days."
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <Label className="text-xs">Link URL (optional)</Label>
                 <Input
                   value={cs.href}

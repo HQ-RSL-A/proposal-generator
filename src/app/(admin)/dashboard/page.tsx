@@ -212,7 +212,7 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <h1 className="font-heading text-2xl font-bold">Proposals</h1>
         <Button size="sm" nativeButton={false} render={<Link href="/proposals/new" />}>

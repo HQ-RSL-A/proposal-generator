@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -42,14 +42,14 @@ export function SignatureSettings({
       let type: "DRAWN" | "TYPED";
       if (tab === "draw") {
         if (!padRef.current || padRef.current.isEmpty()) {
-          toast.error("Draw your signature first.");
+          brandToast("error", "Draw your signature first.");
           return;
         }
         pngDataUrl = padRef.current.toPngDataUrl();
         type = "DRAWN";
       } else {
         if (!name.trim()) {
-          toast.error("Type your name first.");
+          brandToast("error", "Type your name first.");
           return;
         }
         pngDataUrl = await typedNameToPng(name.trim(), font);
@@ -57,10 +57,10 @@ export function SignatureSettings({
       }
       const result = await saveAdminSignature({ pngDataUrl, adoptedName: name.trim(), type });
       if (!result.ok) {
-        toast.error(result.error);
+        brandToast("error", result.error);
         return;
       }
-      toast.success("Signature saved. It gets pre-applied on every send.");
+      brandToast("success", "Signature saved. It gets pre-applied on every send.");
       setCacheBust(Date.now());
       router.refresh();
     } finally {

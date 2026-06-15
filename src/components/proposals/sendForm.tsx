@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,13 +51,14 @@ export function SendForm({
         parties: parties.map((p) => ({ ...p, email: p.email.trim().toLowerCase() })),
       });
       if (!result.ok) {
-        toast.error(result.error);
+        brandToast("error", result.error);
         return;
       }
-      toast.success("Proposal sent", {
-        description:
-          "Each signer just got their own signing link by email. You'll be emailed the moment everyone has signed.",
-      });
+      brandToast(
+        "success",
+        "Proposal sent",
+        "Each signer just got their own signing link by email. You'll be emailed the moment everyone has signed."
+      );
       router.push(`/proposals/${proposalId}`);
       router.refresh();
     } finally {

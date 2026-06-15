@@ -10,7 +10,7 @@ import { Check, PenLine } from "lucide-react";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="font-heading mt-12 mb-4 text-xl font-bold text-primary first:mt-0">
+    <h2 className="font-heading mt-9 mb-3 text-xl font-bold text-primary first:mt-0">
       {children}
     </h2>
   );

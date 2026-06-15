@@ -1,5 +1,28 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-15 — UI/UX polish pass (tighter & crisper, whole web app)
+
+Harmonized the web app's visual details (Rahul: rounded corners, spacing, text, toast cards).
+Direction: **tighter & crisper**; scope: whole web app except the PDF. Purely presentational, no
+logic touched, 74 tests still green.
+
+- **Tokens** ([globals.css](src/app/globals.css)): base `--radius` 10px -> 8px (sharpens the whole
+  `rounded-*` family via the `@theme` scale), crisper `.card-hover` shadow.
+- **Button** ([button.tsx](src/components/ui/button.tsx)): `active:scale-[0.98]` press feedback
+  (was a 1px nudge) so every button responds to press (emilDesignEng).
+- **Toasts** ([toast.tsx](src/lib/toast.tsx)): crisper branded card (`rounded-2xl`->`xl`, tighter
+  padding, smaller icon chip, `shadow-xl`->`lg`) + a new `warning` tone (amber). Migrated the **5
+  files still firing raw sonner** (teamSettings, signatureSettings, sendForm, proposalForm,
+  partyList) to `brandToast`, so every toast is the branded top-center card (kills the
+  branded-vs-stock split and the bottom-right/top-center position split).
+- **Spacing:** signing-doc section rhythm `mt-12 mb-4` -> `mt-9 mb-3`
+  ([proposalView](src/components/proposal/proposalView.tsx) `SectionHeading`); form label->input
+  gaps `space-y-1` -> `space-y-1.5`; every page wrapper unified to `space-y-5` (dashboard,
+  settings, detail, send, systemHealth, proposalForm) + import textarea `min-h-28`->`24`.
+- **Verified:** lint clean, 74 tests, production build green. Visual via Chrome DevTools: signing
+  page (tighter rhythm + crisp tier cards), landing + sign-in (crisper button/panel radius). Admin
+  screens are Google-auth-gated (verified by build; Rahul to eyeball live). NOT committed/deployed.
+
 ## 2026-06-15 — Per-proposal editable Track Record (text + URL)
 
 "Our Track Record" was a hardcoded constant shown identically on every proposal (the restaurant /

@@ -43,7 +43,7 @@ export async function SystemHealthPanel() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="pt-4">
