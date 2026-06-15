@@ -5,7 +5,14 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
 
 ## Go-live blockers (only thing gating real revenue)
 
-- [ ] **Stripe live-key swap.** Create live restricted key `proposalGenerator-live`
+- [x] **Stripe live-key swap.** DONE 2026-06-15 — live key active on Vercel Production and
+      verified by a live $1 smoke test (real card -> signature-verified `checkout.session.completed`
+      webhook -> PAID -> client+admin receipts + executed PDF; Notion no-op on the fake company;
+      $1 left un-refunded per Rahul). **Residual CLEARED 2026-06-15:** live endpoint confirmed
+      (dashboard) to subscribe all 6 events; the subscription / ACH / renewal / failure / expiry
+      webhook paths were verified in a local Stripe sandbox + a real sandbox hosted-checkout
+      subscription pay (card 4242 -> PAID + receipts; see LOG). Safe to send recurring/ACH proposals.
+      Original spec: Create live restricted key `proposalGenerator-live`
       (scopes: Checkout Sessions W, Customers R+W, Products R+W, Prices R+W,
       Subscriptions R+W, PaymentIntents R, Invoices R) + live webhook endpoint to
       `proposals.rsla.io/api/webhooks/stripe` (**6 events** — the existing 5 plus

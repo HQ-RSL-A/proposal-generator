@@ -1,5 +1,78 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-15 — Recurring + ACH + renewal verification (local sandbox, PASSED)
+
+Closed the only go-live residual: the never-exercised subscription / ACH / renewal webhook paths
+are now proven. All run in a local Stripe **Sandbox** (the `sk_test` key Rahul pasted into local
+`.env`; a hard `sk_test` guard in the harness blocked any live call) — **prod live key untouched**.
+
+- **Setup:** installed the Stripe CLI; `stripe listen --api-key <sandbox>` forwarded to
+  `localhost:1235` and minted the `whsec` (written to local `.env`); dev booted on :1235.
+  Confirmed first there was **no deploy gap** — prod serves the polished `--radius:.5rem` and the
+  latest prod deploy postdates every source commit; the earlier "NOT committed/deployed" LOG line
+  was stale (corrected).
+- **Session building (real test Stripe via `createCheckoutSession`):** recurring config -> mode
+  `subscription`, two line items ($997 one-time + $497/mo recurring); deposit config -> mode
+  `payment` (no subscription opens). 4/4.
+- **Webhook matrix (correctly-signed synthetic events -> the live dev route):** first charge
+  (`checkout.session.completed` -> PAID + `Payment.stripeSubscriptionId` + client/admin receipts),
+  renewal (`invoice.paid`/subscription_cycle -> receipt, stays PAID, no double-send), ACH (unpaid
+  -> PROCESSING -> `async_payment_succeeded` -> PAID), failures (`async_payment_failed`,
+  `invoice.payment_failed`), expiry (-> SESSION_EXPIRED + relink), idempotency (replay ->
+  `{duplicate:true}`, no double receipt). All correct. The two transient "PENDING" jobs were correct
+  behavior, not bugs (Resend 5/sec rate-limit on the email burst -> queue retries;
+  `STRIPE_METADATA` waits for the executed PDF).
+- **API version `2026-05-27.dahlia`:** the invoice handlers read the subscription id from BOTH the
+  old top-level `invoice.subscription` and the new nested
+  `invoice.parent.subscription_details.subscription`. Verified the nested shape fires the renewal +
+  invoice-failed handlers (3/3) and a no-sub invoice no-ops gracefully -> **the Dahlia API update is
+  safe to take.**
+- **Real hosted-checkout end-to-end (sandbox, card 4242):** Rahul paid a real subscription checkout;
+  real Stripe payloads flowed `stripe listen` -> handler -> **PAID**, `Payment` with the real
+  `sub_…`, client+admin receipts SENT, Notion no-op (fake co). The real first-charge `invoice.paid`
+  correctly did NOT double-send (the `subscription_cycle` guard held on a real payload).
+- **Live endpoint:** Rahul confirmed in the Stripe dashboard that the prod `proposals.rsla.io`
+  webhook subscribes all 6 events. So one-time (prod $1 test) + recurring + ACH are covered live.
+- **Cleanup:** sandbox subscription canceled; all `[TEST-MX]`/`[TEST-R2]` proposals removed
+  (dashboard back to 0 proposals); a handful of inert webhook dedup rows from the session remain
+  (harmless, joins the existing orphaned-row backlog — a precise purge was declined by the auto-mode
+  guard, left for an authorized cleanup). Local `.env` keeps the sandbox `sk_test` key (gitignored)
+  with `STRIPE_WEBHOOK_SECRET` reset to empty (refill from `stripe listen` next time). Reusable
+  harness kept at `.tmp/paymentMatrix.ts` + `.tmp/test2.ts`.
+- **Net:** recurring + ACH proposals are safe to send for real. The PandaDoc replacement is now
+  verified across one-time, subscription, and ACH. Not committed (docs only this session).
+
+## 2026-06-15 — Go-live verification + live $1 smoke test (PASSED)
+
+Verified the tool is production-ready for real proposals. Key finding: prod Stripe is **LIVE** (a
+`cs_live_` checkout session was created on prod today), resolving the only go-live blocker.
+
+- **Confirmed without exposing secrets:** prod `STRIPE_SECRET_KEY` is live (a `cs_live_` session +
+  `cus_` customer on a prod-signed proposal); both Stripe env vars set on Vercel Production; webhook
+  endpoint live + signature-verifying (unsigned -> 400 "Missing signature", bogus -> 400 "Invalid
+  signature"); handler covers the 6 events, idempotent + paid-state guarded; routes + auth gating
+  healthy; Ready prod deploy + clean tree at 75fba62.
+- **Live $1 smoke test (real card):** seeded a $1 one-time, card-only
+  `[TEST] Brightline Test Co` draft via `.tmp/liveSmokeSeed.ts` (the stock `e2eSeed.ts` is
+  test-mode: $997+$497/mo and tells you to use 4242, which is declined on live). Rahul sent -> signed
+  -> paid $1. Full chain landed: SIGNED + **paymentStatus PAID**, Payment row ($1, `cs_live_`/`pi_`,
+  no subscription), **`stripe checkout.session.completed` signature-verified in prod** (the
+  webhook-secret-match proof), GENERATE_PDF/NOTION_SYNC/STRIPE_METADATA all DONE first try, executed
+  PDF in Blob (156KB, hashed), all 5 emails delivered (incl client + admin receipts). Notion sync =
+  no-op (`findCrmPage` returns null for the fake company; it never creates pages).
+- **Cleanup (clean slate for go-live):** deleted the 2 inert `[DEMO]` Brightline rows, the smoke-test
+  row, and all 3 `Connect Health` proposals on Rahul's request -> **dashboard now empty (0 proposals)**.
+  The 3 Connect Health rows turned out to be Rahul's own rehearsals (client signer =
+  `laliarahul2396@gmail.com`, names "RL-testing"/"RJ Dowell"), NOT a real client send -- this corrects
+  the 2026-06-14 note that called the ConnectHealth one "the one real prospect." Left untouched:
+  pre-existing `cmqewz3l` orphan webhook rows + orphaned test blobs (both harmless, backlog).
+- **Decisions:** refund of the live $1 smoke charge SKIPPED per Rahul (left as-is).
+  `.tmp/liveSmokeSeed.ts` kept (gitignored) for future live re-tests.
+- **Next (deferred to 2026-06-16):** recurring/ACH proposal smoke test + independently confirm the
+  live endpoint subscribes all 6 events (only `checkout.session.completed` has fired so far) + ACH.
+  The one-time card path is fully proven; safe to send one-time/card proposals now.
+- **Note:** BRAIN/ROADMAP/LOG edits this session are uncommitted (no commit requested).
+
 ## 2026-06-15 — UI/UX polish pass (tighter & crisper, whole web app)
 
 Harmonized the web app's visual details (Rahul: rounded corners, spacing, text, toast cards).
@@ -21,7 +94,9 @@ logic touched, 74 tests still green.
   settings, detail, send, systemHealth, proposalForm) + import textarea `min-h-28`->`24`.
 - **Verified:** lint clean, 74 tests, production build green. Visual via Chrome DevTools: signing
   page (tighter rhythm + crisp tier cards), landing + sign-in (crisper button/panel radius). Admin
-  screens are Google-auth-gated (verified by build; Rahul to eyeball live). NOT committed/deployed.
+  screens are Google-auth-gated (verified by build; Rahul to eyeball live). **Committed (`75fba62`)
+  and deployed to prod 2026-06-15** (deploy created 01:34 PDT, aliased to proposals.rsla.io; verified
+  live serving the polished `--radius:.5rem`). The earlier "NOT committed/deployed" note was stale.
 
 ## 2026-06-15 — Per-proposal editable Track Record (text + URL)
 

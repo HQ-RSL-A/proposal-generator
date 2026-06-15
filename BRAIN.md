@@ -170,7 +170,7 @@ resolves the proposal by session id whenever the path token is dead.
 | `AUTH_SECRET` / `AUTH_TRUST_HOST` | .env + Vercel | NextAuth |
 | `GOOGLE_CLIENT_ID/SECRET` | .env + Vercel | OAuth client "Proposal Generator" (rsla-2026) |
 | `BLOB_READ_WRITE_TOKEN` | .env + Vercel | Private Blob (signatures, PDFs) |
-| `STRIPE_SECRET_KEY` | .env + Vercel | **Currently TEST mode everywhere** (sandbox key; webhook `we_1ThbkhE1rrZiCLVQEdLERe0Y`). Live swap = new live key + recreate webhook + 2 env values |
+| `STRIPE_SECRET_KEY` | .env + Vercel | **LIVE on Vercel Production (sk_live) since 2026-06-12; local/dev stays TEST.** The live webhook delivers + signature-verifies on prod (proven by a $1 smoke test 2026-06-15: `checkout.session.completed` verified -> PAID -> receipt + executed PDF; Notion no-op on the fake company). Old test sandbox webhook was `we_1ThbkhE1rrZiCLVQEdLERe0Y`. **All 6 live events confirmed (dashboard) + recurring/ACH/renewal verified 2026-06-15** in a local sandbox + a real sandbox hosted-checkout subscription pay. Invoice handlers read both the legacy top-level `invoice.subscription` and the new nested `invoice.parent.subscription_details.subscription`, so the `2026-05-27.dahlia` API version is safe to adopt |
 | `STRIPE_WEBHOOK_SECRET` | .env (stripe listen) / Vercel | Webhook signing |
 | `RESEND_API_KEY` / `RESEND_WEBHOOK_SECRET` | .env + Vercel | Email + svix |
 | `RESEND_FROM` | set | `Rahul Lalia, RSL/A <proposals@rsla.io>` (root domain verified on Resend; tracking off — click tracking would rewrite signing links) |
