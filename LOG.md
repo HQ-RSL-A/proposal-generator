@@ -27,8 +27,9 @@ salon / software case studies). Made it per-proposal editable, mirroring the add
 - **Verified:** 74 tests (was 65; +9 — schema, present/absent renumber, legacy fallback), pdfSmoke
   rendered both states to docs/pdfSmoke.pdf + pdfSmoke-empty.pdf and visually read (links, heading
   marker, plain-text bullet, renumbering all correct), lint clean, production build green, migration
-  applied + Prisma client regenerated. NOT committed/deployed; in-app click-through (auth-gated)
-  left for Rahul.
+  applied + Prisma client regenerated. Committed (`ff675ce`), pushed to
+  `HQ-RSL-A/proposal-generator` main, deployed to proposals.rsla.io (landing 200, /docs +
+  /dashboard gated 307). In-app click-through (auth-gated) left for Rahul to test.
 
 ## 2026-06-14 — Post-ship cleanup (prod proposals + dead component)
 
