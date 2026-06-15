@@ -1,5 +1,31 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-15 — Display-only "Later phases" line items (Phase-2 pricing, never billed)
+
+Answer to "how do I show a future service with pricing but not charge for it?" (e.g. monthly SEO
+that starts after the build). The billing path has no scheduled-start support — a recurring add-on
+bills at signing — so this adds a separate, **display-only** line type instead.
+
+- **`PaymentConfig.futureItems`** (new `FutureItem`: label, displayString, amountCents,
+  intervalMonths, startsNote). It's its **own field that `effectiveCheckout` never reads**, so it
+  can't reach Stripe — unbillable by construction, locked by a guard test.
+- **Validation:** shape + unique ids + cap 6 (zod) and `displayString`↔`amountCents` at send time,
+  same guard as every other priced line. TDD'd — **+5 tests → 98 total**.
+- **Render:** a dashed "Later phases" block in *Your Investment*, **identical on web + PDF**
+  (`proposalView` + `ProposalPdf`), labelled "Shown for planning — billed separately when each
+  begins, not collected today." Each row shows the price + a "Starts: …" note.
+- **Admin form:** a repeater under Add-ons (label / price / recurring toggle / Starts). Scope is
+  **global + display-only** (Rahul's call); not offered on sign-only.
+- **Import + docs:** `Investment.FutureItems` import inference (mirrors `Investment.AddOns`) so the
+  generate-proposal skill can emit them. `/docs` ("Proposal import schema") updated for accuracy —
+  futureItems in the PaymentConfig section, a Later-phases example, the `Investment.FutureItems`
+  import block, and a gotcha. Every code block on `/docs` now has a **click-to-copy** button
+  (`CopyableCode`). NB: the skill prompt itself still needs a separate update to start emitting them.
+- **Verified:** 98 tests, build clean, `pdfSmoke` OK + visual Read of the PDF, a web-render
+  screenshot (web = PDF), and a docs-page screenshot (copy buttons + futureItems content render).
+- **Status:** committed + pushed to `main` (which auto-deploys), confirmed with an explicit
+  `vercel deploy --prod`. Live on `proposals.rsla.io`.
+
 ## 2026-06-15 — Dashboard visual upgrade (deployed to prod; merged into main alongside the PDF rebuild)
 
 Executed the Claude Design "Insightful" dashboard upgrade in an isolated git worktree. Turned out

@@ -134,4 +134,24 @@ describe("effectiveCheckout", () => {
     expect(r.lineItems).toHaveLength(1);
     expect(r.lineItems[0].intervalMonths).toBe(1); // charges the tier recurring normally
   });
+
+  // Invariant guard: display-only future items must NEVER reach checkout, by construction.
+  it("never bills display-only future items", () => {
+    const withFuture: PaymentConfig = {
+      ...flatBuild,
+      futureItems: [
+        {
+          id: "future-seo",
+          label: "Monthly SEO",
+          displayString: "$1,500/month",
+          amountCents: 150000,
+          intervalMonths: 1,
+          startsNote: "After launch",
+        },
+      ],
+    };
+    const r = effectiveCheckout(withFuture, null, []);
+    expect(r.lineItems).toHaveLength(1); // just the build fee — future item excluded
+    expect(r.lineItems.some((li) => li.amountCents === 150000)).toBe(false);
+  });
 });

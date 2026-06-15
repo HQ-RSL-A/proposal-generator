@@ -44,6 +44,10 @@ const paymentConfig: PaymentConfig = {
     { id: "addon-rush", label: "Rush delivery (two-week build)", displayString: "$800", amountCents: 80000, intervalMonths: null },
     { id: "addon-extra-channel", label: "Extra ad channel each month", displayString: "$500/month", amountCents: 50000, intervalMonths: 1 },
   ],
+  futureItems: [
+    { id: "future-seo", label: "Monthly SEO retainer", displayString: "$1,500/month", amountCents: 150000, intervalMonths: 1, startsNote: "After launch" },
+    { id: "future-brand", label: "Brand refresh (Phase 2)", displayString: "$3,000", amountCents: 300000, intervalMonths: null, startsNote: "Q4 2026" },
+  ],
   deposit: { depositPercent: 50 },
 };
 

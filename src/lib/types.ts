@@ -76,6 +76,24 @@ export interface AddOn {
   intervalMonths: 1 | 3 | 12 | null;
 }
 
+/**
+ * A priced line shown for information only — a later phase or future service (e.g. an ongoing
+ * retainer that starts after launch). NEVER billed: it lives outside `effectiveCheckout` by
+ * design, so it can't reach Stripe. Display + send-time validation treat it like any priced line.
+ */
+export interface FutureItem {
+  /** Stable slug, unique within a config, e.g. "future-seo". */
+  id: string;
+  label: string;
+  /** Shown to the client; must match amountCents to the cent. */
+  displayString: string;
+  amountCents: number;
+  /** null = one-time; 1 | 3 | 12 = recurring cadence (shown, never charged). */
+  intervalMonths: 1 | 3 | 12 | null;
+  /** When it begins, e.g. "After launch" or "Q3 2026". */
+  startsNote: string;
+}
+
 export interface DepositConfig {
   /** Integer percent (1..99). Applies to the one-time build fee only. Default 50. */
   depositPercent: number;
@@ -94,6 +112,8 @@ export interface PaymentConfig {
   addOns?: AddOn[] | null;
   /** When set, only this fraction of the one-time build fee is charged at signing. */
   deposit?: DepositConfig | null;
+  /** Display-only future/Phase-2 lines: shown with pricing, never charged (excluded from checkout). */
+  futureItems?: FutureItem[] | null;
 }
 
 export interface TrackRecordCaseStudy {

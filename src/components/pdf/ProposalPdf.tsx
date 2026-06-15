@@ -11,7 +11,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 import type { DepositScheduleInfo, ProposalSections } from "@/lib/proposalContent";
-import type { AddOn, TierConfig } from "@/lib/types";
+import type { AddOn, FutureItem, TierConfig } from "@/lib/types";
 import { formatCents } from "@/lib/currency";
 
 const fontsDir = path.join(process.cwd(), "public", "fonts");
@@ -500,6 +500,36 @@ function DepositScheduleBlock({ schedule }: { schedule: DepositScheduleInfo }) {
   );
 }
 
+/** Display-only future / Phase-2 lines: shown with pricing, never billed. Mirrors the web FutureItems. */
+function FutureItemsTable({ items }: { items: FutureItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <View style={{ marginTop: 14 }} wrap={false}>
+      <Text style={[s.microLabel, { marginBottom: 2 }]}>Later phases</Text>
+      <Text style={{ fontSize: 8.5, color: MUTED, marginBottom: 6 }}>
+        Shown for planning — billed separately when each begins, not collected today.
+      </Text>
+      {items.map((item) => (
+        <View
+          key={item.id}
+          style={[
+            s.addOnRow,
+            { alignItems: "flex-start", borderStyle: "dashed", backgroundColor: SURFACE },
+          ]}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontWeight: 500 }}>{item.label}</Text>
+            <Text style={{ fontSize: 8.5, color: MUTED, marginTop: 1 }}>
+              Starts: {item.startsNote}
+            </Text>
+          </View>
+          <Text style={{ fontWeight: 700, color: SLATE }}>{item.displayString}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export interface SignerCertInfo {
   name: string;
   email: string;
@@ -728,6 +758,9 @@ export function ProposalPdf({
         ) : null}
         {sections.investment.depositSchedule ? (
           <DepositScheduleBlock schedule={sections.investment.depositSchedule} />
+        ) : null}
+        {sections.investment.futureItems && sections.investment.futureItems.length > 0 ? (
+          <FutureItemsTable items={sections.investment.futureItems} />
         ) : null}
 
         {/* How to proceed */}

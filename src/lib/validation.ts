@@ -102,6 +102,15 @@ const addOnSchema = z.object({
   intervalMonths: z.union([z.literal(1), z.literal(3), z.literal(12)]).nullable(),
 });
 
+const futureItemSchema = z.object({
+  id: nonEmpty,
+  label: nonEmpty,
+  displayString: nonEmpty,
+  amountCents: z.number().int().positive(),
+  intervalMonths: z.union([z.literal(1), z.literal(3), z.literal(12)]).nullable(),
+  startsNote: nonEmpty,
+});
+
 const depositConfigSchema = z.object({
   depositPercent: z.number().int().min(1).max(99),
 });
@@ -116,6 +125,7 @@ export const paymentConfigSchema = z
     preferAch: z.boolean(),
     addOns: z.array(addOnSchema).max(10).nullable().optional(),
     deposit: depositConfigSchema.nullable().optional(),
+    futureItems: z.array(futureItemSchema).max(6).nullable().optional(),
   })
   .superRefine((config, ctx) => {
     const hasFlat = Boolean(config.oneTime || config.recurring);
@@ -147,6 +157,12 @@ export const paymentConfigSchema = z
       const ids = config.addOns.map((a) => a.id);
       if (new Set(ids).size !== ids.length) {
         ctx.addIssue({ code: "custom", message: "Add-on ids must be unique." });
+      }
+    }
+    if (config.futureItems && config.futureItems.length > 0) {
+      const ids = config.futureItems.map((f) => f.id);
+      if (new Set(ids).size !== ids.length) {
+        ctx.addIssue({ code: "custom", message: "Future item ids must be unique." });
       }
     }
     if (config.deposit) {
@@ -184,6 +200,9 @@ export function validatePaymentConfigForSend(config: PaymentConfig): string[] {
   }
   for (const addOn of config.addOns ?? []) {
     check(addOn);
+  }
+  for (const item of config.futureItems ?? []) {
+    check(item);
   }
   return errors;
 }

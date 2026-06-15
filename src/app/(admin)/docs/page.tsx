@@ -1,4 +1,5 @@
 import { TOKEN_KEYS, type TokensJson } from "@/lib/types";
+import { CopyableCode } from "@/components/docs/copyableCode";
 import { Card } from "@/components/ui/card";
 import {
   Table,
@@ -219,12 +220,32 @@ const PAYMENT_DEPOSIT = `{
   "deposit": { "depositPercent": 50 }
 }`;
 
+const PAYMENT_FUTURE = `{
+  "currency": "usd",
+  "paymentMethods": ["card"],
+  "preferAch": false,
+  "oneTime": { "amountCents": 600000, "displayString": "$6,000", "label": "Website build" },
+  "recurring": null,
+  "tiers": null,
+  "futureItems": [
+    { "id": "future-seo", "label": "Monthly SEO retainer", "displayString": "$1,500/month", "amountCents": 150000, "intervalMonths": 1, "startsNote": "After launch" },
+    { "id": "future-brand", "label": "Brand refresh (Phase 2)", "displayString": "$3,000", "amountCents": 300000, "intervalMonths": null, "startsNote": "Q4 2026" }
+  ]
+}`;
+
 const INVESTMENT_ADDONS = `{
   "Investment.AddOns": [
     { "name": "Rush delivery (two-week build)", "price": "$800" },
     { "name": "Monthly SEO", "price": "$500/month" }
   ],
   "Investment.DepositPercent": 50
+}`;
+
+const INVESTMENT_FUTURE = `{
+  "Investment.FutureItems": [
+    { "name": "Monthly SEO retainer", "price": "$1,500/month", "starts": "After launch" },
+    { "name": "Brand refresh (Phase 2)", "price": "$3,000", "starts": "Q4 2026" }
+  ]
 }`;
 
 const CONTENT_TRACK_RECORD = `{
@@ -238,11 +259,7 @@ const CONTENT_TRACK_RECORD = `{
 }`;
 
 function CodeBlock({ children }: { children: string }) {
-  return (
-    <pre className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-4 font-mono text-xs leading-relaxed">
-      <code>{children}</code>
-    </pre>
-  );
+  return <CopyableCode code={children} />;
 }
 
 export default function DocsPage() {
@@ -326,8 +343,9 @@ export default function DocsPage() {
           Pricing is set in the form, or inferred from an Investment.Structure block (below). It is
           stored as a PaymentConfig in one of three shapes (flat, tiered, sign-only). Money is
           always an integer amountCents plus a matching displayString. At send time the two must
-          agree to the cent. Two optional fields stack on top of any shape: addOns (extras the
-          client toggles) and deposit (charge only a percentage up front).
+          agree to the cent. Three optional fields stack on top of any shape: addOns (extras the
+          client toggles), deposit (charge only a percentage up front), and futureItems (priced
+          Phase-2 lines shown but never billed).
         </p>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Flat, one time</h3>
@@ -368,6 +386,16 @@ export default function DocsPage() {
           </p>
           <CodeBlock>{PAYMENT_DEPOSIT}</CodeBlock>
         </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Later phases, display-only (any shape)</h3>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            A global futureItems array shown with pricing in Your Investment but never charged — for
+            Phase-2 or future services that begin later. Each carries a startsNote (when it begins)
+            and is one time (intervalMonths null) or recurring (1, 3, or 12). Up to six, each with a
+            unique id. It lives outside the checkout, so it can never be billed at signing.
+          </p>
+          <CodeBlock>{PAYMENT_FUTURE}</CodeBlock>
+        </div>
       </section>
 
       <section className="space-y-3">
@@ -385,14 +413,22 @@ export default function DocsPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-heading text-lg font-semibold">Optional: Investment.AddOns and deposit</h2>
+        <h2 className="font-heading text-lg font-semibold">
+          Optional: Investment.AddOns, FutureItems, and deposit
+        </h2>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Two more top level blocks the import reads and then drops. Investment.AddOns pre-fills the
+          More top level blocks the import reads and then drops. Investment.AddOns pre-fills the
           add-on editor (a price with a /mo, /month, /quarter, /yr, or /year suffix becomes a
           recurring add-on; otherwise one time). Investment.DepositPercent (1 to 99) turns the
           deposit on.
         </p>
         <CodeBlock>{INVESTMENT_ADDONS}</CodeBlock>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Investment.FutureItems pre-fills the Later phases editor — display-only priced lines that
+          are never billed. Each takes a name, a price (recurring when it carries a /mo, /month,
+          /quarter, /yr, or /year suffix), and a starts note. Up to six.
+        </p>
+        <CodeBlock>{INVESTMENT_FUTURE}</CodeBlock>
       </section>
 
       <section className="space-y-3">
@@ -425,6 +461,11 @@ export default function DocsPage() {
           <li>
             A deposit needs a one-time build fee (flat or on at least one tier). With a deposit, the
             retainer and recurring add-ons are deferred, so only the deposit is charged at signing.
+          </li>
+          <li>
+            Future items: up to six, each with a unique id and a startsNote. Display-only — shown
+            with pricing but never billed (kept out of checkout). Bill them separately when they
+            begin.
           </li>
           <li>Track Record: up to six case studies, each with text and an optional url. No case studies hides the section.</li>
           <li>Use generic names in examples and tests. The Notion sync matches real CRM rows by company name.</li>

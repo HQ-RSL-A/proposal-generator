@@ -5,6 +5,7 @@
 import type {
   AddOn,
   FrozenContent,
+  FutureItem,
   PaymentConfig,
   RecurringItem,
   TierConfig,
@@ -117,6 +118,7 @@ export interface ProposalSections {
     details: string;
     tiers: TierConfig[] | null;
     addOns: AddOn[] | null;
+    futureItems: FutureItem[] | null;
     depositSchedule: DepositScheduleInfo | null;
     noteNumber: number;
   };
@@ -250,6 +252,7 @@ export function buildProposalSections(input: {
       details: tokens["Client.InvestmentDetails"],
       tiers: paymentConfig.tiers,
       addOns: paymentConfig.addOns ?? null,
+      futureItems: paymentConfig.futureItems ?? null,
       depositSchedule,
       noteNumber: investmentNoteNumber,
     },

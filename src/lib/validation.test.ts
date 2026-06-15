@@ -192,6 +192,46 @@ describe("paymentConfigSchema add-ons and deposit", () => {
   });
 });
 
+describe("paymentConfigSchema future items (display-only)", () => {
+  const futureItems = [
+    { id: "future-seo", label: "Monthly SEO", displayString: "$1,500/month", amountCents: 150000, intervalMonths: 1, startsNote: "After launch" },
+    { id: "future-ads", label: "Ad management", displayString: "$2,000", amountCents: 200000, intervalMonths: null, startsNote: "Phase 2" },
+  ];
+
+  it("accepts well-formed future items", () => {
+    expect(paymentConfigSchema.safeParse({ ...flatConfig, futureItems }).success).toBe(true);
+  });
+
+  it("rejects duplicate future item ids", () => {
+    const bad = {
+      ...flatConfig,
+      futureItems: [
+        { id: "dup", label: "A", displayString: "$1", amountCents: 100, intervalMonths: null, startsNote: "later" },
+        { id: "dup", label: "B", displayString: "$2", amountCents: 200, intervalMonths: null, startsNote: "later" },
+      ],
+    };
+    expect(paymentConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects a future item with a blank startsNote", () => {
+    const bad = {
+      ...flatConfig,
+      futureItems: [{ id: "future-x", label: "X", displayString: "$1", amountCents: 100, intervalMonths: null, startsNote: "" }],
+    };
+    expect(paymentConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("validatePaymentConfigForSend catches future-item display/cents drift", () => {
+    const drifted = {
+      ...flatConfig,
+      futureItems: [{ id: "future-seo", label: "Monthly SEO", displayString: "$1,500/month", amountCents: 160000, intervalMonths: 1, startsNote: "After launch" }],
+    } as PaymentConfig;
+    const errors = validatePaymentConfigForSend(drifted);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("$1,500");
+  });
+});
+
 describe("trackRecordConfigSchema", () => {
   it("accepts an intro plus case studies with and without a URL", () => {
     const ok = {

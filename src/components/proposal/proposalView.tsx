@@ -5,7 +5,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { formatCents } from "@/lib/currency";
 import type { DepositScheduleInfo, ProposalSections } from "@/lib/proposalContent";
-import type { AddOn, TierConfig } from "@/lib/types";
+import type { AddOn, FutureItem, TierConfig } from "@/lib/types";
 import { Check, PenLine } from "lucide-react";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -175,6 +175,37 @@ export function AddOnPicker({
             </label>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/** Display-only future / Phase-2 lines: shown with pricing, never billed. */
+export function FutureItems({ items }: { items: FutureItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-6">
+      <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+        Later phases
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Shown for planning — billed separately when each begins, not collected today.
+      </p>
+      <div className="mt-3 space-y-2">
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-border bg-surface/60 p-3.5"
+          >
+            <span className="min-w-0">
+              <span className="block text-sm font-medium">{item.label}</span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                Starts: {item.startsNote}
+              </span>
+            </span>
+            <span className="whitespace-nowrap text-sm font-bold">{item.displayString}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -492,6 +523,9 @@ export function ProposalView({
           />
         ) : null}
         {depositSchedule ? <DepositScheduleBanner schedule={depositSchedule} /> : null}
+        {sections.investment.futureItems && sections.investment.futureItems.length > 0 ? (
+          <FutureItems items={sections.investment.futureItems} />
+        ) : null}
 
         {/* How to proceed */}
         <SectionHeading>{sections.howToProceed.heading}</SectionHeading>

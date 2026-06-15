@@ -18,6 +18,7 @@ import {
   TOKEN_KEYS,
   type AddOn,
   type DepositConfig,
+  type FutureItem,
   type PaymentConfig,
   type TierConfig,
   type TokensJson,
@@ -50,6 +51,8 @@ interface FormState {
   tiers: TierDraft[];
   /** Global optional add-ons; apply across flat + tiers, not sign-only. */
   addOns: AddOnDraft[];
+  /** Display-only future / Phase-2 lines; shown with pricing, never charged. */
+  futureItems: FutureItemDraft[];
   depositEnabled: boolean;
   depositPercent: number;
   methods: { card: boolean; ach: boolean };
@@ -63,6 +66,16 @@ interface AddOnDraft {
   amountCents: number;
   isRecurring: boolean;
   intervalMonths: 1 | 3 | 12;
+}
+
+interface FutureItemDraft {
+  id: string;
+  label: string;
+  displayString: string;
+  amountCents: number;
+  isRecurring: boolean;
+  intervalMonths: 1 | 3 | 12;
+  startsNote: string;
 }
 
 interface CaseStudyDraft {
@@ -99,6 +112,18 @@ function blankAddOn(): AddOnDraft {
   };
 }
 
+function blankFutureItem(): FutureItemDraft {
+  return {
+    id: "",
+    label: "",
+    displayString: "",
+    amountCents: 0,
+    isRecurring: false,
+    intervalMonths: 1,
+    startsNote: "",
+  };
+}
+
 function blankCaseStudy(): CaseStudyDraft {
   return { text: "", href: "" };
 }
@@ -109,6 +134,14 @@ function slugifyAddOn(label: string, index: number): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
   return `addon-${slug || index + 1}`;
+}
+
+function slugifyFutureItem(label: string, index: number): string {
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return `future-${slug || index + 1}`;
 }
 
 function blankTier(index: number): TierDraft {
@@ -174,6 +207,16 @@ function configToState(config: PaymentConfig | null): Partial<FormState> {
         isRecurring: a.intervalMonths !== null,
         intervalMonths: (a.intervalMonths ?? 1) as 1 | 3 | 12,
       })) ?? [],
+    futureItems:
+      config.futureItems?.map((f) => ({
+        id: f.id,
+        label: f.label,
+        displayString: f.displayString,
+        amountCents: f.amountCents,
+        isRecurring: f.intervalMonths !== null,
+        intervalMonths: (f.intervalMonths ?? 1) as 1 | 3 | 12,
+        startsNote: f.startsNote,
+      })) ?? [],
     depositEnabled: Boolean(config.deposit),
     depositPercent: config.deposit?.depositPercent ?? 50,
     methods: {
@@ -207,6 +250,7 @@ function stateToConfig(state: FormState): PaymentConfig {
       preferAch: state.preferAch,
       addOns: null,
       deposit: null,
+      futureItems: null,
     };
   }
 
@@ -221,6 +265,19 @@ function stateToConfig(state: FormState): PaymentConfig {
       intervalMonths: a.isRecurring ? a.intervalMonths : null,
     }));
   const addOns = cleanedAddOns.length > 0 ? cleanedAddOns : null;
+
+  // Display-only future lines: cleaned like add-ons, but they never flow into checkout.
+  const cleanedFutureItems: FutureItem[] = state.futureItems
+    .filter((f) => f.label.trim() || f.displayString.trim() || f.amountCents > 0)
+    .map((f, i) => ({
+      id: f.id || slugifyFutureItem(f.label, i),
+      label: f.label,
+      displayString: f.displayString,
+      amountCents: f.amountCents,
+      intervalMonths: f.isRecurring ? f.intervalMonths : null,
+      startsNote: f.startsNote,
+    }));
+  const futureItems = cleanedFutureItems.length > 0 ? cleanedFutureItems : null;
 
   if (state.pricingMode === "tiers") {
     const tiers: TierConfig[] = state.tiers.map((tier) => ({
@@ -247,6 +304,7 @@ function stateToConfig(state: FormState): PaymentConfig {
       preferAch: state.preferAch,
       addOns,
       deposit,
+      futureItems,
     };
   }
 
@@ -262,6 +320,7 @@ function stateToConfig(state: FormState): PaymentConfig {
     preferAch: state.preferAch,
     addOns,
     deposit,
+    futureItems,
   };
 }
 
@@ -313,6 +372,27 @@ function inferAddOnsFromImport(raw: Record<string, unknown>): AddOnDraft[] | nul
       amountCents: cents,
       isRecurring,
       intervalMonths: 1 as const,
+    };
+  });
+}
+
+/** Best-effort mapping of the skill's Investment.FutureItems to display-only future-line drafts. */
+function inferFutureItemsFromImport(raw: Record<string, unknown>): FutureItemDraft[] | null {
+  const list = raw["Investment.FutureItems"] as
+    | { name: string; price: string; starts?: string }[]
+    | undefined;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return list.slice(0, 6).map((item, i) => {
+    const cents = parseCentsFromDisplayString(item.price) ?? 0;
+    const isRecurring = /\/\s*(mo|month|quarter|yr|year)/i.test(item.price);
+    return {
+      id: slugifyFutureItem(item.name, i),
+      label: item.name,
+      displayString: item.price,
+      amountCents: cents,
+      isRecurring,
+      intervalMonths: 1 as const,
+      startsNote: item.starts ?? "",
     };
   });
 }
@@ -487,6 +567,7 @@ export function ProposalForm({
     recurring: { ...emptyMoney, label: "Monthly retainer", intervalMonths: 1 },
     tiers: [blankTier(0), blankTier(1), blankTier(2)],
     addOns: [],
+    futureItems: [],
     depositEnabled: false,
     depositPercent: 50,
     methods: { card: true, ach: false },
@@ -519,6 +600,7 @@ export function ProposalForm({
     const rawObj = raw as Record<string, unknown>;
     const inferredTiers = inferTiersFromImport(rawObj);
     const inferredAddOns = inferAddOnsFromImport(rawObj);
+    const inferredFutureItems = inferFutureItemsFromImport(rawObj);
     const inferredDeposit = inferDepositFromImport(rawObj);
     const inferredTrackRecord = inferTrackRecordFromImport(rawObj);
     setState((prev) => ({
@@ -529,6 +611,7 @@ export function ProposalForm({
         ? { pricingMode: "tiers" as PricingMode, tiers: inferredTiers }
         : {}),
       ...(inferredAddOns ? { addOns: inferredAddOns } : {}),
+      ...(inferredFutureItems ? { futureItems: inferredFutureItems } : {}),
       ...(inferredDeposit ? { depositEnabled: true, depositPercent: inferredDeposit } : {}),
       ...(inferredTrackRecord
         ? {
@@ -540,6 +623,7 @@ export function ProposalForm({
     const extras = [
       inferredTiers ? `${inferredTiers.length} pricing tiers` : null,
       inferredAddOns ? `${inferredAddOns.length} add-ons` : null,
+      inferredFutureItems ? `${inferredFutureItems.length} later-phase items` : null,
       inferredDeposit ? `${inferredDeposit}% deposit` : null,
       inferredTrackRecord ? `${inferredTrackRecord.caseStudies.length} case studies` : null,
     ].filter(Boolean);
@@ -990,6 +1074,90 @@ export function ProposalForm({
                   onClick={() => set("addOns", [...state.addOns, blankAddOn()])}
                 >
                   Add add-on
+                </Button>
+              ) : null}
+            </div>
+
+            <div className="space-y-3 border-t border-border pt-4">
+              <div>
+                <p className="text-sm font-medium">Later phases (display-only)</p>
+                <p className="text-xs text-muted-foreground">
+                  Shown with pricing but never charged at signing — for Phase 2 or future services
+                  that start later. You bill these separately when they begin.
+                </p>
+              </div>
+              {state.futureItems.map((item, index) => (
+                <div
+                  key={index}
+                  className="space-y-2 rounded-lg border border-dashed border-border p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={item.isRecurring}
+                        onCheckedChange={(v) => {
+                          const futureItems = [...state.futureItems];
+                          futureItems[index] = { ...item, isRecurring: Boolean(v) };
+                          set("futureItems", futureItems);
+                        }}
+                      />
+                      <Label className="text-xs">Recurring</Label>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-destructive"
+                      onClick={() =>
+                        set(
+                          "futureItems",
+                          state.futureItems.filter((_, i) => i !== index)
+                        )
+                      }
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <MoneyFields
+                    value={{
+                      label: item.label,
+                      displayString: item.displayString,
+                      amountCents: item.amountCents,
+                      intervalMonths: item.intervalMonths,
+                    }}
+                    onChange={(v) => {
+                      const futureItems = [...state.futureItems];
+                      futureItems[index] = {
+                        ...item,
+                        label: v.label,
+                        displayString: v.displayString,
+                        amountCents: v.amountCents,
+                        intervalMonths: (v.intervalMonths ?? item.intervalMonths) as 1 | 3 | 12,
+                      };
+                      set("futureItems", futureItems);
+                    }}
+                    withInterval={item.isRecurring}
+                  />
+                  <div className="space-y-1">
+                    <Label className="text-xs">Starts</Label>
+                    <Input
+                      value={item.startsNote}
+                      placeholder="After launch"
+                      onChange={(e) => {
+                        const futureItems = [...state.futureItems];
+                        futureItems[index] = { ...item, startsNote: e.target.value };
+                        set("futureItems", futureItems);
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+              {state.futureItems.length < 6 ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => set("futureItems", [...state.futureItems, blankFutureItem()])}
+                >
+                  Add later-phase item
                 </Button>
               ) : null}
             </div>
