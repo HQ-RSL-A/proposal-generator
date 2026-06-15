@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -21,12 +21,6 @@ const inter = Inter({
   display: "swap",
 });
 
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   title: "Proposals | RSL/A",
   description: "RSL/A proposal generator and e-signing",
@@ -40,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${satoshi.variable} ${inter.variable} ${spaceGrotesk.variable} font-sans antialiased bg-white`}
+        className={`${satoshi.variable} ${inter.variable} font-sans antialiased bg-white`}
       >
         {children}
         <Toaster richColors position="bottom-right" />

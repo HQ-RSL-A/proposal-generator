@@ -1,5 +1,41 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-15 — Dashboard visual upgrade (worktree `worktree-dashboard-upgrade`, NOT yet merged/deployed)
+
+Executed the Claude Design "Insightful" dashboard upgrade in an isolated git worktree. Turned out
+to be **~90% a visual/layout job, not a data project** — the old dashboard already computed every
+metric the mockup shows (win rate, contracted one-time, MRR, signed-this-month vs last, avg
+time-to-sign, oldest-open). Two decisions were Rahul's: **Satoshi + Inter** font direction, and
+**real-but-hide-if-sparse** sparklines.
+
+- **Fonts — retired Space Grotesk.** `--font-tag` / `.font-tag` repointed to Inter and the
+  `Space_Grotesk` import dropped from `layout.tsx`; the 7 `font-tag` consumers inherit it for free.
+  Note this also restyles the small uppercase labels on the **client-facing** proposal view +
+  signing modal (Inter instead of Space Grotesk) — judged more consistent, not flagged as blocking.
+  Now a clean two-font stack (Satoshi display + Inter everything).
+- **New pure module `src/lib/dashboardMetrics.ts` (TDD, +19 tests).** 6-month MRR stock series +
+  signed/avg-sign flow series, month-over-month MRR delta, attention detection (signed+awaiting/
+  failed payment, or open > 14d), filter predicates + counts, and `hasSparklineSignal` (a sparkline
+  shows only with ≥2 non-zero points, so it never renders fake data). The page does the
+  Prisma→`NormalizedProposal` extraction (same money math as before) and feeds this module.
+- **New components.** `sparkline.tsx` (SVG bar + line, server-rendered), `metrics.tsx` (MRR 2×2
+  hero with delta pill + nested contracted-one-time + bar sparkline; calm Win-rate/Signed/Avg cards;
+  amber Oldest-open warn card), `proposalsPanel.tsx` (client island: attention strip + segmented
+  filter tabs with live counts + desktop table + mobile cards; "Review" jumps to the
+  Needs-attention filter). Shell/top-nav left untouched (already matched the mockup).
+- **emilDesignEng polish.** `.card-hover` lift gated behind `(hover: hover) and (pointer: fine)` +
+  nulled under `prefers-reduced-motion`, easing moved to the existing `--ease-out-strong`; filter
+  tabs transition named props instead of `all`; removed a no-op `width` transition on the win-rate
+  bar. Arbitrary spacing classes converted to Tailwind v4 canonical fractions (lint clean).
+- **Verified.** `npm test` 93 pass (was 74), `npm run build` clean, and the rendered dashboard
+  screenshotted at desktop + mobile against the mockup (faithful) via a throwaway public preview
+  route with mock data (deleted after). Real-data correctness covered by the unit tests + build
+  (the authed `/dashboard` needs a Google session, so it wasn't screenshotted directly).
+- **Design source** archived to `docs/mockups/dashboardUpgrade/` (camelCased; `support.js` kept so
+  the `.dc.html` files still render; Downloads folder cleared).
+- **Status:** all on branch `worktree-dashboard-upgrade`, uncommitted. Not merged to main, not
+  deployed. Unrelated PDF WIP (`ProposalPdf.tsx`, pdfSmoke PDFs) stayed on the main checkout.
+
 ## 2026-06-15 — Recurring + ACH + renewal verification (local sandbox, PASSED)
 
 Closed the only go-live residual: the never-exercised subscription / ACH / renewal webhook paths

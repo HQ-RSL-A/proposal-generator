@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#EEF1F4;font-family:'Inter',sans-serif;color:#111827;padding:44px 32px 72px;">
+  <div style="max-width:1200px;margin:0 auto;">
+
+    <!-- Canvas intro -->
+    <div style="margin-bottom:28px;">
+      <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:#0070F3;margin:0 0 8px;">RSL/A · Internal · Proposals</p>
+      <h1 style="font-family:'Satoshi',sans-serif;letter-spacing:-0.025em;font-size:32px;font-weight:700;margin:0 0 8px;line-height:1.1;">Dashboard upgrade</h1>
+      <p style="font-size:15px;line-height:1.55;color:#6B7280;max-width:680px;margin:0;text-wrap:pretty;">A refreshed proposals dashboard — a revenue hero, calmer metric cards with light on-brand data viz, an attention strip, and a filterable pipeline. The filter tabs work; use <strong style="color:#111827;font-weight:600;">Tweaks</strong> to toggle the attention banner and sparklines.</p>
+    </div>
+
+    <!-- ============ RECOMMENDED DASHBOARD ============ -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#0070F3;background:#F0F4FF;padding:4px 10px;border-radius:999px;">Recommended</span>
+      <span style="font-size:13px;color:#9CA3AF;">Full dashboard · desktop</span>
+    </div>
+
+    <!-- Window frame -->
+    <div style="background:#FFFFFF;border-radius:18px;overflow:hidden;box-shadow:0 1px 2px rgba(17,24,39,0.06),0 24px 60px -28px rgba(17,24,39,0.30);">
+
+      <!-- Top bar -->
+      <div style="height:56px;border-bottom:1px solid #E5E7EB;background:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:space-between;padding:0 22px;">
+        <div style="display:flex;align-items:center;gap:26px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:28px;height:28px;border-radius:8px;background:#0070F3;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-family:'Satoshi',sans-serif;font-weight:900;font-size:15px;">R</span>
+          </div>
+          <nav style="display:flex;align-items:center;gap:4px;">
+            <span style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:#0070F3;background:#F0F4FF;padding:6px 12px;border-radius:8px;">Proposals</span>
+            <span style="display:flex;align-items:center;gap:6px;font-size:13.5px;color:#6B7280;padding:6px 12px;border-radius:8px;">Docs</span>
+            <span style="display:flex;align-items:center;gap:6px;font-size:13.5px;color:#6B7280;padding:6px 12px;border-radius:8px;">Settings</span>
+          </nav>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <span style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:#FFFFFF;background:#0070F3;padding:7px 14px;border-radius:8px;box-shadow:0 1px 2px rgba(0,112,243,0.4);">+ New proposal</span>
+          <span style="width:32px;height:32px;border-radius:999px;background:#111827;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;">JD</span>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div style="background:#F9FAFB;padding:30px 30px 36px;">
+        <div style="max-width:1080px;margin:0 auto;">
+
+          <!-- Page header -->
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:24px;">
+            <div>
+              <h2 style="font-family:'Satoshi',sans-serif;letter-spacing:-0.025em;font-size:26px;font-weight:700;margin:0 0 4px;">Proposals</h2>
+              <p style="font-size:13.5px;color:#6B7280;margin:0;">Live pipeline across all clients</p>
+            </div>
+            <span style="display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:#FFFFFF;background:#0070F3;padding:9px 16px;border-radius:9px;box-shadow:0 1px 2px rgba(0,112,243,0.4);white-space:nowrap;">+ New proposal</span>
+          </div>
+
+          <!-- METRICS GRID (Insightful / recommended) -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:16px;margin-bottom:22px;">
+
+            <!-- HERO: MRR -->
+            <div style="grid-column:span 2;grid-row:span 2;background:linear-gradient(155deg,#F4F8FF 0%,#FFFFFF 46%);border-radius:16px;box-shadow:0 0 0 1px rgba(17,24,39,0.07);padding:26px;display:flex;flex-direction:column;transition:box-shadow .2s ease,transform .15s ease;" style-hover="box-shadow:0 0 0 1px rgba(17,24,39,0.10),0 12px 28px -12px rgba(17,24,39,0.14);transform:translateY(-1px);">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                <p style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#0070F3;margin:0;">Monthly recurring revenue</p>
+                <span style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:#0070F3;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"></polyline><polyline points="15 7 21 7 21 13"></polyline></svg>
+                </span>
+              </div>
+              <div style="margin-top:14px;display:flex;align-items:baseline;gap:4px;">
+                <span style="font-family:'Satoshi',sans-serif;letter-spacing:-0.03em;font-size:48px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;">$12,400</span>
+                <span style="font-size:18px;font-weight:500;color:#9CA3AF;">/mo</span>
+              </div>
+              <div style="margin-top:14px;">
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:#047857;background:#ECFDF5;padding:4px 10px;border-radius:999px;">▲ $1,200 vs last month</span>
+              </div>
+              <div style="flex:1;"></div>
+              <div style="margin-top:22px;padding-top:18px;border-top:1px solid #E9EDF3;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;">
+                <div>
+                  <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6B7280;margin:0 0 5px;">Contracted one-time</p>
+                  <p style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:26px;font-weight:700;margin:0;font-variant-numeric:tabular-nums;">$148,500</p>
+                  <p style="font-size:11.5px;color:#9CA3AF;margin:4px 0 0;">build fees on signed deals</p>
+                </div>
+                <sc-if value="{{ showSparklines }}" hint-placeholder-val="{{ true }}">
+                  <div style="text-align:right;">
+                    <svg width="116" height="46" viewBox="0 0 116 46" style="display:block;">
+                      <rect x="0" y="28" width="13" height="18" rx="2.5" fill="#BFDBFE"></rect>
+                      <rect x="20" y="20" width="13" height="26" rx="2.5" fill="#BFDBFE"></rect>
+                      <rect x="40" y="31" width="13" height="15" rx="2.5" fill="#BFDBFE"></rect>
+                      <rect x="60" y="12" width="13" height="34" rx="2.5" fill="#93C5FD"></rect>
+                      <rect x="80" y="18" width="13" height="28" rx="2.5" fill="#93C5FD"></rect>
+                      <rect x="100" y="4" width="13" height="42" rx="2.5" fill="#0070F3"></rect>
+                    </svg>
+                    <p style="font-size:10.5px;color:#9CA3AF;margin:5px 2px 0;">last 6 months</p>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+
+            <!-- Win rate -->
+            <div style="background:#FFFFFF;border-radius:16px;box-shadow:0 0 0 1px rgba(17,24,39,0.07);padding:20px;display:flex;flex-direction:column;transition:box-shadow .2s ease,transform .15s ease;" style-hover="box-shadow:0 0 0 1px rgba(17,24,39,0.10),0 12px 28px -12px rgba(17,24,39,0.14);transform:translateY(-1px);">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6B7280;margin:0;">Win rate</p>
+                <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#F0F4FF;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0070F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                </span>
+              </div>
+              <p style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:30px;font-weight:700;margin:10px 0 0;font-variant-numeric:tabular-nums;">64%</p>
+              <div style="margin-top:12px;height:6px;border-radius:999px;background:#EEF1F6;overflow:hidden;">
+                <div style="width:64%;height:100%;border-radius:999px;background:#0070F3;"></div>
+              </div>
+              <p style="font-size:11.5px;color:#9CA3AF;margin:9px 0 0;">9 signed of 14 sent</p>
+            </div>
+
+            <!-- Signed this month -->
+            <div style="background:#FFFFFF;border-radius:16px;box-shadow:0 0 0 1px rgba(17,24,39,0.07);padding:20px;display:flex;flex-direction:column;transition:box-shadow .2s ease,transform .15s ease;" style-hover="box-shadow:0 0 0 1px rgba(17,24,39,0.10),0 12px 28px -12px rgba(17,24,39,0.14);transform:translateY(-1px);">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6B7280;margin:0;">Signed this month</p>
+                <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#ECFDF5;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:9px;margin-top:10px;">
+                <span style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;">4</span>
+                <span style="font-size:12px;font-weight:600;color:#047857;">▲ +1</span>
+              </div>
+              <sc-if value="{{ showSparklines }}" hint-placeholder-val="{{ true }}">
+                <svg width="100%" height="30" viewBox="0 0 100 30" preserveAspectRatio="none" style="margin-top:12px;display:block;">
+                  <rect x="2" y="18" width="11" height="12" rx="2" fill="#D1FAE5"></rect>
+                  <rect x="18" y="11" width="11" height="19" rx="2" fill="#D1FAE5"></rect>
+                  <rect x="34" y="22" width="11" height="8" rx="2" fill="#D1FAE5"></rect>
+                  <rect x="50" y="4" width="11" height="26" rx="2" fill="#A7F3D0"></rect>
+                  <rect x="66" y="11" width="11" height="19" rx="2" fill="#A7F3D0"></rect>
+                  <rect x="82" y="4" width="11" height="26" rx="2" fill="#059669"></rect>
+                </svg>
+              </sc-if>
+              <p style="font-size:11.5px;color:#9CA3AF;margin:9px 0 0;">vs 3 last month</p>
+            </div>
+
+            <!-- Avg time to sign -->
+            <div style="background:#FFFFFF;border-radius:16px;box-shadow:0 0 0 1px rgba(17,24,39,0.07);padding:20px;display:flex;flex-direction:column;transition:box-shadow .2s ease,transform .15s ease;" style-hover="box-shadow:0 0 0 1px rgba(17,24,39,0.10),0 12px 28px -12px rgba(17,24,39,0.14);transform:translateY(-1px);">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6B7280;margin:0;">Avg time to sign</p>
+                <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#F0F4FF;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0070F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 16 14"></polyline></svg>
+                </span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:9px;margin-top:10px;">
+                <span style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;">31h</span>
+                <span style="font-size:12px;font-weight:600;color:#047857;">▼ faster</span>
+              </div>
+              <sc-if value="{{ showSparklines }}" hint-placeholder-val="{{ true }}">
+                <svg width="100%" height="30" viewBox="0 0 100 30" preserveAspectRatio="none" style="margin-top:12px;display:block;">
+                  <polyline points="2,8 22,12 42,9 62,16 82,20 98,24" fill="none" stroke="#0070F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"></polyline>
+                  <circle cx="98" cy="24" r="2.6" fill="#0070F3"></circle>
+                </svg>
+              </sc-if>
+              <p style="font-size:11.5px;color:#9CA3AF;margin:9px 0 0;">sent → signed</p>
+            </div>
+
+            <!-- Oldest open (warn) -->
+            <div style="background:#FFFBEB;border-radius:16px;box-shadow:0 0 0 1px rgba(245,158,11,0.22);padding:20px;display:flex;flex-direction:column;transition:box-shadow .2s ease,transform .15s ease;" style-hover="box-shadow:0 0 0 1px rgba(245,158,11,0.35),0 12px 28px -12px rgba(180,120,10,0.20);transform:translateY(-1px);">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#B45309;margin:0;">Oldest open</p>
+                <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#FEF3C7;">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"></circle><polyline points="12 9 12 13 15 15"></polyline><line x1="9" y1="2" x2="15" y2="2"></line></svg>
+                </span>
+              </div>
+              <p style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:30px;font-weight:700;margin:10px 0 0;color:#B45309;font-variant-numeric:tabular-nums;">16d</p>
+              <div style="flex:1;"></div>
+              <p style="font-size:11.5px;color:#B4530999;color:rgba(180,83,9,0.7);margin:14px 0 0;font-weight:500;">Atlas Goods · needs a nudge</p>
+            </div>
+          </div>
+
+          <!-- Attention strip -->
+          <sc-if value="{{ showAttention }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;background:#FFFBEB;border-radius:14px;box-shadow:0 0 0 1px rgba(245,158,11,0.22);padding:14px 18px;margin-bottom:22px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                <span style="width:9px;height:9px;border-radius:999px;background:#F59E0B;box-shadow:0 0 0 4px rgba(245,158,11,0.18);flex-shrink:0;"></span>
+                <p style="font-size:13.5px;color:#92400E;margin:0;"><strong style="font-weight:600;">2 proposals need attention</strong> — 1 awaiting payment (Lumen Health), 1 open 16 days (Atlas Goods).</p>
+              </div>
+              <span style="font-size:13px;font-weight:600;color:#B45309;white-space:nowrap;cursor:pointer;">Review →</span>
+            </div>
+          </sc-if>
+
+          <!-- Filter tabs + count -->
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+            <div style="display:inline-flex;align-items:center;gap:3px;background:#EEF1F6;border-radius:11px;padding:4px;">
+              <sc-for list="{{ filters }}" as="f" hint-placeholder-count="4">
+                <button onClick="{{ f.set }}" style="{{ f.style }}">
+                  {{ f.label }}<span style="{{ f.countStyle }}">{{ f.count }}</span>
+                </button>
+              </sc-for>
+            </div>
+            <p style="font-size:12.5px;color:#9CA3AF;margin:0;">{{ rowCountLabel }}</p>
+          </div>
+
+          <!-- Table -->
+          <div style="background:#FFFFFF;border-radius:16px;box-shadow:0 0 0 1px rgba(17,24,39,0.07);overflow:hidden;">
+            <div style="display:grid;grid-template-columns:2.4fr 2fr 1.5fr 1.6fr 0.9fr;gap:12px;padding:13px 22px;border-bottom:1px solid #EEF1F6;background:#FCFCFD;">
+              <span style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#9CA3AF;">Proposal</span>
+              <span style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#9CA3AF;">Client</span>
+              <span style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#9CA3AF;">Deal</span>
+              <span style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#9CA3AF;">Status</span>
+              <span style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:#9CA3AF;text-align:right;">Valid until</span>
+            </div>
+
+            <sc-for list="{{ visibleRows }}" as="row" hint-placeholder-count="7">
+              <div style="display:grid;grid-template-columns:2.4fr 2fr 1.5fr 1.6fr 0.9fr;gap:12px;padding:15px 22px;border-bottom:1px solid #F4F6F9;align-items:center;cursor:pointer;transition:background .12s ease;" style-hover="background:#F9FAFB;">
+                <div style="min-width:0;">
+                  <span style="font-size:14px;font-weight:500;color:#111827;">{{ row.title }}</span>
+                  <sc-if value="{{ row.showVersion }}"><span style="font-size:11.5px;color:#9CA3AF;margin-left:7px;">{{ row.versionLabel }}</span></sc-if>
+                </div>
+                <div style="font-size:13px;color:#6B7280;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ row.clientLine }}</div>
+                <div style="font-size:13px;color:#374151;font-variant-numeric:tabular-nums;">{{ row.deal }}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                  <span style="{{ row.statusChipStyle }}">{{ row.statusLabel }}</span>
+                  <sc-if value="{{ row.hasPayment }}"><span style="{{ row.paymentChipStyle }}">{{ row.paymentLabel }}</span></sc-if>
+                </div>
+                <div style="font-size:13px;color:#9CA3AF;text-align:right;">{{ row.validUntil }}</div>
+              </div>
+            </sc-for>
+
+            <sc-if value="{{ noRows }}">
+              <div style="padding:40px;text-align:center;color:#9CA3AF;font-size:13.5px;">Nothing in this filter right now.</div>
+            </sc-if>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ TREATMENTS GALLERY ============ -->
+    <div style="margin-top:48px;">
+      <h3 style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:21px;font-weight:700;margin:0 0 6px;">Metric cards — three treatments</h3>
+      <p style="font-size:14px;color:#6B7280;margin:0 0 22px;max-width:640px;">Same data, three visual approaches. The dashboard above uses <strong style="color:#111827;font-weight:600;">Insightful</strong>. Tell me which to roll across.</p>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;">
+
+        <!-- CALM -->
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#374151;">Calm</span>
+            <span style="font-size:11.5px;color:#9CA3AF;">minimal · airy</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="background:#FFFFFF;border-radius:16px;box-shadow:0 0 0 1px rgba(17,24,39,0.07);padding:24px;">
+              <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#9CA3AF;margin:0 0 14px;">Win rate</p>
+              <p style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:34px;font-weight:700;margin:0;font-variant-numeric:tabular-nums;">64%</p>
+              <p style="font-size:12px;color:#9CA3AF;margin:10px 0 0;">9 signed of 14 sent</p>
+            </div>
+            <div style="background:#FFFFFF;border-radius:16px;box-shadow:0 0 0 1px rgba(17,24,39,0.07);padding:24px;">
+              <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#9CA3AF;margin:0 0 14px;">Signed this month</p>
+              <p style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:34px;font-weight:700;margin:0;font-variant-numeric:tabular-nums;">4</p>
+              <p style="font-size:12px;color:#9CA3AF;margin:10px 0 0;">vs 3 last month</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- INSIGHTFUL -->
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#0070F3;">Insightful</span>
+            <span style="font-size:11px;font-weight:600;color:#0070F3;background:#F0F4FF;padding:2px 8px;border-radius:999px;">recommended</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="background:#FFFFFF;border-radius:16px;box-shadow:0 0 0 1px rgba(17,24,39,0.07);padding:20px;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6B7280;margin:0;">Win rate</p>
+                <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#F0F4FF;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0070F3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3"></circle></svg></span>
+              </div>
+              <p style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:30px;font-weight:700;margin:10px 0 0;font-variant-numeric:tabular-nums;">64%</p>
+              <div style="margin-top:12px;height:6px;border-radius:999px;background:#EEF1F6;overflow:hidden;"><div style="width:64%;height:100%;border-radius:999px;background:#0070F3;"></div></div>
+              <p style="font-size:11.5px;color:#9CA3AF;margin:9px 0 0;">9 signed of 14 sent</p>
+            </div>
+            <div style="background:#FFFFFF;border-radius:16px;box-shadow:0 0 0 1px rgba(17,24,39,0.07);padding:20px;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6B7280;margin:0;">Signed this month</p>
+                <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#ECFDF5;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:9px;margin-top:10px;"><span style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;">4</span><span style="font-size:12px;font-weight:600;color:#047857;">▲ +1</span></div>
+              <svg width="100%" height="28" viewBox="0 0 100 28" preserveAspectRatio="none" style="margin-top:12px;display:block;">
+                <rect x="2" y="17" width="11" height="11" rx="2" fill="#D1FAE5"></rect><rect x="18" y="10" width="11" height="18" rx="2" fill="#D1FAE5"></rect><rect x="34" y="20" width="11" height="8" rx="2" fill="#D1FAE5"></rect><rect x="50" y="4" width="11" height="24" rx="2" fill="#A7F3D0"></rect><rect x="66" y="10" width="11" height="18" rx="2" fill="#A7F3D0"></rect><rect x="82" y="4" width="11" height="24" rx="2" fill="#059669"></rect>
+              </svg>
+              <p style="font-size:11.5px;color:#9CA3AF;margin:9px 0 0;">vs 3 last month</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOLD -->
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span style="font-family:'Inter',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#374151;">Bold</span>
+            <span style="font-size:11.5px;color:#9CA3AF;">filled · energetic</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="background:linear-gradient(135deg,#0070F3 0%,#00C2FF 100%);border-radius:16px;padding:22px;color:#FFFFFF;box-shadow:0 8px 24px -10px rgba(0,112,243,0.5);">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.85);margin:0;">Win rate</p>
+                <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.2);"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="3"></circle></svg></span>
+              </div>
+              <p style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:32px;font-weight:700;margin:10px 0 0;font-variant-numeric:tabular-nums;">64%</p>
+              <div style="margin-top:12px;height:6px;border-radius:999px;background:rgba(255,255,255,0.25);overflow:hidden;"><div style="width:64%;height:100%;border-radius:999px;background:#FFFFFF;"></div></div>
+              <p style="font-size:11.5px;color:rgba(255,255,255,0.8);margin:9px 0 0;">9 signed of 14 sent</p>
+            </div>
+            <div style="background:#ECFDF5;border-radius:16px;box-shadow:0 0 0 1px rgba(5,150,105,0.18);padding:22px;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                <p style="font-family:'Inter',sans-serif;font-size:10.5px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#047857;margin:0;">Signed this month</p>
+                <span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#059669;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
+              </div>
+              <div style="display:flex;align-items:baseline;gap:9px;margin-top:10px;"><span style="font-family:'Satoshi',sans-serif;letter-spacing:-0.02em;font-size:32px;font-weight:700;color:#065F46;font-variant-numeric:tabular-nums;">4</span><span style="font-size:12px;font-weight:700;color:#047857;">▲ +1</span></div>
+              <svg width="100%" height="28" viewBox="0 0 100 28" preserveAspectRatio="none" style="margin-top:12px;display:block;">
+                <rect x="2" y="17" width="11" height="11" rx="2" fill="#6EE7B7"></rect><rect x="18" y="10" width="11" height="18" rx="2" fill="#6EE7B7"></rect><rect x="34" y="20" width="11" height="8" rx="2" fill="#6EE7B7"></rect><rect x="50" y="4" width="11" height="24" rx="2" fill="#34D399"></rect><rect x="66" y="10" width="11" height="18" rx="2" fill="#34D399"></rect><rect x="82" y="4" width="11" height="24" rx="2" fill="#059669"></rect>
+              </svg>
+              <p style="font-size:11.5px;color:#059669;margin:9px 0 0;">vs 3 last month</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1264, &quot;height&quot;: 1640 },
+  &quot;showAttention&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; },
+  &quot;showSparklines&quot;: { &quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot; }
+}">
+class Component extends DCLogic {
+  state = { filter: "all" };
+
+  data() {
+    const S = {
+      SENT: { label: "Sent", bg: "#DBEAFE", fg: "#1D4ED8" },
+      VIEWED: { label: "Viewed", bg: "#E0E7FF", fg: "#4338CA" },
+      PARTIALLY_SIGNED: { label: "Partially signed", bg: "#FEF3C7", fg: "#B45309" },
+      SIGNED: { label: "Signed", bg: "#D1FAE5", fg: "#047857" },
+      DECLINED: { label: "Declined", bg: "#FFE4E6", fg: "#BE123C" },
+      EXPIRED: { label: "Expired", bg: "#FFEDD5", fg: "#C2410C" },
+    };
+    const P = {
+      PAID: { label: "Paid", bg: "#059669", fg: "#FFFFFF" },
+      AWAITING: { label: "Awaiting payment", bg: "#FEF3C7", fg: "#B45309" },
+      PROCESSING: { label: "ACH processing", bg: "#E0F2FE", fg: "#0369A1" },
+    };
+    const chipBase = {
+      display: "inline-flex", alignItems: "center", padding: "2px 9px",
+      borderRadius: "6px", fontSize: "11px", fontWeight: 600,
+      fontFamily: "'Inter',sans-serif", lineHeight: 1.5, whiteSpace: "nowrap",
+    };
+    const raw = [
+      { id: "1", title: "Website Redesign + Care Plan", version: 2, client: "Maya Chen", company: "Northwind Labs", deal: "$24,000 + $1,200/mo", status: "SIGNED", payment: "PAID", validUntil: "Jun 28" },
+      { id: "2", title: "Brand & Marketing Site", version: 1, client: "Daniel Okafor", company: "Lumen Health", deal: "$38,500", status: "SIGNED", payment: "AWAITING", validUntil: "Jul 02" },
+      { id: "3", title: "Mobile App MVP", version: 1, client: "Priya Raman", company: "Tably", deal: "3 options", status: "VIEWED", payment: null, validUntil: "Jun 22" },
+      { id: "4", title: "Q3 Retainer Renewal", version: 1, client: "Sam Whitfield", company: "Forge Metrics", deal: "$4,500/mo", status: "PARTIALLY_SIGNED", payment: null, validUntil: "Jun 19" },
+      { id: "5", title: "E-commerce Replatform", version: 1, client: "Lena Vogt", company: "Atlas Goods", deal: "$52,000 + $900/mo", status: "SENT", payment: null, validUntil: "Jun 30" },
+      { id: "6", title: "Design System Sprint", version: 1, client: "Tomás Reyes", company: "Vela Studio", deal: "$16,000", status: "DECLINED", payment: null, validUntil: "—" },
+      { id: "7", title: "Internal Tools Audit", version: 1, client: "Grace Kim", company: "Meridian Co", deal: "$9,800", status: "EXPIRED", payment: null, validUntil: "Jun 05" },
+    ];
+    const attentionIds = new Set(["2", "5"]); // awaiting payment + open 16d
+    return raw.map((r) => {
+      const s = S[r.status];
+      const p = r.status === "SIGNED" && r.payment ? P[r.payment] : null;
+      return {
+        ...r,
+        clientLine: `${r.client} · ${r.company}`,
+        statusLabel: s.label,
+        statusChipStyle: { ...chipBase, background: s.bg, color: s.fg },
+        hasPayment: !!p,
+        paymentLabel: p ? p.label : "",
+        paymentChipStyle: p ? { ...chipBase, background: p.bg, color: p.fg } : chipBase,
+        showVersion: r.version > 1,
+        versionLabel: `v${r.version}`,
+        _open: ["SENT", "VIEWED", "PARTIALLY_SIGNED"].includes(r.status),
+        _signed: r.status === "SIGNED",
+        _attention: attentionIds.has(r.id),
+      };
+    });
+  }
+
+  renderVals() {
+    const all = this.data();
+    const filter = this.state.filter;
+    const match = (r) =>
+      filter === "all" ? true
+      : filter === "open" ? r._open
+      : filter === "signed" ? r._signed
+      : r._attention;
+    const visible = all.filter(match);
+
+    const counts = {
+      all: all.length,
+      open: all.filter((r) => r._open).length,
+      signed: all.filter((r) => r._signed).length,
+      attention: all.filter((r) => r._attention).length,
+    };
+
+    const tabBase = {
+      display: "inline-flex", alignItems: "center", gap: "6px", border: "none",
+      cursor: "pointer", fontFamily: "'Inter',sans-serif", fontSize: "13px",
+      padding: "7px 13px", borderRadius: "8px", transition: "all .15s ease",
+    };
+    const defs = [
+      { key: "all", label: "All" },
+      { key: "open", label: "Open" },
+      { key: "signed", label: "Signed" },
+      { key: "attention", label: "Needs attention" },
+    ];
+    const filters = defs.map((d) => {
+      const active = d.key === filter;
+      return {
+        key: d.key,
+        label: d.label,
+        count: counts[d.key],
+        set: () => this.setState({ filter: d.key }),
+        style: active
+          ? { ...tabBase, background: "#FFFFFF", color: "#111827", fontWeight: 600, boxShadow: "0 1px 2px rgba(17,24,39,0.10)" }
+          : { ...tabBase, background: "transparent", color: "#6B7280", fontWeight: 500 },
+        countStyle: {
+          fontSize: "11px", fontWeight: 600, fontVariantNumeric: "tabular-nums",
+          color: active ? "#0070F3" : "#9CA3AF",
+        },
+      };
+    });
+
+    const n = visible.length;
+    return {
+      filters,
+      visibleRows: visible,
+      noRows: n === 0,
+      rowCountLabel: `${n} proposal${n === 1 ? "" : "s"}`,
+      showAttention: this.props.showAttention ?? true,
+      showSparklines: this.props.showSparklines ?? true,
+    };
+  }
+}
+</script>
+</body>
+</html>
