@@ -33,8 +33,10 @@ time-to-sign, oldest-open). Two decisions were Rahul's: **Satoshi + Inter** font
   (the authed `/dashboard` needs a Google session, so it wasn't screenshotted directly).
 - **Design source** archived to `docs/mockups/dashboardUpgrade/` (camelCased; `support.js` kept so
   the `.dc.html` files still render; Downloads folder cleared).
-- **Status:** all on branch `worktree-dashboard-upgrade`, uncommitted. Not merged to main, not
-  deployed. Unrelated PDF WIP (`ProposalPdf.tsx`, pdfSmoke PDFs) stayed on the main checkout.
+- **Status:** committed (`5b59a4d`), pushed, fast-forward **merged to `main`**, and **deployed to
+  production** — live at `proposals.rsla.io` (deployment `dpl_7ccVDmbU2yyXjDDbymUx5BCodWLJ`).
+  Deployed from the worktree (clean tree), so prod and `main` match. Unrelated PDF WIP
+  (`ProposalPdf.tsx`, pdfSmoke PDFs) stayed uncommitted on the main checkout.
 
 ## 2026-06-15 — Recurring + ACH + renewal verification (local sandbox, PASSED)
 
