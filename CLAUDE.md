@@ -48,6 +48,10 @@ for open and planned work.
 - Dev port: **1235** (expenseVault owns 1234).
 - Migrations: hand SQL via `npx prisma db execute --file ...` (RLS lives outside Prisma's
   history — same convention as expenseVault). Never `prisma migrate dev` against the shared DB.
+- **`main` is git-linked to Vercel — pushing to `main` auto-deploys to production.**
+  `vercel deploy --prod --yes` is a manual deploy of the current directory (e.g. a worktree); use it
+  only to ship a non-`main` state. Never manually deploy a branch that's behind `main` — it
+  supersedes the live deploy and reverts whatever `main` last shipped.
 
 ## Commands
 
@@ -59,5 +63,5 @@ npx prisma db seed             # seed MsaVersion v3 + AdminSettings
 npx tsx scripts/pdfSmoke.ts    # render the full PDF locally (required after any PDF change)
 npx tsx scripts/emailPreview.tsx  # render all 14 emails to docs/emailPreviews/
 npx tsx scripts/e2eSeed.ts     # fresh [TEST] rehearsal draft (fake company, prod DB)
-vercel deploy --prod --yes     # SHIP — the Vercel project is NOT git-linked; push alone deploys nothing
+vercel deploy --prod --yes     # manual deploy of the CWD (worktree, etc.); main is git-linked, so pushing main also ships
 ```

@@ -38,6 +38,9 @@ time-to-sign, oldest-open). Two decisions were Rahul's: **Satoshi + Inter** font
   already landed on `main` + been deployed — so it briefly reverted the PDF rebuild on prod. Fixed by
   merging the PDF rebuild into this branch and redeploying the combined build, then fast-forwarding
   `main`. End state: `main` = prod = dashboard + PDF rebuild.
+- **Root cause + doc fix:** the project is git-linked to `main` (pushing `main` auto-deploys to
+  prod) — the "not git-linked" notes in CLAUDE.md/BRAIN.md were stale and led to the manual
+  stale-branch deploy that caused the revert. Both corrected.
 
 ## 2026-06-15 — Executed PDF rebuilt as a paginated replica of the web signing doc
 

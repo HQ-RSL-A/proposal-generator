@@ -208,8 +208,9 @@ resolves the proposal by session id whenever the path token is dead.
 
 ## Gotchas
 
-- **Vercel project is CLI-deployed, not git-linked**: pushing to GitHub does NOT deploy.
-  Ship with `vercel deploy --prod --yes` from the project root.
+- **Vercel project is git-linked to `main`**: pushing to `main` auto-deploys to production.
+  `vercel deploy --prod --yes` also deploys the current directory manually (e.g. a worktree) — but
+  never manually deploy a branch behind `main`, it supersedes and reverts main's live deploy.
 - **Middleware runs before `public/` assets on Vercel** (next dev serves them first), so
   the auth matcher excludes static assets by extension. Never re-add filename-specific
   exclusions; renamed assets will 307 to sign-in on prod only.
