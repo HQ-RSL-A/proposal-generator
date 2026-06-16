@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { brandToast } from "@/lib/toast";
+import { brandConfirm, brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -97,8 +97,16 @@ export function ProposalActions({
               variant="ghost"
               className="text-destructive"
               disabled={busy}
-              onClick={() => {
-                if (!confirm("Delete this draft? This can't be undone.")) return;
+              onClick={async () => {
+                const ok = await brandConfirm({
+                  title: "Delete this draft?",
+                  description: "This can't be undone.",
+                  confirmLabel: "Delete draft",
+                  cancelLabel: "Keep",
+                  icon: Trash2,
+                  tone: "danger",
+                });
+                if (!ok) return;
                 run(() => deleteDraft(proposalId), "Draft deleted").then(() =>
                   router.push("/dashboard")
                 );
