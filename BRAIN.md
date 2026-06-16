@@ -169,7 +169,7 @@ resolves the proposal by session id whenever the path token is dead.
 | `DATABASE_URL_POOLER` | Vercel only | Supabase pooler (prod; direct host doesn't resolve from Vercel) |
 | `AUTH_SECRET` / `AUTH_TRUST_HOST` | .env + Vercel | NextAuth |
 | `GOOGLE_CLIENT_ID/SECRET` | .env + Vercel | OAuth client "Proposal Generator" (rsla-2026) |
-| `BLOB_READ_WRITE_TOKEN` | .env + Vercel | Private Blob (signatures, PDFs) |
+| `BLOB_STORE_ID` (+ ambient `VERCEL_OIDC_TOKEN`) | Vercel runtime | Private Blob auth (signatures, PDFs) — OIDC, **no static `BLOB_READ_WRITE_TOKEN`** exists (the local `.env` var is empty/legacy). Admin/delete = dashboard; see Gotchas |
 | `STRIPE_SECRET_KEY` | .env + Vercel | **LIVE on Vercel Production (sk_live) since 2026-06-12; local/dev stays TEST.** The live webhook delivers + signature-verifies on prod (proven by a $1 smoke test 2026-06-15: `checkout.session.completed` verified -> PAID -> receipt + executed PDF; Notion no-op on the fake company). Old test sandbox webhook was `we_1ThbkhE1rrZiCLVQEdLERe0Y`. **All 6 live events confirmed (dashboard) + recurring/ACH/renewal verified 2026-06-15** in a local sandbox + a real sandbox hosted-checkout subscription pay. Invoice handlers read both the legacy top-level `invoice.subscription` and the new nested `invoice.parent.subscription_details.subscription`, so the `2026-05-27.dahlia` API version is safe to adopt |
 | `STRIPE_WEBHOOK_SECRET` | .env (stripe listen) / Vercel | Webhook signing |
 | `RESEND_API_KEY` / `RESEND_WEBHOOK_SECRET` | .env + Vercel | Email + svix |
@@ -219,6 +219,19 @@ resolves the proposal by session id whenever the path token is dead.
   RW token. Local dev needs the store connection's Development environment enabled in the
   Vercel dashboard, plus `vercel env pull` (12h token). `blob.ts` uses the SDK's private
   `get`/`put`.
+- **Blob write lifecycle:** a draft writes **nothing** to Blob — the first artifact is
+  RSL/A's signature PNG stamped at **send** (`sendProposal`); each client signature PNG lands
+  as that party signs; the executed `signed.pdf` after all sign. Paths:
+  `proposals/{id}/signatures/{partyId}.png`, `proposals/{id}/v{n}/signed.pdf`, plus the
+  proposal-independent `settings/admin-signature.png` (your saved template).
+- **Deleting/admin-ing blobs from a laptop does NOT work via CLI** (confirmed 2026-06-15):
+  the locally-minted OIDC token is *development*-scoped and the store rejects it ("OIDC …
+  not enabled for the development environment"), and there's no static RW token to pull
+  (`vercel env run/pull` don't expose one — it's runtime-only). To delete, either use the
+  **Vercel dashboard Blob browser** (Storage → store → delete the `proposals/` prefix; keep
+  `settings/`) or generate a one-off RW token in the dashboard and run
+  `vercel blob del <pathname> --rw-token <token>` (CLI ≥ 54). "Folders" are just key
+  prefixes — deleting the contents removes the folder.
 - Supabase pooler host is **aws-1**-us-west-1.pooler.supabase.com (aws-0 returns
   "tenant not found" and crashes sign-in via the auth allowlist lookup).
 - **Test/seed data must use fake company names.** The Notion paid-sync matches CRM pages by

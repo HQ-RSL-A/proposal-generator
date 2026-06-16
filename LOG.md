@@ -1002,3 +1002,34 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
 - Verified via a throwaway no-auth `/devpreview` route (deleted after QA) since the admin
   view is Google-OAuth gated; screenshots + DOM measurements confirmed centering, colors,
   and that the confirm buttons dismiss/resolve correctly. No console errors.
+
+## 2026-06-15 (cont.) — Shipped the polish; wiped prod proposals; external-cleanup status
+
+- The polish above shipped: commit `289dcc2`, live on prod (proposals.rsla.io,
+  `dpl_DcDHLPmZdt…`, Ready). Local `npm run build` + in-browser QA passed first. (A concurrent
+  Claude session's `e44b238 import flat pricing` had landed on `main` moments earlier and
+  swept up the LOG note + its own files — unrelated; left untouched. Scope your commits to
+  your own files and `git fetch` before pushing — the tree changes under you here.)
+- **Deleted ALL proposals from prod at Rahul's request** (both were his tests):
+  `Valley Oak Landscape Co` (SIGNED, payment AWAITING, 2 sigs + executed PDF) and
+  `Meridian Test Co` (VOIDED). Confirmed scope first because one looked like a real signed
+  contract; Rahul confirmed both disposable. Hard-deleted by id in a txn; `onDelete: Cascade`
+  cleared every child (verified 0 parties/sigs/docs/payments/jobs/events/emails). One-off
+  list/delete scripts removed after.
+- External cleanup:
+  - **Notion — nothing to clean (no-op).** The sync only *updates* an existing CRM row matched
+    by company name in DB `2e6fbb11…806d`; neither company had a row. The
+    "Proposal for Christian (Valley Oak Landscape Co)" page is Rahul's real **high-priority
+    task** in Lalia's Tasks — left untouched (so Valley Oak/Christian is a real lead he tested
+    the tool with).
+  - **Blob — PENDING (handoff).** Orphaned `proposals/{id}/…` signature PNGs + Valley Oak
+    `signed.pdf` remain (private, now unreferenced). Cannot delete from CLI — local OIDC is
+    development-scoped and the store rejects it; no static RW token exists. **Next step:** in
+    the Vercel dashboard Blob browser delete the `proposals/` prefix (KEEP
+    `settings/admin-signature.png`), or paste a dashboard RW token and I'll
+    `vercel blob del`. (Details now in BRAIN Gotchas.)
+  - **Stripe — left to auto-expire.** Any unpaid live Checkout Session from the Valley Oak
+    test self-expires (~24h); declined to pull the live key (safety guard + needless exposure).
+- Upgraded Vercel CLI 53.1.1 → 54.14.0 (adds blob `--oidc-token`/`--store-id` flags).
+- BRAIN.md updated: Blob write-lifecycle + the CLI-can't-delete-locally reality, and the
+  env-var table corrected (no static `BLOB_READ_WRITE_TOKEN`; OIDC via `BLOB_STORE_ID`).
