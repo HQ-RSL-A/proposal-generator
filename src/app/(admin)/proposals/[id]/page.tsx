@@ -6,6 +6,7 @@ import { formatDate, formatDateTime } from "@/lib/dates";
 import { buildProposalSections, sectionsFromFrozen } from "@/lib/proposalContent";
 import { frozenPaymentConfig, frozenTokens, frozenTrackRecord } from "@/lib/signingService";
 import type { FrozenContent } from "@/lib/types";
+import { clientFullName } from "@/lib/clientName";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { PaymentChip, StatusChip } from "@/components/dashboard/statusChip";
@@ -87,7 +88,7 @@ export default async function ProposalDetailPage({
             <PaymentChip paymentStatus={proposal.paymentStatus} status={proposal.status} />
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            {tokens["Client.FirstName"]} {tokens["Client.LastName"]} · {tokens["Client.Company"]}
+            {clientFullName(tokens["Client.FirstName"], tokens["Client.LastName"])} · {tokens["Client.Company"]}
             {proposal.validUntil ? ` · valid until ${formatDate(proposal.validUntil)}` : ""}
             {proposal.versionNumber > 1 ? ` · v${proposal.versionNumber}` : ""}
           </p>
@@ -176,7 +177,7 @@ export default async function ProposalDetailPage({
                       // Draft: parties exist only after send, so preview the
                       // signature spaces from the imported tokens.
                       {
-                        name: `${tokens["Client.FirstName"]} ${tokens["Client.LastName"]}`,
+                        name: clientFullName(tokens["Client.FirstName"], tokens["Client.LastName"]),
                         detail: tokens["Client.Company"],
                         signedAt: null,
                         signatureImageUrl: null,

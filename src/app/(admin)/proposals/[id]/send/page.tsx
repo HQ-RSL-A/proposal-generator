@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { formatCents } from "@/lib/currency";
 import { validatePaymentConfigForSend } from "@/lib/validation";
 import { isSignOnly, type PaymentConfig, type TokensJson } from "@/lib/types";
+import { clientFullName } from "@/lib/clientName";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SendForm } from "@/components/proposals/sendForm";
@@ -71,7 +72,7 @@ export default async function SendPage({ params }: { params: Promise<{ id: strin
 
       <SendForm
         proposalId={proposal.id}
-        defaultName={`${tokens["Client.FirstName"]} ${tokens["Client.LastName"]}`}
+        defaultName={clientFullName(tokens["Client.FirstName"], tokens["Client.LastName"])}
         defaultEmail=""
       />
     </div>

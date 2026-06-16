@@ -1,5 +1,25 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-15 — Last name is now optional (first name + company on the contract)
+
+Some prospects are known only by a first name, but `Client.LastName` was required, so saving or
+sending blocked with "Last name is required." Made it optional end to end.
+
+- **Validation:** `Client.LastName` accepts blank or omitted (`OPTIONAL_TOKEN_KEYS`); first name and
+  company stay required. The token transform tolerates a missing key.
+- **Legal rendering (the decision):** when the surname is blank, the executed MSA party line and the
+  acceptance block identify the Client as **first name + company** (Rahul's call). New helper
+  `src/lib/clientName.ts`: `clientFullName` (drops a blank surname) and `collapseNameFieldGap`
+  (removes the gap an empty merge leaves, e.g. "Christian , Co" to "Christian, Co"). The collapse
+  runs **only when the surname is blank**, so normal proposals render byte-identically. No change to
+  the attorney-owned MSA wording.
+- **Polish:** admin dashboard/detail/send name strings use `clientFullName` (no dangling space); the
+  form field reads "Last name (optional)"; `/docs` marks it optional.
+- **Verified:** 126 tests (+11, TDD'd), tsc + eslint clean, `pdfSmoke` regression clean, and a
+  blank-surname PDF visually checked — page 4 party line reads "Christian, Valley Oak Landscape Co
+  (the Client)." with the cover, MSA body, and footers intact.
+- **Status:** committed + pushed to `main` (auto-deploys to prod).
+
 ## 2026-06-15 — Validation errors now read in plain English (was raw Zod JSON)
 
 Saving or sending a proposal with an empty field dumped a raw Zod 4 issue array at the user

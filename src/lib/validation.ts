@@ -7,19 +7,21 @@ import { humanizeZodError } from "@/lib/zodErrors";
 // ---------- Tokens JSON ----------
 
 const nonEmpty = z.string().trim().min(1);
+/** Tokens allowed to be blank or omitted (e.g. a client known only by first name). */
+const OPTIONAL_TOKEN_KEYS = new Set<string>(["Client.LastName"]);
+const optionalText = z.string().trim().optional();
 
 export const tokensJsonSchema = z
   .object(
-    Object.fromEntries(TOKEN_KEYS.map((k) => [k, nonEmpty])) as Record<
-      keyof TokensJson,
-      typeof nonEmpty
-    >
+    Object.fromEntries(
+      TOKEN_KEYS.map((k) => [k, OPTIONAL_TOKEN_KEYS.has(k) ? optionalText : nonEmpty])
+    ) as Record<string, z.ZodTypeAny>
   )
   // Older skill outputs carry extra keys (e.g. Client.CaseStudy); accept and drop them.
   .catchall(z.unknown())
   .transform((parsed) => {
     const clean = {} as TokensJson;
-    for (const key of TOKEN_KEYS) clean[key] = (parsed[key] as string).trim();
+    for (const key of TOKEN_KEYS) clean[key] = String(parsed[key] ?? "").trim();
     return clean;
   });
 

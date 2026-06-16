@@ -14,6 +14,7 @@ import type {
   TrackRecordConfig,
 } from "@/lib/types";
 import { effectiveLineItems, isSignOnly } from "@/lib/types";
+import { clientFullName, collapseNameFieldGap } from "@/lib/clientName";
 import {
   parseMsa,
   replaceTokensInBlocks,
@@ -162,13 +163,23 @@ export function buildProposalSections(input: {
   selectedTierId?: string | null;
 }): ProposalSections {
   const { tokens, paymentConfig, trackRecord, msaBodyMarkdown, selectedTierId = null } = input;
-  const clientFull = `${tokens["Client.FirstName"]} ${tokens["Client.LastName"]}`;
+  const clientFull = clientFullName(tokens["Client.FirstName"], tokens["Client.LastName"]);
   const clientLine = `${clientFull}, ${tokens["Client.Company"]}`;
 
-  const msaBlocks = replaceTokensInBlocks(
+  // When the optional last name is blank, suppress the spacing gap its empty merge leaves in the
+  // MSA party line (e.g. "Christian , Co" -> "Christian, Co"). No change to the agreement wording.
+  const lastNameBlank = tokens["Client.LastName"].trim().length === 0;
+  const rawMsaBlocks = replaceTokensInBlocks(
     parseMsa(msaBodyMarkdown),
     tokens as unknown as Record<string, string>
   );
+  const msaBlocks = lastNameBlank
+    ? rawMsaBlocks.map((block) =>
+        block.type === "heading"
+          ? { ...block, text: collapseNameFieldGap(block.text) }
+          : { ...block, runs: block.runs.map((run) => ({ ...run, text: collapseNameFieldGap(run.text) })) }
+      )
+    : rawMsaBlocks;
 
   const signOnly = isSignOnly(paymentConfig);
   const depositSchedule = computeDepositSchedule(paymentConfig, selectedTierId);

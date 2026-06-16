@@ -428,7 +428,7 @@ const tokenFieldGroups: { heading: string; fields: { key: keyof TokensJson; labe
     heading: "Client",
     fields: [
       { key: "Client.FirstName", label: "First name" },
-      { key: "Client.LastName", label: "Last name" },
+      { key: "Client.LastName", label: "Last name (optional)" },
       { key: "Client.Company", label: "Company" },
       { key: "Client.ProposalTitle", label: "Proposal title" },
     ],

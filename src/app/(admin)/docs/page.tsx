@@ -28,8 +28,8 @@ const FIELD_META: Record<keyof TokensJson, FieldMeta> = {
     example: "Jordan",
   },
   "Client.LastName": {
-    required: true,
-    description: "Primary signer last name.",
+    required: false,
+    description: "Primary signer last name. Optional - leave blank for a client known by first name only.",
     example: "Avery",
   },
   "Client.Company": {

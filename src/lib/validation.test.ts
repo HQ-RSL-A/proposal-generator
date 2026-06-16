@@ -45,6 +45,24 @@ describe("normalizeImportedTokens", () => {
   it("rejects non-objects", () => {
     expect(normalizeImportedTokens("nope").tokens).toBeNull();
   });
+
+  it("accepts an empty last name (optional)", () => {
+    const { tokens, errors } = normalizeImportedTokens({ ...scorpionFixture, "Client.LastName": "" });
+    expect(errors).toEqual([]);
+    expect(tokens!["Client.LastName"]).toBe("");
+  });
+
+  it("accepts a missing last name (optional)", () => {
+    const withoutLast: Record<string, unknown> = { ...scorpionFixture };
+    delete withoutLast["Client.LastName"];
+    const { tokens, errors } = normalizeImportedTokens(withoutLast);
+    expect(errors).toEqual([]);
+    expect(tokens!["Client.LastName"]).toBe("");
+  });
+
+  it("still rejects an empty first name", () => {
+    expect(normalizeImportedTokens({ ...scorpionFixture, "Client.FirstName": "" }).tokens).toBeNull();
+  });
 });
 
 const flatConfig: PaymentConfig = {

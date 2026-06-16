@@ -91,6 +91,21 @@ describe("buildProposalSections", () => {
     expect(JSON.stringify(sections.msa.blocks)).not.toContain("{{Client.");
   });
 
+  it("renders first name + company when the last name is blank", () => {
+    const sections = buildProposalSections({
+      tokens: { ...tokens, "Client.LastName": "" },
+      paymentConfig: paidConfig,
+      trackRecord,
+      msaBodyMarkdown: msa,
+    });
+    expect(sections.cover.subtitle).toContain("Dominique, Scorpion Junk Removal");
+    expect(sections.cover.subtitle).not.toContain("Dominique ,");
+    const msaText = JSON.stringify(sections.msa.blocks);
+    expect(msaText).toContain("Dominique, Scorpion Junk Removal");
+    expect(msaText).not.toContain("Dominique ,");
+    expect(msaText).not.toContain("{{Client.");
+  });
+
   it("adapts How to Proceed copy to the payment mode", () => {
     const paid = buildProposalSections({ tokens, paymentConfig: paidConfig, trackRecord, msaBodyMarkdown: msa });
     const signOnly = buildProposalSections({

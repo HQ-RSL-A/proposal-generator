@@ -3,6 +3,7 @@ import { FileSignature, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { formatCents } from "@/lib/currency";
 import { effectiveLineItems, type PaymentConfig, type TokensJson } from "@/lib/types";
+import { clientFullName } from "@/lib/clientName";
 import {
   ATTENTION_AGE_DAYS,
   computeDashboardMetrics,
@@ -81,7 +82,7 @@ export default async function DashboardPage() {
     return {
       proposal,
       normalized,
-      clientLine: `${tokens["Client.FirstName"]} ${tokens["Client.LastName"]} · ${company}`,
+      clientLine: `${clientFullName(tokens["Client.FirstName"], tokens["Client.LastName"])} · ${company}`,
       deal: dealParts.join(" + ") || "Sign-only",
     };
   });
