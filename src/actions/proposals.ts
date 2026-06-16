@@ -18,6 +18,7 @@ import {
   parseMsa,
   replaceTokensInBlocks,
 } from "@/lib/parseMsa";
+import { ZodError } from "zod";
 import {
   paymentConfigSchema,
   partiesSchema,
@@ -25,6 +26,7 @@ import {
   trackRecordConfigSchema,
   validatePaymentConfigForSend,
 } from "@/lib/validation";
+import { humanizeZodError } from "@/lib/zodErrors";
 import type { FrozenContent, PaymentConfig, TokensJson } from "@/lib/types";
 import { EMPTY_TRACK_RECORD, resolveTrackRecord } from "@/lib/trackRecord";
 
@@ -33,6 +35,7 @@ export type ActionResult<T = undefined> =
   | { ok: false; error: string };
 
 function errorMessage(error: unknown): string {
+  if (error instanceof ZodError) return humanizeZodError(error);
   return error instanceof Error ? error.message : "Something went wrong";
 }
 

@@ -1,5 +1,22 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-15 — Validation errors now read in plain English (was raw Zod JSON)
+
+Saving or sending a proposal with an empty field dumped a raw Zod 4 issue array at the user
+(`[{ "code": "too_small", "path": ["Client.LastName"] ... }]`) — `errorMessage()` returned
+`ZodError.message`, which Zod 4 stringifies to JSON. Surfaced by an empty `Client.LastName`.
+
+- **New `src/lib/zodErrors.ts` → `humanizeZodError`** (pure, TDD'd, +8 tests). Maps the field path to
+  a sentence-case label (`Client.LastName` -> "Last name") and the Zod code to plain phrasing
+  ("is required", "must be at most N characters"); falls back to `"<Field>: <message>"` otherwise;
+  de-dupes repeated lines.
+- **Wired into** the save/send actions (`proposals.ts` `errorMessage`, gated on `instanceof ZodError`)
+  and the import parser (`validation.ts` `normalizeImportedTokens`) so paste errors are friendly too.
+  Result: "Last name is required." instead of the JSON blob.
+- **Verified:** 115 tests green (+8), tsc + eslint clean, before/after demo on the exact LastName error.
+- **Status:** committed + pushed to `main` (auto-deploys to prod). Admin user-management form still
+  shows one semi-raw Zod message — left for a separate pass.
+
 ## 2026-06-15 — Flat pricing now imports from pasted JSON (was tiers-only)
 
 A flat deal generated in the platform's internal `PaymentConfig` shape (top-level `oneTime` /

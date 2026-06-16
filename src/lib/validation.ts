@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TOKEN_KEYS, type PaymentConfig, type TokensJson } from "@/lib/types";
 import { displayMatchesCents } from "@/lib/currency";
 import { MAX_CASE_STUDIES } from "@/lib/trackRecord";
+import { humanizeZodError } from "@/lib/zodErrors";
 
 // ---------- Tokens JSON ----------
 
@@ -46,7 +47,7 @@ export function normalizeImportedTokens(raw: unknown): {
   if (!result.success) {
     return {
       tokens: null,
-      errors: result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`),
+      errors: [humanizeZodError(result.error)],
     };
   }
   return { tokens: result.data, errors: [] };
