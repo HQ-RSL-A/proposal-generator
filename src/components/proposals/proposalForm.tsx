@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createProposal, updateProposal } from "@/actions/proposals";
 import { normalizeImportedTokens } from "@/lib/validation";
 import { parseCentsFromDisplayString } from "@/lib/currency";
+import { inferFlatPricingFromImport } from "@/lib/importPricing";
 import {
   TOKEN_KEYS,
   type AddOn,
@@ -599,6 +600,8 @@ export function ProposalForm({
     }
     const rawObj = raw as Record<string, unknown>;
     const inferredTiers = inferTiersFromImport(rawObj);
+    // Flat pricing only when the deal isn't tiered; tiers always win.
+    const inferredFlat = inferredTiers ? null : inferFlatPricingFromImport(rawObj);
     const inferredAddOns = inferAddOnsFromImport(rawObj);
     const inferredFutureItems = inferFutureItemsFromImport(rawObj);
     const inferredDeposit = inferDepositFromImport(rawObj);
@@ -609,6 +612,17 @@ export function ProposalForm({
       tokens: tokens as unknown as Record<string, string>,
       ...(inferredTiers
         ? { pricingMode: "tiers" as PricingMode, tiers: inferredTiers }
+        : {}),
+      ...(inferredFlat
+        ? {
+            pricingMode: "flat" as PricingMode,
+            oneTimeEnabled: Boolean(inferredFlat.oneTime),
+            oneTime: inferredFlat.oneTime ?? prev.oneTime,
+            recurringEnabled: Boolean(inferredFlat.recurring),
+            recurring: inferredFlat.recurring ?? prev.recurring,
+            ...(inferredFlat.methods ? { methods: inferredFlat.methods } : {}),
+            ...(inferredFlat.preferAch !== null ? { preferAch: inferredFlat.preferAch } : {}),
+          }
         : {}),
       ...(inferredAddOns ? { addOns: inferredAddOns } : {}),
       ...(inferredFutureItems ? { futureItems: inferredFutureItems } : {}),
@@ -622,6 +636,7 @@ export function ProposalForm({
     }));
     const extras = [
       inferredTiers ? `${inferredTiers.length} pricing tiers` : null,
+      inferredFlat ? "flat pricing" : null,
       inferredAddOns ? `${inferredAddOns.length} add-ons` : null,
       inferredFutureItems ? `${inferredFutureItems.length} later-phase items` : null,
       inferredDeposit ? `${inferredDeposit}% deposit` : null,

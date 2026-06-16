@@ -340,8 +340,10 @@ export default function DocsPage() {
       <section className="space-y-4">
         <h2 className="font-heading text-lg font-semibold">Pricing (PaymentConfig)</h2>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Pricing is set in the form, or inferred from an Investment.Structure block (below). It is
-          stored as a PaymentConfig in one of three shapes (flat, tiered, sign-only). Money is
+          Pricing is set in the form, or imported from the pasted JSON: flat pricing from top-level
+          oneTime / recurring (plus paymentMethods and preferAch), tiers from an Investment.Structure
+          block (below). It is stored as a PaymentConfig in one of three shapes (flat, tiered,
+          sign-only). Money is
           always an integer amountCents plus a matching displayString. At send time the two must
           agree to the cent. Three optional fields stack on top of any shape: addOns (extras the
           client toggles), deposit (charge only a percentage up front), and futureItems (priced

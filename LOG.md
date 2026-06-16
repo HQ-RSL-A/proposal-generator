@@ -1,5 +1,28 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-15 — Flat pricing now imports from pasted JSON (was tiers-only)
+
+A flat deal generated in the platform's internal `PaymentConfig` shape (top-level `oneTime` /
+`recurring` / `paymentMethods` / `preferAch`, `tiers: null`) pasted with all copy filled but the
+**pricing blank** — the import box only inferred `Investment.Structure` (tiers), so flat amounts had
+to be hand-typed. Surfaced by a Valley Oak proposal ($13,700 build + $1,250/mo) that "wouldn't parse
+the pricing part."
+
+- **New `src/lib/importPricing.ts` → `inferFlatPricingFromImport`** (pure, exported, unit-tested —
+  unlike the sibling `infer*FromImport` helpers that live un-tested inside `proposalForm.tsx`).
+  Reads `oneTime` / `recurring` / `paymentMethods` / `preferAch`; trusts a positive-integer
+  `amountCents`, else derives cents from the `displayString`; coerces `intervalMonths` to 1|3|12;
+  defaults labels. Returns null when the deal is tiered (tiers win) or carries no flat amount, so it
+  never clobbers an empty pricing section.
+- **Wired into `handleImport`**: flat path runs only when no tiers were inferred; sets
+  `pricingMode: "flat"`, enables the one-time/monthly lines, applies methods + preferAch, and adds a
+  "flat pricing" chip to the success toast. TDD'd — **+9 tests → 107 total**.
+- **`/docs` updated**: the Pricing section now states flat pricing imports from top-level
+  oneTime/recurring, not just Investment.Structure.
+- **Verified:** 107 tests green, `tsc --noEmit` clean, eslint clean on changed files. No money-path
+  behavior changed (effectiveCheckout/validation untouched); this only pre-fills the reviewable form.
+- **Status:** on branch `feat-flat-pricing-import`, **not committed, not deployed** — awaiting review.
+
 ## 2026-06-15 — Display-only "Later phases" line items (Phase-2 pricing, never billed)
 
 Answer to "how do I show a future service with pricing but not charge for it?" (e.g. monthly SEO
@@ -923,3 +946,22 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
   integrity; ESIGN/UETA don't require them; friction on mobile).
 - Demo PDF regeneration queued (email dedupe guard prevents re-sends). Fresh [TEST]
   Brightline draft seeded for the full rehearsal with the new design.
+
+## 2026-06-15 — Proposal-detail polish (delete confirm + audit trail)
+
+- Delete-draft no longer fires the browser's native `confirm()` "system card". New
+  `brandConfirm()` in `src/lib/toast.tsx` renders a top-center card in the same family as
+  `brandToast` (dark info-tone fill, icon badge, title/description) with Keep / Delete
+  buttons (active:scale press feedback). Returns a `Promise<boolean>`; resolves false on
+  cancel/dismiss/timeout, true on confirm. `proposalActions.tsx` awaits it before deleting.
+- Audit timeline (`auditTimeline.tsx`) rebuilt from the `border-l … -left-[31px]`
+  magic-number layout to a per-row flex layout. Connector is `left-3.5 -translate-x-1/2`
+  under a 28px badge, so the line threads exactly through every icon center — verified in a
+  real browser: badge-center minus line-center delta = 0px on every row (the prior
+  off-center complaint is gone).
+- Icons are now color-coded SVG badges by event family (slate/blue/violet/indigo/emerald/
+  amber/rose/cyan) — tinted fill + saturated glyph + faint ring — replacing the flat mono
+  icons. Bigger badges (h-7) and cleaner spacing.
+- Verified via a throwaway no-auth `/devpreview` route (deleted after QA) since the admin
+  view is Google-OAuth gated; screenshots + DOM measurements confirmed centering, colors,
+  and that the confirm buttons dismiss/resolve correctly. No console errors.
