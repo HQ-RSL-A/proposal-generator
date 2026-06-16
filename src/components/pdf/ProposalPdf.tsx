@@ -12,7 +12,7 @@ import {
 } from "@react-pdf/renderer";
 import type { DepositScheduleInfo, ProposalSections } from "@/lib/proposalContent";
 import type { AddOn, FutureItem, TierConfig } from "@/lib/types";
-import { formatCents } from "@/lib/currency";
+import { formatCents, formatPricedLine } from "@/lib/currency";
 
 const fontsDir = path.join(process.cwd(), "public", "fonts");
 const logoPath = path.join(process.cwd(), "public", "logomark.png");
@@ -507,7 +507,7 @@ function FutureItemsTable({ items }: { items: FutureItem[] }) {
     <View style={{ marginTop: 14 }} wrap={false}>
       <Text style={[s.microLabel, { marginBottom: 2 }]}>Later phases</Text>
       <Text style={{ fontSize: 8.5, color: MUTED, marginBottom: 6 }}>
-        Shown for planning — billed separately when each begins, not collected today.
+        Shown for planning. Billed separately when each begins, not collected today.
       </Text>
       {items.map((item) => (
         <View
@@ -523,7 +523,9 @@ function FutureItemsTable({ items }: { items: FutureItem[] }) {
               Starts: {item.startsNote}
             </Text>
           </View>
-          <Text style={{ fontWeight: 700, color: SLATE }}>{item.displayString}</Text>
+          <Text style={{ fontWeight: 700, color: SLATE }}>
+            {formatPricedLine(item.amountCents, item.intervalMonths)}
+          </Text>
         </View>
       ))}
     </View>

@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { displayMatchesCents, formatCents, parseCentsFromDisplayString } from "@/lib/currency";
+import {
+  displayMatchesCents,
+  formatCents,
+  formatPricedLine,
+  parseCentsFromDisplayString,
+} from "@/lib/currency";
 
 describe("parseCentsFromDisplayString", () => {
   it("parses plain amounts", () => {
@@ -40,5 +45,19 @@ describe("formatCents", () => {
   });
   it("keeps cents when present", () => {
     expect(formatCents(114950)).toBe("$1,149.50");
+  });
+});
+
+describe("formatPricedLine", () => {
+  it("formats a one-time amount as plain currency", () => {
+    expect(formatPricedLine(300000, null)).toBe("$3,000");
+  });
+  it("appends the cadence for recurring amounts", () => {
+    expect(formatPricedLine(125000, 1)).toBe("$1,250/month");
+    expect(formatPricedLine(90000, 3)).toBe("$900/quarter");
+    expect(formatPricedLine(300000, 12)).toBe("$3,000/year");
+  });
+  it("keeps cents when present", () => {
+    expect(formatPricedLine(114950, 1)).toBe("$1,149.50/month");
   });
 });

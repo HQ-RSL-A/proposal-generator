@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { formatCents } from "@/lib/currency";
+import { formatCents, formatPricedLine } from "@/lib/currency";
 import type { DepositScheduleInfo, ProposalSections } from "@/lib/proposalContent";
 import type { AddOn, FutureItem, TierConfig } from "@/lib/types";
 import { Check, PenLine } from "lucide-react";
@@ -189,7 +189,7 @@ export function FutureItems({ items }: { items: FutureItem[] }) {
         Later phases
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        Shown for planning — billed separately when each begins, not collected today.
+        Shown for planning. Billed separately when each begins, not collected today.
       </p>
       <div className="mt-3 space-y-2">
         {items.map((item) => (
@@ -203,7 +203,9 @@ export function FutureItems({ items }: { items: FutureItem[] }) {
                 Starts: {item.startsNote}
               </span>
             </span>
-            <span className="whitespace-nowrap text-sm font-bold">{item.displayString}</span>
+            <span className="whitespace-nowrap text-sm font-bold">
+              {formatPricedLine(item.amountCents, item.intervalMonths)}
+            </span>
           </div>
         ))}
       </div>

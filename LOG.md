@@ -1,5 +1,23 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-15 — Later phases: currency formatting + em-dash removal
+
+Two bugs in the "Later phases" (FutureItems) section, reported on a live proposal: a future-item
+amount typed as a bare number ("1250") rendered as "1250" (not "$1,250"), and the disclaimer carried
+an em dash.
+
+- **Currency:** both renderers showed `item.displayString` raw, so a malformed display string leaked
+  through. New `formatPricedLine(amountCents, intervalMonths)` in `currency.ts` derives the display
+  from cents (the validated source of truth) and appends the cadence for recurring lines
+  ("$1,250/month"). Web (`proposalView`) and PDF (`ProposalPdf`) both use it, so they stay identical.
+- **Em dash:** the FutureItems disclaimer "Shown for planning — billed separately..." now reads
+  "Shown for planning. Billed separately..." in both renderers (no em/en dash in client-facing copy).
+- **Note:** add-ons render `displayString` the same way (same latent issue if a bare number is typed);
+  left as-is since not reported. Easy follow-up with the same helper.
+- **Verified:** 129 tests (+3, TDD'd), tsc + eslint clean, `pdfSmoke` visually checked — Later phases
+  shows "$1,500/month" / "$3,000" and the period-form disclaimer.
+- **Status:** committed + pushed to `main` (auto-deploys to prod).
+
 ## 2026-06-15 — Last name is now optional (first name + company on the contract)
 
 Some prospects are known only by a first name, but `Client.LastName` was required, so saving or

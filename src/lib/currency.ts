@@ -38,3 +38,12 @@ export function intervalLabel(intervalMonths: 1 | 3 | 12): string {
       return "year";
   }
 }
+
+/**
+ * Currency for a priced line, derived from cents (the validated source of truth) so the display is
+ * always formatted regardless of how the display string was typed. Appends the cadence when recurring.
+ */
+export function formatPricedLine(amountCents: number, intervalMonths: 1 | 3 | 12 | null): string {
+  const base = formatCents(amountCents);
+  return intervalMonths ? `${base}/${intervalLabel(intervalMonths)}` : base;
+}
