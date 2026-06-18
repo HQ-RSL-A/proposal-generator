@@ -54,5 +54,15 @@ export const LEGACY_TRACK_RECORD: TrackRecordConfig = {
  */
 export function resolveTrackRecord(value: unknown): TrackRecordConfig {
   if (value == null) return LEGACY_TRACK_RECORD;
-  return value as TrackRecordConfig;
+  // Validate the shape on read (RSL-21): a malformed/partial frozen value (e.g.
+  // one missing its caseStudies array) must not crash the document render at
+  // `trackRecord.caseStudies.length`. Fall back to the legacy default instead.
+  if (
+    typeof value === "object" &&
+    typeof (value as { intro?: unknown }).intro === "string" &&
+    Array.isArray((value as { caseStudies?: unknown }).caseStudies)
+  ) {
+    return value as TrackRecordConfig;
+  }
+  return LEGACY_TRACK_RECORD;
 }

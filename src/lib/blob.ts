@@ -28,8 +28,8 @@ export async function fetchPrivateBlob(urlOrPathname: string): Promise<Buffer> {
 }
 
 export const blobPaths = {
-  signature: (proposalId: string, partyId: string) =>
-    `proposals/${proposalId}/signatures/${partyId}.png`,
+  signature: (proposalId: string, partyId: string, nonce?: string) =>
+    `proposals/${proposalId}/signatures/${partyId}${nonce ? `-${nonce}` : ""}.png`,
   signedPdf: (proposalId: string, versionNumber: number) =>
     `proposals/${proposalId}/v${versionNumber}/signed.pdf`,
   adminSignature: () => `settings/admin-signature.png`,
