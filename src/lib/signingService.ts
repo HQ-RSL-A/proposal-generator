@@ -337,7 +337,9 @@ export async function ensureCheckoutSession(
     // Stripe substitutes the placeholder; the session id lets the /paid page
     // identify the proposal even if the path token was rotated mid-checkout.
     successUrl: `${base}/sign/${rawTokenForReturn}/paid?session_id={CHECKOUT_SESSION_ID}`,
-    cancelUrl: `${base}/pay/${rawTokenForReturn}`,
+    // Carry the session id on cancel too, so the /pay page can self-heal by session id if the
+    // path token was rotated while the client sat in checkout — the same net the /paid page has (RSL-14).
+    cancelUrl: `${base}/pay/${rawTokenForReturn}?session_id={CHECKOUT_SESSION_ID}`,
     idempotencyKey: `checkout-${proposalId}-g${generation}`,
   });
 

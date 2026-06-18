@@ -16,6 +16,21 @@ export async function rotatePartyToken(partyId: string): Promise<string> {
   return raw;
 }
 
+/**
+ * Is this party's token live in an open Stripe Checkout right now? By design the payer signs
+ * last and goes straight to checkout, so their token is baked into the success_url/cancel_url
+ * while payment is awaiting or processing — rotating it then would 404 the page Stripe returns
+ * them to. The ONE payer-identity rotation guard, shared by the executed-copy email
+ * (generatePdf) and the SEND_EMAIL retry path (jobRunner); never keyed on signer ordering,
+ * which mis-identifies the payer on tied timestamps or a non-payer signing last (RSL-14).
+ */
+export function isPayerTokenInFlight(
+  party: { payer: boolean },
+  paymentStatus: string
+): boolean {
+  return party.payer && (paymentStatus === "AWAITING" || paymentStatus === "PROCESSING");
+}
+
 export type PartyWithProposal = Party & { proposal: Proposal };
 
 export async function findPartyByToken(rawToken: string): Promise<PartyWithProposal | null> {

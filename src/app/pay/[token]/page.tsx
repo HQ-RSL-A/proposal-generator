@@ -15,11 +15,30 @@ export const metadata: Metadata = {
 };
 
 /** Payment recovery: signed-but-unpaid proposals get a fresh Checkout Session here. */
-export default async function PayPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function PayPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>;
+  searchParams: Promise<{ session_id?: string }>;
+}) {
   const { token } = await params;
+  const { session_id: sessionId } = await searchParams;
   const gate = await gateToken(token);
 
-  if (!gate.ok) {
+  // Identify the proposal by token, or by the Stripe session id if the token was rotated while
+  // the client sat in checkout. A client returning to retry payment must never hit a dead link —
+  // the same self-heal the /paid success page has (RSL-14).
+  let proposalId: string | null = gate.ok ? gate.party.proposalId : null;
+  if (!proposalId && sessionId && /^cs_[a-zA-Z0-9_]+$/.test(sessionId)) {
+    const bySession = await prisma.proposal.findFirst({
+      where: { stripeCheckoutSessionId: sessionId },
+      select: { id: true },
+    });
+    proposalId = bySession?.id ?? null;
+  }
+
+  if (!proposalId) {
     return (
       <OutcomeCard icon={Link2Off} tone="neutral" title={OUTCOME_COPY.invalidLink.title}>
         <p>{OUTCOME_COPY.invalidLink.body}</p>
@@ -28,7 +47,7 @@ export default async function PayPage({ params }: { params: Promise<{ token: str
   }
 
   const proposal = await prisma.proposal.findUniqueOrThrow({
-    where: { id: gate.party.proposalId },
+    where: { id: proposalId },
   });
 
   if (proposal.paymentStatus === "PAID") {

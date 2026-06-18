@@ -6,7 +6,6 @@ import { sha256Hex } from "@/lib/contentHash";
 import { formatDateTime } from "@/lib/dates";
 import { logEvent } from "@/lib/audit";
 import { sendTemplateEmail } from "@/lib/email";
-import { rotatePartyToken } from "@/lib/partyTokens";
 import { sectionsFromFrozen } from "@/lib/proposalContent";
 import type { FrozenContent } from "@/lib/types";
 import {
@@ -130,34 +129,38 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
     metadata: { blobPath, sizeBytes: pdfBuffer.length },
   });
 
-  // Executed-copy emails go out only once the PDF exists. Dedupe guard: a
-  // regenerated PDF must not re-send them.
-  const alreadySent = await prisma.emailLog.findFirst({
-    where: { proposalId: proposal.id, templateId: "fully_signed_admin", status: { not: "FAILED" } },
+  // Executed-copy emails go out once the PDF exists. Per-party dedup (RSL-22): key each send on
+  // its OWN email-log row (not the single admin row), so a regeneration re-sends only the copy
+  // that actually failed — a failed admin send no longer re-mails every client.
+  const paymentPending =
+    proposal.paymentStatus !== "NOT_REQUIRED" && proposal.paymentStatus !== "PAID";
+  for (const party of proposal.parties.filter((p) => p.role === "CLIENT_SIGNER")) {
+    const alreadySent = await prisma.emailLog.findFirst({
+      where: {
+        proposalId: proposal.id,
+        partyId: party.id,
+        templateId: "fully_signed_client",
+        status: { not: "FAILED" },
+      },
+    });
+    if (alreadySent) continue;
+    // RSL-14: never rotate the payer's token here. By design the payer signs last and is
+    // mid-checkout right now, so their token is live in the Stripe success_url/cancel_url
+    // (see isPayerTokenInFlight) — rotating it would 404 the page Stripe returns them to. They
+    // recover via the /paid + /pay session_id self-heal, or the payment_link email on session
+    // expiry. The old "last signer by signedAt" heuristic mis-identified the payer on ties or a
+    // non-payer signing last, rotating the live token out from under them.
+    await sendTemplateEmail("fully_signed_client", proposal.id, party.id, { paymentPending });
+  }
+  const adminAlreadySent = await prisma.emailLog.findFirst({
+    where: {
+      proposalId: proposal.id,
+      partyId: null,
+      templateId: "fully_signed_admin",
+      status: { not: "FAILED" },
+    },
   });
-  if (!alreadySent) {
-    const paymentPending =
-      proposal.paymentStatus !== "NOT_REQUIRED" && proposal.paymentStatus !== "PAID";
-    // The last signer's token is baked into the Stripe success_url. When the
-    // payer IS the last signer (every single-signer deal), they are mid-checkout
-    // right now — rotating their token here would 404 the page Stripe returns
-    // them to. Skip the button for them; session-expiry recovery covers the
-    // abandoned case. Payers who signed earlier get the button as their entry
-    // point, and rotating THEIR token can't touch the in-flight success_url.
-    const lastSigner = [...proposal.parties]
-      .filter((p) => p.role === "CLIENT_SIGNER" && p.signedAt)
-      .sort((a, b) => b.signedAt!.getTime() - a.signedAt!.getTime())[0];
-    for (const party of proposal.parties.filter((p) => p.role === "CLIENT_SIGNER")) {
-      const payerMidCheckout = party.payer && party.id === lastSigner?.id;
-      const rawToken =
-        paymentPending && party.payer && !payerMidCheckout
-          ? await rotatePartyToken(party.id)
-          : undefined;
-      await sendTemplateEmail("fully_signed_client", proposal.id, party.id, {
-        paymentPending,
-        rawToken,
-      });
-    }
+  if (!adminAlreadySent) {
     await sendTemplateEmail("fully_signed_admin", proposal.id, null, {});
   }
 

@@ -16,7 +16,10 @@ export async function GET(request: NextRequest) {
   try {
     const now = new Date();
 
-    // 1) Expire
+    // 1) Expire. Per-iteration isolation (RSL-16): one proposal's failure — including a failed
+    // expiry-notice send — must never abort the remaining expirations or the reminder pass. The
+    // notice is queue-backed (sendTemplateEmail self-heals via a SEND_EMAIL retry job), so a
+    // committed EXPIRED never goes silent.
     const toExpire = await prisma.proposal.findMany({
       where: {
         status: { in: ["SENT", "VIEWED", "PARTIALLY_SIGNED"] },
@@ -24,19 +27,25 @@ export async function GET(request: NextRequest) {
       },
       take: 50,
     });
+    let expired = 0;
     for (const proposal of toExpire) {
-      await prisma.$transaction([
-        prisma.proposal.update({
-          where: { id: proposal.id },
-          data: { status: "EXPIRED" },
-        }),
-        prisma.party.updateMany({
-          where: { proposalId: proposal.id, signedAt: null },
-          data: { tokenExpiresAt: now },
-        }),
-      ]);
-      await logEvent({ proposalId: proposal.id, eventType: "PROPOSAL_EXPIRED" });
-      await sendTemplateEmail("expired_admin", proposal.id, null, {});
+      try {
+        await prisma.$transaction([
+          prisma.proposal.update({
+            where: { id: proposal.id },
+            data: { status: "EXPIRED" },
+          }),
+          prisma.party.updateMany({
+            where: { proposalId: proposal.id, signedAt: null },
+            data: { tokenExpiresAt: now },
+          }),
+        ]);
+        expired++;
+        await logEvent({ proposalId: proposal.id, eventType: "PROPOSAL_EXPIRED" });
+        await sendTemplateEmail("expired_admin", proposal.id, null, {});
+      } catch (error) {
+        console.error("daily cron: expire failed for", proposal.id, error);
+      }
     }
 
     // 2) Remind at 3 days and 1 day before expiry
@@ -55,24 +64,31 @@ export async function GET(request: NextRequest) {
       for (const party of proposal.parties) {
         if (party.role !== "CLIENT_SIGNER" || party.signedAt || party.declinedAt) continue;
         if (party.emailBounced || party.emailComplained) continue;
-        // One reminder per threshold: skip if one went out in the last 36h.
-        const recent = await prisma.emailLog.findFirst({
-          where: {
+        try {
+          // Dedup PER (party, daysLeft), not just per template (RSL-16): the 3-day reminder must
+          // not suppress the 1-day "last day" nudge. Keyed on the REMINDER_SENT audit event
+          // (which records daysLeft) within a sub-24h window so a threshold fires at most once.
+          const recent = await prisma.auditEvent.findFirst({
+            where: {
+              partyId: party.id,
+              eventType: "REMINDER_SENT",
+              metadata: { path: ["daysLeft"], equals: daysLeft },
+              occurredAt: { gt: new Date(now.getTime() - 20 * 3_600_000) },
+            },
+          });
+          if (recent) continue;
+          const rawToken = await rotatePartyToken(party.id);
+          await sendTemplateEmail("signing_reminder", proposal.id, party.id, { rawToken, daysLeft });
+          await logEvent({
+            proposalId: proposal.id,
             partyId: party.id,
-            templateId: "signing_reminder",
-            sentAt: { gt: new Date(now.getTime() - 36 * 3_600_000) },
-          },
-        });
-        if (recent) continue;
-        const rawToken = await rotatePartyToken(party.id);
-        await sendTemplateEmail("signing_reminder", proposal.id, party.id, { rawToken, daysLeft });
-        await logEvent({
-          proposalId: proposal.id,
-          partyId: party.id,
-          eventType: "REMINDER_SENT",
-          metadata: { daysLeft, automatic: true },
-        });
-        reminders++;
+            eventType: "REMINDER_SENT",
+            metadata: { daysLeft, automatic: true },
+          });
+          reminders++;
+        } catch (error) {
+          console.error("daily cron: reminder failed for", party.id, error);
+        }
       }
     }
 
@@ -80,9 +96,9 @@ export async function GET(request: NextRequest) {
       "/api/cron/daily",
       started,
       true,
-      `expired=${toExpire.length} reminders=${reminders}`
+      `expired=${expired} reminders=${reminders}`
     );
-    return NextResponse.json({ expired: toExpire.length, reminders });
+    return NextResponse.json({ expired, reminders });
   } catch (error) {
     await logCronRun("/api/cron/daily", started, false, String(error).slice(0, 300));
     return NextResponse.json({ error: "Failed" }, { status: 500 });

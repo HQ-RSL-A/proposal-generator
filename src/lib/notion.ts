@@ -39,32 +39,71 @@ async function getDbSchema(): Promise<NotionDbSchema> {
   return { titlePropertyName, propertyNames };
 }
 
-/** Find the CRM page whose title contains the company name. */
+type NotionPageRow = {
+  id: string;
+  parent?: { database_id?: string };
+  properties?: Record<string, { title?: { plain_text?: string }[] }>;
+};
+
+/** The page's title text, normalized for an exact (trimmed, case-insensitive) comparison. */
+function titleText(page: NotionPageRow, titleProperty: string): string {
+  return (page.properties?.[titleProperty]?.title ?? [])
+    .map((t) => t.plain_text ?? "")
+    .join("")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Resolve `pages` to the single page whose title EXACTLY matches `company`. The Notion
+ * `contains` filter is a substring match, so "Scorpion" (or a real name that prefixes a
+ * "(DEMO)" row) returns several candidates and results[0] can be the wrong company — the
+ * documented Scorpion incident. Exactly one exact match wins; zero → null; more than one →
+ * refuse loudly rather than PATCH the wrong CRM record (RSL-15).
+ */
+function resolveExactMatch(
+  pages: NotionPageRow[],
+  titleProperty: string,
+  company: string
+): string | null {
+  const target = company.trim().toLowerCase();
+  const exact = pages.filter((p) => titleText(p, titleProperty) === target);
+  if (exact.length === 1) return exact[0].id;
+  if (exact.length > 1) {
+    throw new Error(`Notion CRM has ${exact.length} pages titled "${company}" — refusing to guess which is real`);
+  }
+  return null;
+}
+
+/** Find the CRM page whose title EXACTLY matches the company name (RSL-15). */
 export async function findCrmPage(company: string): Promise<string | null> {
   const schema = await getDbSchema();
   if (schema.titlePropertyName) {
     const result = (await notionFetch(`/databases/${NOTION_DB_ID}/query`, {
       method: "POST",
       body: JSON.stringify({
-        page_size: 3,
+        page_size: 10,
         filter: {
           property: schema.titlePropertyName,
           title: { contains: company },
         },
       }),
-    })) as unknown as { results: { id: string }[] };
-    if (result.results?.length) return result.results[0].id;
+    })) as unknown as { results: NotionPageRow[] };
+    const matched = resolveExactMatch(result.results ?? [], schema.titlePropertyName, company);
+    if (matched) return matched;
   }
 
-  // Fallback: integration-scoped search filtered to this database.
+  // Fallback: integration-scoped search filtered to this database, exact-matched the same way.
   const search = (await notionFetch(`/search`, {
     method: "POST",
-    body: JSON.stringify({ query: company, page_size: 5 }),
-  })) as unknown as { results: { id: string; parent?: { database_id?: string } }[] };
-  const hit = (search.results ?? []).find(
+    body: JSON.stringify({ query: company, page_size: 10 }),
+  })) as unknown as { results: NotionPageRow[] };
+  const inDb = (search.results ?? []).filter(
     (r) => r.parent?.database_id?.replace(/-/g, "") === NOTION_DB_ID.replace(/-/g, "")
   );
-  return hit?.id ?? null;
+  return schema.titlePropertyName
+    ? resolveExactMatch(inDb, schema.titlePropertyName, company)
+    : (inDb[0]?.id ?? null);
 }
 
 async function getDbPropertyNames(): Promise<Set<string>> {

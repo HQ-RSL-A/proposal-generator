@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { claimJobs, completeJob, failJob } from "@/lib/jobs";
+import { claimJobs, completeJob, failJob, reapStuckJobs } from "@/lib/jobs";
 import { sendTemplateEmail, type EmailTemplateId } from "@/lib/email";
-import { rotatePartyToken } from "@/lib/partyTokens";
+import { rotatePartyToken, isPayerTokenInFlight } from "@/lib/partyTokens";
 import { generateAndStorePdf } from "@/lib/generatePdf";
 import { updateCrmOnPaid, noteOnSigned } from "@/lib/notion";
 import { attachCustomerMetadata } from "@/lib/stripe";
@@ -31,7 +31,16 @@ async function executeJob(job: PendingJob): Promise<void> {
         Parameters<typeof sendTemplateEmail>[3]
       >;
       if (payload.needsToken && partyId) {
-        context.rawToken = await rotatePartyToken(partyId);
+        // Don't rotate the payer's token while their checkout is in flight: a retry of a failed
+        // payer email would otherwise invalidate the live success_url/cancel_url they hold. Same
+        // payer-identity guard as the executed-copy email, never keyed on signer order (RSL-14).
+        const party = await prisma.party.findUnique({
+          where: { id: partyId },
+          include: { proposal: true },
+        });
+        if (!party || !isPayerTokenInFlight(party, party.proposal.paymentStatus)) {
+          context.rawToken = await rotatePartyToken(partyId);
+        }
       }
       const result = await sendTemplateEmail(
         templateId,
@@ -46,6 +55,19 @@ async function executeJob(job: PendingJob): Promise<void> {
 
     case "NOTION_SYNC": {
       const proposalId = (payload.proposalId as string) ?? job.proposalId!;
+      const kind = (payload.kind as string) ?? "paid";
+
+      // Idempotency (RSL-15): the Notion block append is not natively idempotent, so a retry
+      // after a post-append throw would write a SECOND "Signed & paid" block and re-PATCH the
+      // fees. Skip if this kind of sync already recorded its marker. The marker (logEvent below)
+      // is written immediately after the append, so the only re-append window is the marker
+      // write itself failing — far smaller than re-running on any later step (process-then-record,
+      // per the RSL-6 family principle).
+      const alreadySynced = await prisma.auditEvent.findFirst({
+        where: { proposalId, eventType: "NOTION_SYNCED", metadata: { path: ["kind"], equals: kind } },
+      });
+      if (alreadySynced) return;
+
       const proposal = await prisma.proposal.findUniqueOrThrow({
         where: { id: proposalId },
         include: { documents: { where: { isFinal: true } } },
@@ -54,11 +76,12 @@ async function executeJob(job: PendingJob): Promise<void> {
       const tokens = (frozen?.tokens ?? proposal.tokens) as TokensJson;
       const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL}/proposals/${proposal.id}`;
 
-      if (payload.kind === "signed") {
+      if (kind === "signed") {
         const { pageId } = await noteOnSigned({
           company: tokens["Client.Company"],
           proposalUrl,
         });
+        await logEvent({ proposalId, eventType: "NOTION_SYNCED", metadata: { kind: "signed" } });
         if (pageId) {
           await prisma.proposal.update({ where: { id: proposalId }, data: { notionPageId: pageId } });
         }
@@ -85,11 +108,11 @@ async function executeJob(job: PendingJob): Promise<void> {
           signedPdfUrl: proposal.documents[0]?.blobUrl ?? null,
           stripeCustomerId: proposal.stripeCustomerId,
         });
+        await logEvent({ proposalId, eventType: "NOTION_SYNCED", metadata: { kind: "paid" } });
         if (pageId) {
           await prisma.proposal.update({ where: { id: proposalId }, data: { notionPageId: pageId } });
         }
       }
-      await logEvent({ proposalId, eventType: "NOTION_SYNCED", metadata: { kind: payload.kind ?? "paid" } });
       return;
     }
 
@@ -117,6 +140,8 @@ async function executeJob(job: PendingJob): Promise<void> {
 
 /** Claims and runs due jobs. Used by the cron sweep and opportunistic immediate runs. */
 export async function processDueJobs(limit = 10): Promise<{ ran: number; failed: number }> {
+  // Recover jobs stranded in PROCESSING by a killed lambda before claiming new work (RSL-13).
+  await reapStuckJobs();
   const jobs = await claimJobs(limit);
   let failed = 0;
   for (const job of jobs) {
@@ -125,7 +150,13 @@ export async function processDueJobs(limit = 10): Promise<{ ran: number; failed:
       await completeJob(job.id);
     } catch (error) {
       failed++;
-      await failJob(job, error);
+      // One job's bookkeeping failure must never abort the rest of the batch (RSL-13):
+      // failJob's own prisma.update can reject on a DB hiccup — isolate it.
+      try {
+        await failJob(job, error);
+      } catch (failError) {
+        console.error("failJob threw while recording a job failure", job.id, failError);
+      }
     }
   }
   return { ran: jobs.length, failed };
@@ -133,10 +164,12 @@ export async function processDueJobs(limit = 10): Promise<{ ran: number; failed:
 
 /** Runs one specific job immediately if it's still pending (race-safe with the cron). */
 export async function runJobNow(jobId: string): Promise<void> {
+  // Match claimJobs' due-gate: never run a job before its scheduledAt backoff has elapsed,
+  // or an opportunistic immediate run would defeat failJob's exponential backoff (RSL-13).
   const claimed = await prisma.$queryRaw<PendingJob[]>`
     UPDATE "proposals"."PendingJob"
     SET "status" = 'PROCESSING', "processingAt" = NOW(), "attempts" = "attempts" + 1, "updatedAt" = NOW()
-    WHERE "id" = ${jobId} AND "status" = 'PENDING'
+    WHERE "id" = ${jobId} AND "status" = 'PENDING' AND "scheduledAt" <= NOW()
     RETURNING *
   `;
   if (claimed.length === 0) return;
