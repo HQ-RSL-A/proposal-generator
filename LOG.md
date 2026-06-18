@@ -1,5 +1,56 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-17 — Security/correctness audit remediation (Sid's RSL-6..26) — IN PROGRESS
+
+Working through Siddharth Rodrigues' ("Sid") 21-issue security + correctness audit, filed as
+Linear issues **RSL-6 → RSL-26** (team RSL/A); each has a full remediation spec in Linear.
+Plan file: `~/.claude/plans/please-create-a-plan-humble-gosling.md`. Branch: **`audit/remediation`**
+(cut from `main`). Cadence: **one wave per commit, paused for review before each commit**; `main`
+is git-linked, so each merge auto-deploys to prod.
+
+**Session decisions:** single operator today → authz holes (RSL-11/12/26) are cheap hardening,
+deferred to Wave 6. Added a **Prisma-mock test seam** (Wave 0) so handler/queue/authz paths get real
+regression tests: `src/lib/__mocks__/prisma.ts` (mockDeep), `src/test/db.ts` (`prismaMock` +
+auto-reset), `src/test/factories.ts`; per-test `auth`/`after`/stripe/resend/notion mocks at first use.
+
+**Waves (0 enabler + 7 fix + deferred verification):**
+
+- ✅ **Wave 0 — test seam.** Commit `864cb97`.
+- ✅ **Wave 1 — payment exactly-once (RSL-6, RSL-8).** Commit `3d4f9f3`. RSL-6: webhook + reconcile now
+  **process-then-record** (`wasWebhookProcessed`/`markWebhookProcessed` in `paymentState.ts`) so a
+  transient failure heals on Stripe's retry; atomic paid-guard preserved. RSL-8: receipts are durable
+  `SEND_EMAIL` jobs + the deposit-note read is non-fatal.
+- ✅ **Wave 2 — signing-path integrity (RSL-9, RSL-10, RSL-21, RSL-7, RSL-20).** Commit `6765282`, all
+  in `signingService.ts`. RSL-9: post-commit `safeLogEvent` + checkout build wrapped (recoverable,
+  never rejects a committed sign). RSL-10: per-submit blob key `{partyId}-{uuid}.png`. RSL-21:
+  `frozenPaymentConfig` shape-guards tiers/addOns → `SigningError("config_error")`; `resolveTrackRecord`
+  falls back to legacy on a malformed value. RSL-7: `ensureCheckoutSession` reuse-or-refuse + key
+  `checkout-{id}-g{generation}` (generation = CHECKOUT_CREATED count, never the session id).
+  RSL-20 (**product default — confirm**): decline records the party but only flips SENT/VIEWED →
+  DECLINED; a committed signature is never reverted.
+- ⬜ **Wave 3 — legal-text fidelity (RSL-17, RSL-25)** — NEXT. `parseMsa.ts` (token regex tolerate inner
+  whitespace in BOTH the replacer and the leftover-token scan; parseRuns odd-`**`), `proposalContent.ts`
+  (`splitBulletString` keep a leading minus, e.g. `-5%`).
+- ⬜ **Wave 4 — side-effect reliability (RSL-13, RSL-16, RSL-15, RSL-14, RSL-22)** —
+  `jobRunner.ts`/`jobs.ts`/`generatePdf.ts`/`notion.ts`/`cron/daily`. failJob isolation + PROCESSING
+  reaper + runJobNow scheduledAt; daily-cron per-iteration isolation + daysLeft dedup key; Notion
+  idempotent append + exact-match company; payer-token identity guard; per-party executed-copy dedup.
+- ⬜ **Wave 5 — dashboard (RSL-18, RSL-24)** — `dashboardMetrics.ts`/`dashboard/page.tsx`. MRR
+  normalize `/intervalMonths`; consistent half-open bucket bound + oldest-open day unit.
+- ⬜ **Wave 6 — authz (RSL-11, RSL-12, RSL-26)** — the 3 API routes/3 actions/3 admin pages/middleware
+  use the existing `requireUser`/`requireAdmin`.
+- ⬜ **Wave 7 — dates + rate-limit (RSL-23, RSL-19)** — `dates.ts` Intl ET offset; `rateLimit.ts` TTL
+  eviction (accept per-instance + document).
+
+**Status:** Waves 0-2 committed and **deployed to prod** (push `c17cd18..6765282` → Vercel deploy
+Ready; `proposals.rsla.io` serving). 7 of 21 issues live. 159 tests + `tsc` + `next build` clean.
+
+**Deferred verification (after ALL waves, per Rahul):** (1) **Stripe test-mode rehearsal** — a real
+test-mode sign→checkout→pay on a fake-company proposal (RSL-6/7/8/9 touch the live money flow, not yet
+exercised end to end); (2) move fixed RSL issues to **Done** in Linear; (3) full e2e rehearsal
+(`e2eSeed` → sign drawn+typed → pay → executed PDF + cert via `pdfSmoke` → 14 emails via `emailPreview`
+→ Notion fake company → dashboard).
+
 ## 2026-06-15 — Later phases: currency formatting + em-dash removal
 
 Two bugs in the "Later phases" (FutureItems) section, reported on a live proposal: a future-item
