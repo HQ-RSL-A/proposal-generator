@@ -1,5 +1,38 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-18 — Audit remediation COMPLETE (Wave 7) + RSL-12/20 product refinements
+
+**All 21 audit issues (RSL-6..26) are now code-complete.** Wave 7 — the last wave — plus two
+product refinements landed on `audit/remediation` this session. **Not yet deployed to prod**
+(branch is ahead of `main`; ship when ready). Verified: **201 tests**, `tsc`, `next build`,
+`eslint src` (0 errors) all clean. No schema migration.
+
+- **Wave 7 (RSL-23, RSL-19) — commit `2c9264d`.** RSL-23 (`dates.ts`): replaced the hand-rolled
+  April–October DST month band (treated all of March as EST, mis-set early Nov) with an Intl
+  `America/New_York` offset sampled at noon UTC, so end-of-day expiry instants are correct on DST
+  edge days (Mar 9–31, early Nov). RSL-19 (`rateLimit.ts`): throttled TTL eviction so the in-memory
+  Map can't grow unbounded under distinct/spoofed keys; per-instance scope **documented as
+  deliberate** (the 256-bit signing token is the real auth boundary — abuse-dampening, not authz) +
+  a `rateLimitSize()` introspection. Lean option per the spec. +7 tests.
+- **RSL-12 + RSL-20 product refinements — commit `70d812c`.** Both resolve the product decision
+  their issue flagged (issues already Done; defect already fixed in Waves 6/2). **RSL-12:**
+  `remindParty` drops the ADMIN gate (keeps `requireAuth`) — a reminder only re-emails the signer's
+  existing address, so any active teammate may send one; copy-link (`getFreshSigningLink`) +
+  email-repoint (`updatePartyEmail`) stay ADMIN-only. **RSL-20:** `declineProposal` now also moves
+  PARTIALLY_SIGNED → DECLINED (every party must sign to execute, so one decline ends the deal);
+  committed signatures are preserved, a fully SIGNED proposal stays excluded (VOID only). Reuses the
+  existing DECLINED enum value — no migration.
+
+**Linear:** the 19 deployed issues are Done with resolution comments; RSL-12/RSL-20 got follow-up
+comments noting the refined behavior. **RSL-23 + RSL-19 stay in Backlog** until this branch deploys
+to prod, then move to Done (the "deployed" bar).
+
+**Next:** deploy `audit/remediation` → prod (ff `main`), then RSL-23/RSL-19 → Done. The deferred
+Stripe test-mode + full e2e rehearsal still stands before a real send (Wave 4's money-path is live
+but not yet exercised e2e). NB: bare `eslint` reports ~23k problems from build artifacts in the
+untracked `.claude/worktrees/dashboard-upgrade/.next/` leftover worktree — unrelated noise;
+`eslint src` is the real gate (consider ignoring `**/.next/` or removing the stale worktree).
+
 ## 2026-06-17 — Security/correctness audit remediation (Sid's RSL-6..26) — IN PROGRESS
 
 Working through Siddharth Rodrigues' ("Sid") 21-issue security + correctness audit, filed as
@@ -80,8 +113,10 @@ auto-reset), `src/test/factories.ts`; per-test `auth`/`after`/stripe/resend/noti
   point (per-page/route/action), so a forged cookie is rejected the moment it hits a guarded surface. Edge JWT
   validation was deliberately NOT added (auth.ts pulls Prisma, which isn't Edge-safe; getting it wrong risks
   locking out the team). +10 tests (193 total); `tsc` + `next build` + eslint clean. No schema migration.
-- ⬜ **Wave 7 — dates + rate-limit (RSL-23, RSL-19)** — `dates.ts` Intl ET offset; `rateLimit.ts` TTL
-  eviction (accept per-instance + document).
+- ✅ **Wave 7 — dates + rate-limit (RSL-23, RSL-19).** Commit `2c9264d` (2026-06-18). `dates.ts`: Intl
+  `America/New_York` offset sampled at noon UTC replaces the DST month band — correct on Mar 9–31 /
+  early-Nov edges. `rateLimit.ts`: throttled TTL eviction bounds the Map; per-instance scope
+  documented as deliberate (256-bit token is the real boundary) + `rateLimitSize()`. +7 tests.
 
 **Status:** **Waves 0-6 deployed to prod — 19 of 21 audit issues LIVE.** 2026-06-17, two prod pushes this
 session: `6765282..0749262` (waves 3-5, `dpl_ETk…`) then `0749262..a2cb293` (wave 6, `dpl_J5wGN…`), both
