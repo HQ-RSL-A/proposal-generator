@@ -15,7 +15,7 @@ export interface NormalizedProposal {
   completedAt: Date | null;
   /** Effective one-time value (build fee + one-time add-ons), in cents. */
   oneTimeCents: number;
-  /** Effective monthly recurring (true monthly only, matching the headline MRR), in cents. */
+  /** Effective recurring revenue normalized to a monthly figure (see monthlyRecurringCents), in cents. */
   recurringMonthlyCents: number;
   company: string;
   title: string;
@@ -38,6 +38,29 @@ const DECIDED_STATUSES: ProposalStatus[] = [
 export const ATTENTION_AGE_DAYS = 14;
 
 const DAY_MS = 86_400_000;
+
+/** Normalize an amount billed every `intervalMonths` to a monthly figure: $300/quarter -> $100/mo,
+ *  $12k/year -> $1,000/mo. A guard returns 0 for a non-positive interval. */
+export function monthlyNormalizedCents(amountCents: number, intervalMonths: number): number {
+  return intervalMonths > 0 ? Math.round(amountCents / intervalMonths) : 0;
+}
+
+/**
+ * The single source of truth for MRR period-normalization (RSL-18): the monthly-normalized sum of
+ * a recurring base line plus any recurring add-ons (1/3/12-month intervals all fold to monthly).
+ * The dashboard page consumes this instead of re-deriving MRR in its mapper, so a non-monthly
+ * retainer is never silently dropped to $0.
+ */
+export function monthlyRecurringCents(
+  recurring: { amountCents: number; intervalMonths: number } | null,
+  addOns: { amountCents: number; intervalMonths: number | null }[]
+): number {
+  const base = recurring ? monthlyNormalizedCents(recurring.amountCents, recurring.intervalMonths) : 0;
+  const addOnMonthly = addOns
+    .filter((a): a is { amountCents: number; intervalMonths: number } => a.intervalMonths != null)
+    .reduce((sum, a) => sum + monthlyNormalizedCents(a.amountCents, a.intervalMonths), 0);
+  return base + addOnMonthly;
+}
 
 export interface MonthBucket {
   /** First instant of the month (inclusive). */
@@ -129,13 +152,14 @@ export function computeDashboardMetrics(
     : null;
 
   const buckets = monthlyBuckets(now, 6);
-  const nowMs = now.getTime();
-  const mrrSeries = buckets.map((b) => {
-    const cutoff = Math.min(b.end.getTime(), nowMs);
-    return signed
-      .filter((p) => p.completedAt && p.completedAt.getTime() <= cutoff)
-      .reduce((s, p) => s + p.recurringMonthlyCents, 0);
-  });
+  // Cumulative recurring stock through each month end, half-open (`< end`) so it agrees with
+  // signedSeries: a deal signed exactly at a month boundary lands in the SAME month for both
+  // (RSL-24). No `min(end, now)` is needed — completedAt is never in the future.
+  const mrrSeries = buckets.map((b) =>
+    signed
+      .filter((p) => p.completedAt && p.completedAt.getTime() < b.end.getTime())
+      .reduce((s, p) => s + p.recurringMonthlyCents, 0)
+  );
   const signedSeries = buckets.map((b) => signedInMonth(b.start, b.end).length);
   const avgSignSeries = buckets.map((b) => {
     const times = signedInMonth(b.start, b.end)
@@ -149,9 +173,11 @@ export function computeDashboardMetrics(
     if (p.status === "SIGNED" && (p.paymentStatus === "AWAITING" || p.paymentStatus === "FAILED")) {
       attention.push({ id: p.id, company: p.company, reason: "awaiting_payment" });
     } else if (OPEN_STATUSES.includes(p.status) && p.sentAt) {
-      const ageDays = Math.floor((now.getTime() - p.sentAt.getTime()) / DAY_MS);
-      if (ageDays > ATTENTION_AGE_DAYS) {
-        attention.push({ id: p.id, company: p.company, reason: "stale_open", ageDays });
+      // Continuous day comparison so the strip flags the deal the instant it crosses 14 days,
+      // matching the headline's `oldestOpenMs > 14d` warn (RSL-24). `floor(days) > 14` lagged ~24h.
+      const ageMs = now.getTime() - p.sentAt.getTime();
+      if (ageMs > ATTENTION_AGE_DAYS * DAY_MS) {
+        attention.push({ id: p.id, company: p.company, reason: "stale_open", ageDays: Math.floor(ageMs / DAY_MS) });
       }
     }
   }

@@ -4,6 +4,7 @@ import {
   filterCounts,
   hasSparklineSignal,
   monthlyBuckets,
+  monthlyRecurringCents,
   rowMatchesFilter,
   type NormalizedProposal,
 } from "./dashboardMetrics";
@@ -164,6 +165,50 @@ describe("computeDashboardMetrics — sparkline series", () => {
       NOW
     );
     expect(m.avgSignSeries).toEqual([null, null, 24 * DAY / 24, null, null, 48 * DAY / 24]);
+  });
+});
+
+describe("monthlyRecurringCents (RSL-18 period normalization)", () => {
+  it("normalizes quarterly and annual retainers to a monthly figure", () => {
+    // $300/quarter -> $100/mo; $12,000/year -> $1,000/mo (was dropped to $0).
+    expect(monthlyRecurringCents({ amountCents: 30_000, intervalMonths: 3 }, [])).toBe(10_000);
+    expect(monthlyRecurringCents({ amountCents: 1_200_000, intervalMonths: 12 }, [])).toBe(100_000);
+  });
+
+  it("sums a monthly base with normalized recurring add-ons and ignores one-time add-ons", () => {
+    const total = monthlyRecurringCents({ amountCents: 50_000, intervalMonths: 1 }, [
+      { amountCents: 30_000, intervalMonths: 3 }, // $100/mo
+      { amountCents: 9_900, intervalMonths: null }, // one-time -> not recurring
+    ]);
+    expect(total).toBe(60_000);
+  });
+
+  it("is zero when there is no recurring revenue", () => {
+    expect(monthlyRecurringCents(null, [{ amountCents: 9_900, intervalMonths: null }])).toBe(0);
+  });
+});
+
+describe("computeDashboardMetrics — month-boundary consistency (RSL-24)", () => {
+  it("credits a deal signed exactly at a month boundary to the same month in both series", () => {
+    // June 1, 00:00:00 — the exclusive end of May's bucket (index 4); belongs to June (index 5).
+    const boundary = new Date(2026, 5, 1, 0, 0, 0);
+    const m = computeDashboardMetrics(
+      [mk({ status: "SIGNED", recurringMonthlyCents: 50_000, completedAt: boundary })],
+      NOW
+    );
+    expect(m.signedSeries[4]).toBe(0);
+    expect(m.signedSeries[5]).toBe(1);
+    expect(m.mrrSeries[4]).toBe(0); // not mis-credited to May (was 50_000 under `<= cutoff`)
+    expect(m.mrrSeries[5]).toBe(50_000);
+  });
+
+  it("surfaces an open deal in the stale strip the moment it crosses 14 days", () => {
+    // 14.96 days old: floor()=14 (not > 14) missed it; the continuous threshold catches it.
+    const m = computeDashboardMetrics(
+      [mk({ id: "edge", status: "SENT", sentAt: new Date(NOW.getTime() - Math.round(14.96 * DAY)) })],
+      NOW
+    );
+    expect(m.attention.find((a) => a.id === "edge")?.reason).toBe("stale_open");
   });
 });
 

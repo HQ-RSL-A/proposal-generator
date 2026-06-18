@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { FileSignature, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { formatCents } from "@/lib/currency";
+import { formatCents, formatPricedLine } from "@/lib/currency";
 import { effectiveLineItems, type PaymentConfig, type TokensJson } from "@/lib/types";
 import { clientFullName } from "@/lib/clientName";
 import {
   ATTENTION_AGE_DAYS,
   computeDashboardMetrics,
   hasSparklineSignal,
+  monthlyRecurringCents,
   OPEN_STATUSES,
   type NormalizedProposal,
 } from "@/lib/dashboardMetrics";
@@ -54,16 +55,17 @@ export default async function DashboardPage() {
     const oneTimeCents =
       (oneTime?.amountCents ?? 0) +
       addOns.filter((a) => a.intervalMonths === null).reduce((s, a) => s + a.amountCents, 0);
-    const recurringMonthlyCents =
-      (recurring && recurring.intervalMonths === 1 ? recurring.amountCents : 0) +
-      addOns.filter((a) => a.intervalMonths === 1).reduce((s, a) => s + a.amountCents, 0);
+    // MRR normalization lives in the shared util — quarterly/annual retainers fold to monthly
+    // here instead of dropping to $0 (RSL-18).
+    const recurringMonthlyCents = monthlyRecurringCents(recurring, addOns);
 
     const dealParts: string[] = [];
     if (config.tiers && !proposal.selectedTierId) {
       dealParts.push(`${config.tiers.length} options`);
     } else {
       if (oneTime) dealParts.push(formatCents(oneTime.amountCents));
-      if (recurring) dealParts.push(`${formatCents(recurring.amountCents)}/mo`);
+      // Render the real billing cadence (e.g. "$300/quarter"), not a hardcoded "/mo".
+      if (recurring) dealParts.push(formatPricedLine(recurring.amountCents, recurring.intervalMonths));
     }
     const company = tokens["Client.Company"];
 
