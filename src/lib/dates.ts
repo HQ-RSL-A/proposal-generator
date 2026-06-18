@@ -1,7 +1,27 @@
 // validUntil semantics: the proposal is valid through the END of the stated day
 // in America/New_York (RSL/A's home timezone) — every US client gets the full day.
 
-const EASTERN_OFFSETS = ["-04:00", "-05:00"] as const;
+/**
+ * The UTC offset for America/New_York on a given calendar day, as a "±HH:MM"
+ * string, derived from the IANA tz database via Intl — correct across DST
+ * transitions (no hand-rolled month band). Sampled at noon UTC, which is safely
+ * past the 02:00 local DST switch on either edge day, so it matches the
+ * end-of-day offset that parseValidUntil needs.
+ */
+function easternOffset(y: number, m: number, d: number): string {
+  const sample = new Date(Date.UTC(y, m, d, 12, 0, 0));
+  const tzName =
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      timeZoneName: "longOffset",
+    })
+      .formatToParts(sample)
+      .find((p) => p.type === "timeZoneName")?.value ?? "GMT-05:00";
+  const match = tzName.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
+  if (!match) return "-05:00";
+  const [, sign, hh, mm = "00"] = match;
+  return `${sign}${hh.padStart(2, "0")}:${mm}`;
+}
 
 /**
  * Parses a human date like "July 11, 2026" (the skill's Client.ValidUntil format)
@@ -13,9 +33,7 @@ export function parseValidUntil(display: string): Date | null {
   const y = parsed.getFullYear();
   const m = parsed.getMonth();
   const d = parsed.getDate();
-  // DST guess: April–October = EDT (-04:00). Off-by-an-hour at the edges is acceptable
-  // for a proposal validity deadline.
-  const offset = m >= 3 && m <= 9 ? EASTERN_OFFSETS[0] : EASTERN_OFFSETS[1];
+  const offset = easternOffset(y, m, d);
   const iso = `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}T23:59:59${offset}`;
   const result = new Date(iso);
   return Number.isNaN(result.getTime()) ? null : result;
