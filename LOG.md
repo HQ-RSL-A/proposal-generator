@@ -28,22 +28,56 @@ auto-reset), `src/test/factories.ts`; per-test `auth`/`after`/stripe/resend/noti
   `checkout-{id}-g{generation}` (generation = CHECKOUT_CREATED count, never the session id).
   RSL-20 (**product default — confirm**): decline records the party but only flips SENT/VIEWED →
   DECLINED; a committed signature is never reverted.
-- ⬜ **Wave 3 — legal-text fidelity (RSL-17, RSL-25)** — NEXT. `parseMsa.ts` (token regex tolerate inner
-  whitespace in BOTH the replacer and the leftover-token scan; parseRuns odd-`**`), `proposalContent.ts`
-  (`splitBulletString` keep a leading minus, e.g. `-5%`).
-- ⬜ **Wave 4 — side-effect reliability (RSL-13, RSL-16, RSL-15, RSL-14, RSL-22)** —
-  `jobRunner.ts`/`jobs.ts`/`generatePdf.ts`/`notion.ts`/`cron/daily`. failJob isolation + PROCESSING
-  reaper + runJobNow scheduledAt; daily-cron per-iteration isolation + daysLeft dedup key; Notion
-  idempotent append + exact-match company; payer-token identity guard; per-party executed-copy dedup.
-- ⬜ **Wave 5 — dashboard (RSL-18, RSL-24)** — `dashboardMetrics.ts`/`dashboard/page.tsx`. MRR
-  normalize `/intervalMonths`; consistent half-open bucket bound + oldest-open day unit.
+- ✅ **Wave 3 — legal-text fidelity (RSL-17, RSL-25).** Commit `7ea8812`.
+  `parseMsa.ts`: one whitespace-tolerant `tokenPattern()` (`/\{\{\s*([\w.]+)\s*\}\}/g`, a fresh RegExp per
+  call so there's no shared `lastIndex`) now backs BOTH `replaceTokens` and `findUnreplacedTokens`, so a
+  `{{ spaced }}` token is filled or flagged — never shipped raw into the signed MSA (RSL-17a); `parseRuns`
+  toggles bold per `**` and drops an unclosed odd `**` instead of leaking it / dropping the legit pair
+  (RSL-17b). `proposalContent.ts`: `splitBulletString` strips a dash marker only when followed by whitespace
+  (a leading minus like `-5%` survives the sign-flip) and treats em-dash the same as en-dash (RSL-25).
+- ✅ **Wave 4 — side-effect reliability (RSL-13, RSL-16, RSL-15, RSL-14, RSL-22).** Commit `20b93d9`.
+  **RSL-13** (`jobRunner.ts`/`jobs.ts`): `processDueJobs` isolates `await failJob`
+  in its own try/catch (one job's bookkeeping failure can't abort the batch) and reaps stuck PROCESSING rows
+  via new `reapStuckJobs` (>5min → PENDING) before each claim; `runJobNow` gained the `scheduledAt <= NOW()`
+  due-gate so an immediate run can't defeat backoff. **RSL-16** (`cron/daily`): per-iteration try/catch in the
+  expire AND reminder loops (one email failure no longer aborts the rest), and the reminder dedup is keyed per
+  `(party, daysLeft)` via the `REMINDER_SENT` audit event in a sub-24h window, so a 3-day reminder no longer
+  eats the 1-day nudge. **RSL-15** (`notion.ts`/`jobRunner.ts`): `findCrmPage` exact-matches the company title
+  (one match wins, zero → null, >1 → refuse loudly) instead of `contains`→`results[0]` (the Scorpion incident);
+  NOTION_SYNC paid append is idempotent via a `NOTION_SYNCED`/kind marker checked before the append. **RSL-14**
+  (`partyTokens.ts`/`generatePdf.ts`/`jobRunner.ts`/`signingService.ts`/`pay` page): one shared
+  `isPayerTokenInFlight` guard (payer identity + AWAITING/PROCESSING, never signer order) replaces the fragile
+  last-signer-by-`signedAt` heuristic — the executed-copy email and the SEND_EMAIL retry never rotate the
+  payer's live token; the cancel_url now carries `session_id` and `/pay` self-heals by it like `/paid`.
+  **RSL-22** (`generatePdf.ts`): executed-copy dedup is now per-party on the client email row, so a failed
+  admin send no longer re-mails every client on regeneration. +14 tests (178 total); `tsc`, `next build`,
+  and eslint all clean.
+- ✅ **Wave 5 — dashboard correctness (RSL-18, RSL-24).** Commit `0749262`.
+  **RSL-18** (`dashboardMetrics.ts` + `dashboard/page.tsx`): MRR period-normalization now lives in one shared
+  util — `monthlyRecurringCents` folds 1/3/12-month retainers + recurring add-ons to a monthly figure
+  (`amountCents / intervalMonths`), so a $300/qtr or $12k/yr retainer contributes $100/$1,000 instead of $0;
+  the page mapper calls the util instead of re-deriving MRR (the family-principle "single source of truth").
+  **RSL-24** (`dashboardMetrics.ts`): `mrrSeries` now buckets half-open (`< end`, dropping the `min(end,now)`
+  cutoff) so a boundary-signed deal lands in the SAME month as `signedSeries`; the stale-open strip uses a
+  continuous day comparison (`ageMs > 14d`) matching the headline's already-continuous warn, so the oldest
+  open deal surfaces the instant it crosses 14 days (was lagging ~24h via `floor(days) > 14`). +5 tests
+  (183 total); `tsc` + `next build` + eslint clean. Existing 19 dashboard tests unchanged. **Folded in** (same
+  commit, same file, non-audit): the deal-list column renders the real billing cadence via `formatPricedLine`
+  (e.g. "$300/quarter") instead of a hardcoded "/mo".
 - ⬜ **Wave 6 — authz (RSL-11, RSL-12, RSL-26)** — the 3 API routes/3 actions/3 admin pages/middleware
   use the existing `requireUser`/`requireAdmin`.
 - ⬜ **Wave 7 — dates + rate-limit (RSL-23, RSL-19)** — `dates.ts` Intl ET offset; `rateLimit.ts` TTL
   eviction (accept per-instance + document).
 
-**Status:** Waves 0-2 committed and **deployed to prod** (push `c17cd18..6765282` → Vercel deploy
-Ready; `proposals.rsla.io` serving). 7 of 21 issues live. 159 tests + `tsc` + `next build` clean.
+**Status:** **Waves 0-5 deployed to prod.** 2026-06-17: `main` fast-forwarded `6765282..0749262` and
+auto-deployed (`dpl_ETkUPu9mtjL4JqvvXerTvMqYzgr6`, READY; `proposals.rsla.io` serving — landing 200,
+dashboard 307 auth-gated). **16 of 21 issues live** (waves 0-2 earlier; waves 3 `7ea8812`, 4 `20b93d9`,
+5 `0749262` this session). Remaining: Wave 6 authz (RSL-11/12/26) + Wave 7 dates/rate-limit (RSL-23/19).
+No schema migration anywhere in waves 3-5 (the NOTION_SYNC and reminder idempotency markers reuse the
+`AuditEvent` table; the stuck-job reaper reuses `PendingJob.processingAt`; Wave 5 is pure arithmetic).
+**Caveat:** waves 3-5 are unit-tested against the prisma-mock seam and shipped ahead of the deferred
+Stripe test-mode + e2e rehearsal below — notably Wave 4's payer-token/queue changes touch the live money
+path, now in prod but not yet exercised end-to-end. Run that rehearsal before relying on it for a real send.
 
 **Deferred verification (after ALL waves, per Rahul):** (1) **Stripe test-mode rehearsal** — a real
 test-mode sign→checkout→pay on a fake-company proposal (RSL-6/7/8/9 touch the live money flow, not yet
