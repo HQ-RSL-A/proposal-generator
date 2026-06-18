@@ -24,3 +24,19 @@ export async function requireAdmin(): Promise<User> {
 export async function requireAuth(): Promise<User> {
   return requireUser();
 }
+
+/**
+ * API-route variant of requireUser: returns the live, active, allowlisted user, or null so the
+ * caller can answer 401 (route handlers respond with a status, not a redirect). Re-validates the
+ * User row + active flag on every request — never trusting the login-time allowlist — so an
+ * offboarded or deactivated @rsla.io account with a still-valid JWT loses access immediately,
+ * even though the JWT itself hasn't expired (RSL-11).
+ */
+export async function getActiveApiUser(): Promise<User | null> {
+  const session = await auth();
+  const email = session?.user?.email?.toLowerCase();
+  if (!email?.endsWith("@rsla.io")) return null;
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || !user.active) return null;
+  return user;
+}

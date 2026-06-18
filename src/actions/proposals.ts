@@ -381,7 +381,10 @@ export async function reviseProposal(id: string): Promise<ActionResult<{ id: str
 // ---------- Party utilities ----------
 
 export async function remindParty(partyId: string): Promise<ActionResult> {
-  await requireAuth();
+  // ADMIN-gated: minting/mailing a signing link for an arbitrary partyId changes who can
+  // execute the contract, so it carries the same role gate as the rest of the mutation surface (RSL-12).
+  const actor = await requireAuth();
+  if (actor.role !== "ADMIN") return { ok: false, error: "Only admins can send reminders." };
   try {
     const party = await prisma.party.findUniqueOrThrow({
       where: { id: partyId },
@@ -411,7 +414,8 @@ export async function remindParty(partyId: string): Promise<ActionResult> {
 
 /** Copy-link: mints a fresh link (earlier emailed links keep working only until rotation). */
 export async function getFreshSigningLink(partyId: string): Promise<ActionResult<{ url: string }>> {
-  await requireAuth();
+  const actor = await requireAuth();
+  if (actor.role !== "ADMIN") return { ok: false, error: "Only admins can mint signing links." };
   try {
     const party = await prisma.party.findUniqueOrThrow({
       where: { id: partyId },
@@ -430,7 +434,10 @@ export async function updatePartyEmail(input: {
   email: string;
   name: string;
 }): Promise<ActionResult> {
-  await requireAuth();
+  // The highest-stakes party action: repointing the email changes WHO executes the legal
+  // contract. ADMIN-only, never MEMBER (RSL-12).
+  const actor = await requireAuth();
+  if (actor.role !== "ADMIN") return { ok: false, error: "Only admins can change a signer's email." };
   try {
     const party = await prisma.party.findUniqueOrThrow({
       where: { id: input.partyId },

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { FileSignature, Plus } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/lib/authGuard";
 import { formatCents, formatPricedLine } from "@/lib/currency";
 import { effectiveLineItems, type PaymentConfig, type TokensJson } from "@/lib/types";
 import { clientFullName } from "@/lib/clientName";
@@ -37,6 +38,9 @@ function formatDuration(ms: number): string {
 }
 
 export default async function DashboardPage() {
+  // Re-validate the user before fetching every proposal — the RSC page renders before the
+  // (admin) layout body, so the layout guard alone leaves this fetch ungated (RSL-26).
+  await requireUser();
   const proposals = await prisma.proposal.findMany({
     orderBy: { createdAt: "desc" },
     include: { parties: true, payment: true },

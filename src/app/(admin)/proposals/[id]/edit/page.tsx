@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { requireUser } from "@/lib/authGuard";
 import { prisma } from "@/lib/prisma";
 import { ProposalForm } from "@/components/proposals/proposalForm";
 import type { PaymentConfig } from "@/lib/types";
@@ -9,6 +10,9 @@ export default async function EditProposalPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // RSC child segments render before the layout body, so the (admin) layout guard does NOT gate
+  // this page's own draft fetch — re-validate here before touching data (RSL-26).
+  await requireUser();
   const { id } = await params;
   const proposal = await prisma.proposal.findUnique({ where: { id } });
   if (!proposal) notFound();

@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { requireUser } from "@/lib/authGuard";
 import { prisma } from "@/lib/prisma";
 import { formatCents } from "@/lib/currency";
 import { validatePaymentConfigForSend } from "@/lib/validation";
@@ -9,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SendForm } from "@/components/proposals/sendForm";
 
 export default async function SendPage({ params }: { params: Promise<{ id: string }> }) {
+  // Re-validate here, not just in the (admin) layout — the page renders before the layout body
+  // and otherwise fetches the draft + secret pricing ungated (RSL-26).
+  await requireUser();
   const { id } = await params;
   const proposal = await prisma.proposal.findUnique({ where: { id } });
   if (!proposal) notFound();

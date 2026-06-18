@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getActiveApiUser } from "@/lib/authGuard";
 import { prisma } from "@/lib/prisma";
 import { fetchPrivateBlob } from "@/lib/blob";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.email?.endsWith("@rsla.io")) {
+  // Per-request active re-check (RSL-11).
+  if (!(await getActiveApiUser())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const settings = await prisma.adminSettings.findUnique({ where: { id: "singleton" } });

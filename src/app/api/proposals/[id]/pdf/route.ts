@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { getActiveApiUser } from "@/lib/authGuard";
 import { prisma } from "@/lib/prisma";
 import { fetchPrivateBlob } from "@/lib/blob";
 
@@ -7,8 +7,9 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user?.email?.endsWith("@rsla.io")) {
+  // Re-validate the live, active user per request — a deactivated account must not keep
+  // downloading the executed legal record on a still-valid JWT (RSL-11).
+  if (!(await getActiveApiUser())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;

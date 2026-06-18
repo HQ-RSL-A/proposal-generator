@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
-  // Check for the session cookie (NextAuth v5 uses __Secure- prefix in prod, authjs.session-token in dev)
+  // UX-only fast-path: bounce the obvious logged-out case (no cookie) to sign-in cheaply at the
+  // edge. This is a cookie-PRESENCE check, not JWT validation — a forged/expired cookie passes
+  // here on purpose. Real authorization is re-validated at every data-access point against the
+  // live, active User row: requireUser/requireAdmin in each admin page (RSL-26) and server action
+  // (RSL-12), and getActiveApiUser in each API route (RSL-11). JWT verification stays out of the
+  // Edge runtime (auth.ts pulls in Prisma, which isn't Edge-compatible), and a forged cookie is
+  // rejected the moment it reaches any guarded surface (RSL-26).
   const sessionToken =
     request.cookies.get("authjs.session-token")?.value ||
     request.cookies.get("__Secure-authjs.session-token")?.value;
