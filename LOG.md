@@ -2,10 +2,11 @@
 
 ## 2026-06-18 — Audit remediation COMPLETE (Wave 7) + RSL-12/20 product refinements
 
-**All 21 audit issues (RSL-6..26) are now code-complete.** Wave 7 — the last wave — plus two
-product refinements landed on `audit/remediation` this session. **Not yet deployed to prod**
-(branch is ahead of `main`; ship when ready). Verified: **201 tests**, `tsc`, `next build`,
-`eslint src` (0 errors) all clean. No schema migration.
+**All 21 audit issues (RSL-6..26) are now fixed AND deployed to prod — the audit is complete.**
+Wave 7 — the last wave — plus two product refinements shipped this session. **Deployed 2026-06-18:**
+`main` fast-forwarded `a2cb293..6a13c14` and pushed; Vercel deploy `o6frxybnr` READY, aliased to
+proposals.rsla.io (landing 200 / dashboard 307 auth-gated / unauthed `/api/.../pdf` 401). Verified
+pre-push: **201 tests**, `tsc`, `next build`, `eslint src` (0 errors) all clean. No schema migration.
 
 - **Wave 7 (RSL-23, RSL-19) — commit `2c9264d`.** RSL-23 (`dates.ts`): replaced the hand-rolled
   April–October DST month band (treated all of March as EST, mis-set early Nov) with an Intl
@@ -23,15 +24,15 @@ product refinements landed on `audit/remediation` this session. **Not yet deploy
   committed signatures are preserved, a fully SIGNED proposal stays excluded (VOID only). Reuses the
   existing DECLINED enum value — no migration.
 
-**Linear:** the 19 deployed issues are Done with resolution comments; RSL-12/RSL-20 got follow-up
-comments noting the refined behavior. **RSL-23 + RSL-19 stay in Backlog** until this branch deploys
-to prod, then move to Done (the "deployed" bar).
+**Linear:** **all 21 issues (RSL-6..26) are now Done**, each with a resolution comment. RSL-23 +
+RSL-19 moved to Done on this deploy; RSL-12/RSL-20 carry follow-up comments noting the refined
+behavior.
 
-**Next:** deploy `audit/remediation` → prod (ff `main`), then RSL-23/RSL-19 → Done. The deferred
-Stripe test-mode + full e2e rehearsal still stands before a real send (Wave 4's money-path is live
-but not yet exercised e2e). NB: bare `eslint` reports ~23k problems from build artifacts in the
-untracked `.claude/worktrees/dashboard-upgrade/.next/` leftover worktree — unrelated noise;
-`eslint src` is the real gate (consider ignoring `**/.next/` or removing the stale worktree).
+**Next (deferred, per Rahul — now that it's deployed):** the Stripe test-mode rehearsal + full e2e
+rehearsal still stand before relying on it for a real send (Wave 4's money-path is live but not yet
+exercised e2e). NB: bare `eslint` reports ~23k problems from build artifacts in the untracked
+`.claude/worktrees/dashboard-upgrade/.next/` leftover worktree — unrelated noise; `eslint src` is the
+real gate (consider ignoring `**/.next/` or removing the stale worktree).
 
 ## 2026-06-17 — Security/correctness audit remediation (Sid's RSL-6..26) — IN PROGRESS
 
