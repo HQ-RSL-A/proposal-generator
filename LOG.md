@@ -64,17 +64,38 @@ auto-reset), `src/test/factories.ts`; per-test `auth`/`after`/stripe/resend/noti
   (183 total); `tsc` + `next build` + eslint clean. Existing 19 dashboard tests unchanged. **Folded in** (same
   commit, same file, non-audit): the deal-list column renders the real billing cadence via `formatPricedLine`
   (e.g. "$300/quarter") instead of a hardcoded "/mo".
-- ⬜ **Wave 6 — authz (RSL-11, RSL-12, RSL-26)** — the 3 API routes/3 actions/3 admin pages/middleware
-  use the existing `requireUser`/`requireAdmin`.
+- ✅ **Wave 6 — authz re-validation (RSL-11, RSL-12, RSL-26).** Commit `128f21f` on `audit/remediation` —
+  **committed but NOT deployed** (awaiting review before the next prod push; see scope note below).
+  **RSL-11** (`authGuard.ts` + 3 API routes): new `getActiveApiUser` re-checks the live User row + `active`
+  flag per request and returns null → 401; the pdf / signature / settings-signature routes use it instead of
+  the login-time `email.endsWith("@rsla.io")` allowlist, so an offboarded/deactivated account with a valid
+  JWT loses access to executed PDFs + signature PII immediately. **RSL-12** (`proposals.ts`): `remindParty`,
+  `getFreshSigningLink`, `updatePartyEmail` now carry the `actor.role !== "ADMIN"` gate (matching
+  `users.ts`/`settings.ts`), so a MEMBER can no longer repoint a signer's email / rotate the token / mint a
+  signing invite — i.e. can't change who executes the contract. **RSL-26** (3 admin pages + middleware): each
+  RSC page (`dashboard`/`edit`/`send`) calls `requireUser()` before its own prisma fetch (a child segment
+  renders before the layout body, so the `(admin)` layout guard alone left the fetch ungated); middleware is
+  **documented as a UX-only cookie-presence fast-path** — real authz is re-validated at every data-access
+  point (per-page/route/action), so a forged cookie is rejected the moment it hits a guarded surface. Edge JWT
+  validation was deliberately NOT added (auth.ts pulls Prisma, which isn't Edge-safe; getting it wrong risks
+  locking out the team). +10 tests (193 total); `tsc` + `next build` + eslint clean. No schema migration.
 - ⬜ **Wave 7 — dates + rate-limit (RSL-23, RSL-19)** — `dates.ts` Intl ET offset; `rateLimit.ts` TTL
   eviction (accept per-instance + document).
 
 **Status:** **Waves 0-5 deployed to prod.** 2026-06-17: `main` fast-forwarded `6765282..0749262` and
 auto-deployed (`dpl_ETkUPu9mtjL4JqvvXerTvMqYzgr6`, READY; `proposals.rsla.io` serving — landing 200,
 dashboard 307 auth-gated). **16 of 21 issues live** (waves 0-2 earlier; waves 3 `7ea8812`, 4 `20b93d9`,
-5 `0749262` this session). Remaining: Wave 6 authz (RSL-11/12/26) + Wave 7 dates/rate-limit (RSL-23/19).
-No schema migration anywhere in waves 3-5 (the NOTION_SYNC and reminder idempotency markers reuse the
-`AuditEvent` table; the stuck-job reaper reuses `PendingJob.processingAt`; Wave 5 is pure arithmetic).
+5 `0749262` this session). **Wave 6 (RSL-11/12/26) committed to `audit/remediation` (`128f21f`) but NOT
+yet deployed** — 193 tests (+10) + `tsc` + `next build` + eslint clean. So **19 of 21 issues fixed** (16
+live on prod through wave 5; wave 6 awaits review before the next prod push). Only **Wave 7 (RSL-23 dates,
+RSL-19 rate-limit)** remains. No schema migration anywhere in waves 3-6 (the NOTION_SYNC and reminder
+idempotency markers reuse the `AuditEvent` table; the stuck-job reaper reuses `PendingJob.processingAt`;
+waves 5-6 are pure arithmetic / guards).
+
+**Open decisions for next session:** (a) **deploy Wave 6** (push `audit/remediation`→`main`) once reviewed;
+(b) **RSL-12 scope** — remind/copy-link/repoint are now all ADMIN-only; confirm that's wanted, or relax
+remind/copy-link to MEMBER and keep only the email-repoint admin-gated; (c) **Wave 7** is the last wave;
+(d) the **deferred verification** below still stands (Stripe test-mode + e2e rehearsal, Linear status moves).
 **Caveat:** waves 3-5 are unit-tested against the prisma-mock seam and shipped ahead of the deferred
 Stripe test-mode + e2e rehearsal below — notably Wave 4's payer-token/queue changes touch the live money
 path, now in prod but not yet exercised end-to-end. Run that rehearsal before relying on it for a real send.

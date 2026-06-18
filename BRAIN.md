@@ -83,6 +83,15 @@ Read frozen-first via `frozenTrackRecord(proposal)` (`signingService.ts`). Impor
 - Routes: `/` public landing → `/dashboard` (team) → `/settings` (admin; General + System
   tabs — System absorbed the old `/health` page, which now redirects to
   `/settings?tab=system`); plus `/docs` (team-gated, in-app token-schema reference).
+- **Authz is re-validated per request at every data-access point** (not at login). Pages +
+  server actions call `requireUser`/`requireAdmin`; API routes call `getActiveApiUser` (returns
+  null → 401) — all re-read the live `User` row + `active` flag, so deactivating/deleting a user
+  revokes access immediately despite the ~30-day JWT. Each admin RSC page guards itself (the
+  `(admin)` layout does NOT gate child fetches). The party utilities `remindParty`,
+  `getFreshSigningLink`, `updatePartyEmail` are **ADMIN-only**. `middleware.ts` is a **UX-only
+  cookie-presence** fast-path, NOT JWT validation (auth.ts pulls Prisma → not Edge-safe) — never
+  rely on it for authorization; the guards above are the real gate. (Wave-6 audit hardening,
+  RSL-11/12/26.)
 
 ## Copy rules
 
