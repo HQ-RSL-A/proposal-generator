@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { logEvent } from "@/lib/audit";
 import { enqueueJob } from "@/lib/jobs";
 import { runJobNow } from "@/lib/jobRunner";
-import { applyPaidState, recordWebhookOnce } from "@/lib/paymentState";
+import { applyPaidState, markWebhookProcessed, wasWebhookProcessed } from "@/lib/paymentState";
 
 export async function POST(request: NextRequest) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -27,13 +27,13 @@ export async function POST(request: NextRequest) {
     (session.metadata?.proposalId as string | undefined) ??
     (await proposalIdFromSession(session));
 
-  const fresh = await recordWebhookOnce({
-    source: "stripe",
-    externalId: event.id,
-    eventType: event.type,
-    proposalId,
-  });
-  if (!fresh) return NextResponse.json({ received: true, duplicate: true });
+  // Process-then-record (RSL-6): skip only events we've already FINISHED. The
+  // marker is written after the switch below, so a transient failure mid-handler
+  // throws before marking and Stripe's retry re-runs the work. Exactly-once is
+  // still guaranteed by the status-guarded transitions inside each handler.
+  if (await wasWebhookProcessed(event.id)) {
+    return NextResponse.json({ received: true, duplicate: true });
+  }
 
   switch (event.type) {
     case "checkout.session.completed": {
@@ -199,6 +199,15 @@ export async function POST(request: NextRequest) {
       break;
     }
   }
+
+  // Reached only when the handler above didn't throw. Mark processed now so a
+  // future redelivery of this same event id is skipped at the pre-check.
+  await markWebhookProcessed({
+    source: "stripe",
+    externalId: event.id,
+    eventType: event.type,
+    proposalId,
+  });
 
   return NextResponse.json({ received: true });
 }

@@ -4,14 +4,27 @@ import { prisma } from "@/lib/prisma";
 import { logEvent } from "@/lib/audit";
 import { enqueueJob } from "@/lib/jobs";
 import { runJobNow } from "@/lib/jobRunner";
-import { sendTemplateEmail } from "@/lib/email";
 import { computeDepositSchedule } from "@/lib/proposalContent";
 import { formatCents } from "@/lib/currency";
 import type { PaymentConfig } from "@/lib/types";
 
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: string }).code === "P2002"
+  );
+}
+
 /**
- * Records a webhook (or synthetic reconcile) event exactly once.
+ * Records a webhook event exactly once, record-FIRST.
  * Returns false when this externalId was already processed.
+ *
+ * Only safe for handlers whose work is naturally idempotent and low-stakes
+ * (e.g. Resend email-status updates). Payment paths must use the
+ * process-then-record pair below: recording before the work means a transient
+ * failure dedupes the retry into a permanent no-op (RSL-6).
  */
 export async function recordWebhookOnce(input: {
   source: "stripe" | "resend";
@@ -30,15 +43,43 @@ export async function recordWebhookOnce(input: {
     });
     return true;
   } catch (error) {
-    // Unique violation = duplicate delivery / replay.
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      (error as { code: string }).code === "P2002"
-    ) {
-      return false;
-    }
+    if (isUniqueViolation(error)) return false; // duplicate delivery / replay
+    throw error;
+  }
+}
+
+/** True if this external event id has already been fully processed. */
+export async function wasWebhookProcessed(externalId: string): Promise<boolean> {
+  const existing = await prisma.webhookEvent.findUnique({ where: { externalId } });
+  return existing !== null;
+}
+
+/**
+ * Marks an external event processed — call only AFTER its work has succeeded
+ * (process-then-record). Recording on success (not before) means a transient
+ * failure leaves no marker, so Stripe's automatic retry (or the reconcile cron)
+ * re-runs the handler instead of being deduped into a permanent no-op. The paid
+ * transition itself stays exactly-once via the status-guarded `updateMany` in
+ * `applyPaidState`, so a re-run is a safe no-op. Idempotent: a concurrent
+ * duplicate marker is swallowed.
+ */
+export async function markWebhookProcessed(input: {
+  source: "stripe" | "resend";
+  externalId: string;
+  eventType: string;
+  proposalId?: string | null;
+}): Promise<void> {
+  try {
+    await prisma.webhookEvent.create({
+      data: {
+        source: input.source,
+        externalId: input.externalId,
+        eventType: input.eventType,
+        proposalId: input.proposalId ?? null,
+      },
+    });
+  } catch (error) {
+    if (isUniqueViolation(error)) return; // already recorded — fine
     throw error;
   }
 }
@@ -91,51 +132,91 @@ export async function applyPaidState(
   });
 
   after(async () => {
-    const notionJob = await enqueueJob({
-      jobType: "NOTION_SYNC",
-      proposalId,
-      payload: { proposalId, kind: "paid" },
-    });
-    const metadataJob = await enqueueJob({
-      jobType: "STRIPE_METADATA",
-      proposalId,
-      payload: { proposalId },
-    });
+    // Every post-paid side effect goes through the durable queue. This block
+    // runs after the 200, so a throw here can't be surfaced or retried by
+    // Stripe — the queue is the only retry net. Receipts that were once sent
+    // inline (and lost if a preceding read threw) are now jobs too (RSL-8).
+    const enqueuedJobIds: string[] = [];
+    enqueuedJobIds.push(
+      (await enqueueJob({ jobType: "NOTION_SYNC", proposalId, payload: { proposalId, kind: "paid" } })).id
+    );
+    enqueuedJobIds.push(
+      (await enqueueJob({ jobType: "STRIPE_METADATA", proposalId, payload: { proposalId } })).id
+    );
 
-    // On a deposit deal only the deposit was charged — the receipt must say so.
-    const proposal = await prisma.proposal.findUnique({ where: { id: proposalId } });
+    // On a deposit deal only the deposit was charged — the receipt should say
+    // so. This read is best-effort: a failure must NOT block the receipt, so
+    // it's caught and the receipt simply goes out without the deposit note
+    // (RSL-8: the fragile read no longer gates the send).
     let depositNote: string | undefined;
-    if (proposal) {
-      const frozen = proposal.frozenContent as { paymentConfig?: PaymentConfig } | null;
-      const config = (frozen?.paymentConfig ?? proposal.paymentConfig) as PaymentConfig;
-      const schedule = computeDepositSchedule(config, proposal.selectedTierId);
-      if (schedule) {
-        const remaining =
-          schedule.remainingCents != null
-            ? `The remaining ${formatCents(schedule.remainingCents)} is collected when the build is complete.`
-            : "The balance is collected when the build is complete.";
-        const retainer = schedule.deferredRecurring
-          ? ` Your ${schedule.deferredRecurring.displayString} retainer starts when work begins.`
-          : "";
-        depositNote = `This is your ${schedule.depositPercent}% deposit. ${remaining}${retainer}`;
+    try {
+      const proposal = await prisma.proposal.findUnique({ where: { id: proposalId } });
+      if (proposal) {
+        const frozen = proposal.frozenContent as { paymentConfig?: PaymentConfig } | null;
+        const config = (frozen?.paymentConfig ?? proposal.paymentConfig) as PaymentConfig;
+        const schedule = computeDepositSchedule(config, proposal.selectedTierId);
+        if (schedule) {
+          const remaining =
+            schedule.remainingCents != null
+              ? `The remaining ${formatCents(schedule.remainingCents)} is collected when the build is complete.`
+              : "The balance is collected when the build is complete.";
+          const retainer = schedule.deferredRecurring
+            ? ` Your ${schedule.deferredRecurring.displayString} retainer starts when work begins.`
+            : "";
+          depositNote = `This is your ${schedule.depositPercent}% deposit. ${remaining}${retainer}`;
+        }
       }
+    } catch (error) {
+      console.error("deposit-note lookup failed; sending receipt without it", error);
     }
+
+    const receiptContext = { amountCents: session.amount_total ?? undefined, depositNote };
+
+    // Admin receipt first — it needs no payer lookup, so it's enqueued (durable)
+    // even if the payer query below throws.
+    enqueuedJobIds.push(
+      (
+        await enqueueJob({
+          jobType: "SEND_EMAIL",
+          proposalId,
+          payload: {
+            templateId: "payment_received_admin",
+            proposalId,
+            partyId: null,
+            context: receiptContext,
+          },
+        })
+      ).id
+    );
 
     const payer = await prisma.party.findFirst({
       where: { proposalId, role: "CLIENT_SIGNER", payer: true },
     });
     if (payer) {
-      await sendTemplateEmail("payment_received_client", proposalId, payer.id, {
-        amountCents: session.amount_total ?? undefined,
-        depositNote,
-      });
+      enqueuedJobIds.push(
+        (
+          await enqueueJob({
+            jobType: "SEND_EMAIL",
+            proposalId,
+            payload: {
+              templateId: "payment_received_client",
+              proposalId,
+              partyId: payer.id,
+              context: receiptContext,
+            },
+          })
+        ).id
+      );
     }
-    await sendTemplateEmail("payment_received_admin", proposalId, null, {
-      amountCents: session.amount_total ?? undefined,
-      depositNote,
-    });
 
-    await runJobNow(notionJob.id);
-    await runJobNow(metadataJob.id);
+    // Opportunistic immediate runs; the cron is the safety net for any that
+    // fail, and one failed run must not block the others.
+    for (const id of enqueuedJobIds) {
+      try {
+        await runJobNow(id);
+      } catch (error) {
+        console.error("immediate job run failed; cron will retry", id, error);
+      }
+    }
   });
 }

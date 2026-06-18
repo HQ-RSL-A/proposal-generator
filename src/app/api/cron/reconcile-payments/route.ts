@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { retrieveSession } from "@/lib/stripe";
-import { applyPaidState, recordWebhookOnce } from "@/lib/paymentState";
+import { applyPaidState, markWebhookProcessed, wasWebhookProcessed } from "@/lib/paymentState";
 import { isAuthorizedCron, logCronRun } from "@/lib/cronAuth";
 
 export const maxDuration = 60;
@@ -31,14 +31,18 @@ export async function GET(request: NextRequest) {
       try {
         const session = await retrieveSession(proposal.stripeCheckoutSessionId!);
         if (session.payment_status === "paid") {
-          const fresh = await recordWebhookOnce({
-            source: "stripe",
-            externalId: `reconcile_${session.id}_paid`,
-            eventType: "reconcile.paid",
-            proposalId: proposal.id,
-          });
-          if (fresh) {
+          // Process-then-record (RSL-6): heal first, mark after. If applyPaidState
+          // throws, no marker is written, so a later cron run re-attempts the heal
+          // instead of being deduped out.
+          const externalId = `reconcile_${session.id}_paid`;
+          if (!(await wasWebhookProcessed(externalId))) {
             await applyPaidState(proposal.id, session);
+            await markWebhookProcessed({
+              source: "stripe",
+              externalId,
+              eventType: "reconcile.paid",
+              proposalId: proposal.id,
+            });
             healed++;
           }
         } else if (session.status === "expired" && proposal.paymentStatus === "AWAITING") {
