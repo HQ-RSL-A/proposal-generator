@@ -374,17 +374,18 @@ export async function declineProposal(input: {
   if (party.signedAt) throw new SigningError("already_signed", "Already signed");
 
   const now = new Date();
-  // Record this party's decline, but only move the whole proposal to DECLINED
-  // when no signature has been committed yet (RSL-20). A committed signature
-  // (PARTIALLY_SIGNED / SIGNED) is a legal record that must not be reverted by a
-  // later party's decline — the proposal stays as-is and an admin can void it.
+  // Record this party's decline and terminate the deal as DECLINED — including from
+  // PARTIALLY_SIGNED, since every party must sign for the contract to execute, so one
+  // party's decline ends it (RSL-20). Committed signatures are preserved (we never touch
+  // Signature rows) as a record; they're just no longer part of an executed contract.
+  // A fully SIGNED (executed) proposal is excluded — that one can only be VOIDED.
   await prisma.$transaction(async (tx) => {
     await tx.party.update({
       where: { id: party.id },
       data: { declinedAt: now, declinedReason: input.reason },
     });
     await tx.proposal.updateMany({
-      where: { id: party.proposalId, status: { in: ["SENT", "VIEWED"] } },
+      where: { id: party.proposalId, status: { in: ["SENT", "VIEWED", "PARTIALLY_SIGNED"] } },
       data: { status: "DECLINED" },
     });
   });

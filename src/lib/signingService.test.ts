@@ -235,7 +235,7 @@ describe("ensureCheckoutSession — reuse-or-refuse + stable key (RSL-7)", () =>
   });
 });
 
-describe("declineProposal — committed signature blocks a backward decline (RSL-20)", () => {
+describe("declineProposal — a decline terminates the deal, even when partially signed (RSL-20)", () => {
   function programDecline(status: ProposalStatus) {
     const proposal = makeProposal({ id: "p1", status });
     const party = { ...makeParty({ id: "party1", proposalId: "p1", signedAt: null }), proposal };
@@ -244,17 +244,25 @@ describe("declineProposal — committed signature blocks a backward decline (RSL
       ((cb: (tx: typeof prismaMock) => unknown) => cb(prismaMock)) as never
     );
     prismaMock.party.update.mockResolvedValue({} as never);
-    prismaMock.proposal.updateMany.mockResolvedValue({ count: status === "PARTIALLY_SIGNED" ? 0 : 1 });
+    prismaMock.proposal.updateMany.mockResolvedValue({
+      count: ["SENT", "VIEWED", "PARTIALLY_SIGNED"].includes(status) ? 1 : 0,
+    });
   }
 
-  it("records the party decline but does NOT revert a PARTIALLY_SIGNED proposal", async () => {
+  it("moves a PARTIALLY_SIGNED proposal to DECLINED, preserving committed signatures", async () => {
     programDecline("PARTIALLY_SIGNED");
     await declineProposal({ rawToken: "tok", reason: "changed mind", ipAddress: null, userAgent: null });
 
-    expect(prismaMock.party.update).toHaveBeenCalledOnce(); // decline is recorded
-    const where = (prismaMock.proposal.updateMany.mock.calls[0][0] as { where: { status: unknown } })
-      .where;
-    expect(where.status).toEqual({ in: ["SENT", "VIEWED"] }); // gate excludes PARTIALLY_SIGNED
+    expect(prismaMock.party.update).toHaveBeenCalledOnce(); // the decline is recorded
+    const call = prismaMock.proposal.updateMany.mock.calls[0][0] as {
+      where: { status: unknown };
+      data: { status: string };
+    };
+    expect(call.where.status).toEqual({ in: ["SENT", "VIEWED", "PARTIALLY_SIGNED"] });
+    expect(call.data.status).toBe("DECLINED");
+    // signatures are a legal record — a decline never deletes them
+    expect(prismaMock.signature.deleteMany).not.toHaveBeenCalled();
+    expect(prismaMock.signature.delete).not.toHaveBeenCalled();
   });
 
   it("moves a SENT proposal to DECLINED", async () => {
@@ -266,6 +274,16 @@ describe("declineProposal — committed signature blocks a backward decline (RSL
       data: { status: string };
     };
     expect(call.data.status).toBe("DECLINED");
-    expect(call.where.status).toEqual({ in: ["SENT", "VIEWED"] });
+    expect(call.where.status).toEqual({ in: ["SENT", "VIEWED", "PARTIALLY_SIGNED"] });
+  });
+
+  it("does NOT revert a fully SIGNED (executed) proposal", async () => {
+    programDecline("SIGNED");
+    await declineProposal({ rawToken: "tok", reason: null, ipAddress: null, userAgent: null });
+
+    expect(prismaMock.party.update).toHaveBeenCalledOnce(); // the decline is still recorded
+    const call = prismaMock.proposal.updateMany.mock.calls[0][0] as { where: { status: unknown } };
+    // SIGNED is excluded, so the gated updateMany matches no rows and status is unchanged
+    expect(call.where.status).toEqual({ in: ["SENT", "VIEWED", "PARTIALLY_SIGNED"] });
   });
 });

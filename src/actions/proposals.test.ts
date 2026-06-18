@@ -43,7 +43,7 @@ beforeEach(() => {
   prismaMock.party.update.mockResolvedValue(asAny({}));
 });
 
-describe("party actions (RSL-12 ADMIN gate)", () => {
+describe("party actions (RSL-12 role gates)", () => {
   it("blocks a MEMBER from repointing a party email — no update, no token rotation", async () => {
     const res = await updatePartyEmail({ partyId: "party1", email: "attacker@evil.com", name: "X" });
     expect(res.ok).toBe(false);
@@ -57,10 +57,16 @@ describe("party actions (RSL-12 ADMIN gate)", () => {
     expect(rotatePartyToken).not.toHaveBeenCalled();
   });
 
-  it("blocks a MEMBER from sending a reminder", async () => {
+  it("allows a MEMBER to send a reminder — only re-emails the existing client", async () => {
     const res = await remindParty("party1");
-    expect(res.ok).toBe(false);
-    expect(rotatePartyToken).not.toHaveBeenCalled();
+    expect(res.ok).toBe(true);
+    expect(rotatePartyToken).toHaveBeenCalledWith("party1");
+    expect(sendTemplateEmail).toHaveBeenCalledWith(
+      "signing_reminder",
+      "p1",
+      "party1",
+      expect.objectContaining({ rawToken: "rawtok" })
+    );
   });
 
   it("allows an ADMIN to repoint a party email", async () => {

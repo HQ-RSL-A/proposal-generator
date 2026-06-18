@@ -381,10 +381,10 @@ export async function reviseProposal(id: string): Promise<ActionResult<{ id: str
 // ---------- Party utilities ----------
 
 export async function remindParty(partyId: string): Promise<ActionResult> {
-  // ADMIN-gated: minting/mailing a signing link for an arbitrary partyId changes who can
-  // execute the contract, so it carries the same role gate as the rest of the mutation surface (RSL-12).
-  const actor = await requireAuth();
-  if (actor.role !== "ADMIN") return { ok: false, error: "Only admins can send reminders." };
+  // MEMBER-allowed: a reminder only re-emails the signer's EXISTING address (the member
+  // never sees the link) and repoints nothing, so — unlike copy-link / email-repoint, which
+  // stay ADMIN-only — it can't change who executes the contract (RSL-12).
+  await requireAuth();
   try {
     const party = await prisma.party.findUniqueOrThrow({
       where: { id: partyId },
