@@ -13,17 +13,23 @@ export type MsaBlock =
   | { type: "paragraph"; runs: MsaRun[] }
   | { type: "bullet"; runs: MsaRun[] };
 
-/** Splits "a **b** c" into runs. Unmatched ** is treated as literal text. */
+/**
+ * Splits "a **b** c" into runs; each "**" toggles bold. An odd (unclosed) "**" is dropped
+ * rather than leaked as a literal marker into the signed MSA, and its trailing text stays
+ * non-bold — so a stray "**" never ships and a legitimate bold pair on the same line is
+ * never lost (RSL-17).
+ */
 export function parseRuns(line: string): MsaRun[] {
   const runs: MsaRun[] = [];
   const parts = line.split(/\*\*/);
-  // Even count of "**" => odd number of parts => well-formed bold pairs.
-  if (parts.length % 2 === 0) {
-    return [{ text: line, bold: false }];
-  }
+  // Even part count <=> odd number of "**" markers (one is unclosed).
+  const oddMarkers = parts.length % 2 === 0;
   parts.forEach((part, i) => {
     if (part.length === 0) return;
-    runs.push({ text: part, bold: i % 2 === 1 });
+    // Odd indices sit inside a bold pair, except the final part of an odd-marker line:
+    // its opening "**" never closed, so render it plain and let the stray marker drop.
+    const bold = i % 2 === 1 && !(oddMarkers && i === parts.length - 1);
+    runs.push({ text: part, bold });
   });
   return runs.length > 0 ? runs : [{ text: "", bold: false }];
 }
@@ -47,9 +53,17 @@ export function parseMsa(bodyMarkdown: string): MsaBlock[] {
   return blocks;
 }
 
+/**
+ * Token grammar shared by the replacer and the send-time leftover-token guard so the two can
+ * never drift: inner whitespace is tolerated ({{ Client.Company }}) and trimmed from the
+ * captured key, so a placeholder the renderer can't fill is always caught before send (RSL-17).
+ * A fresh RegExp per call avoids shared `lastIndex` state across the global-flag matches.
+ */
+const tokenPattern = () => /\{\{\s*([\w.]+)\s*\}\}/g;
+
 /** Replaces {{Token.Name}} placeholders. Unknown tokens are left intact (caught by tests). */
 export function replaceTokens(text: string, tokens: Record<string, string>): string {
-  return text.replace(/\{\{([\w.]+)\}\}/g, (match, key: string) => tokens[key] ?? match);
+  return text.replace(tokenPattern(), (match, key: string) => tokens[key] ?? match);
 }
 
 export function replaceTokensInBlocks(
@@ -71,7 +85,7 @@ export function replaceTokensInBlocks(
 export function findUnreplacedTokens(blocks: MsaBlock[]): string[] {
   const found = new Set<string>();
   const scan = (text: string) => {
-    for (const match of text.matchAll(/\{\{([\w.]+)\}\}/g)) found.add(match[1]);
+    for (const match of text.matchAll(tokenPattern())) found.add(match[1]);
   };
   for (const block of blocks) {
     if (block.type === "heading") scan(block.text);

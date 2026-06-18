@@ -139,11 +139,16 @@ export interface ProposalSections {
   msa: { heading: string; preparedFor: string; blocks: MsaBlock[] };
 }
 
-/** "• item\n• item" or plain newline lists -> string[] */
+/**
+ * "• item\n• item" or plain newline lists -> string[]. A dash-family marker (-, –, —) is only
+ * stripped when followed by whitespace, so a leading minus on a priced term (e.g. "-5% rush
+ * surcharge") is never mistaken for a bullet and sign-flipped; the bullet glyph "•" is
+ * unambiguous and strips with or without a trailing space (RSL-25).
+ */
 export function splitBulletString(value: string): string[] {
   return value
     .split("\n")
-    .map((line) => line.replace(/^\s*[•\-–]\s*/, "").trim())
+    .map((line) => line.replace(/^\s*(?:•\s*|[-–—]\s+)/, "").trim())
     .filter((line) => line.length > 0);
 }
 

@@ -57,6 +57,13 @@ describe("splitBulletString", () => {
   it("drops empty lines", () => {
     expect(splitBulletString("• a\n\n• b")).toEqual(["a", "b"]);
   });
+  it("keeps a leading minus on a priced term (RSL-25)", () => {
+    // "-5%" is a signed amount, not a bullet — stripping the minus sign-flips a legal term.
+    expect(splitBulletString("-5% rush surcharge")).toEqual(["-5% rush surcharge"]);
+  });
+  it("treats em-dash bullets the same as en-dash bullets (RSL-25)", () => {
+    expect(splitBulletString("— a\n– b")).toEqual(["a", "b"]);
+  });
 });
 
 describe("splitParagraphs", () => {

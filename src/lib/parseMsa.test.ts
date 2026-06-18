@@ -22,8 +22,19 @@ describe("parseRuns", () => {
       { text: " c", bold: false },
     ]);
   });
-  it("treats unmatched ** as literal", () => {
-    expect(parseRuns("a ** b")).toEqual([{ text: "a ** b", bold: false }]);
+  it("drops a lone unmatched ** instead of leaking it into the signed MSA", () => {
+    // RSL-17: a stray ** must never ship as a literal marker in a legal document.
+    expect(parseRuns("a ** b")).toEqual([
+      { text: "a ", bold: false },
+      { text: " b", bold: false },
+    ]);
+  });
+  it("keeps a real bold pair and drops a stray ** on an odd-asterisk line", () => {
+    // RSL-17: an odd ** count must not drop the legit pair nor leak raw markers.
+    const runs = parseRuns("**Important:** see ** clause");
+    expect(runs.some((r) => r.bold)).toBe(true);
+    expect(runs.find((r) => r.bold)?.text).toBe("Important:");
+    expect(runs.every((r) => !r.text.includes("**"))).toBe(true);
   });
 });
 
@@ -69,5 +80,16 @@ describe("parseMsa on the real v3 agreement", () => {
 describe("replaceTokens", () => {
   it("leaves unknown tokens intact", () => {
     expect(replaceTokens("hi {{Nope.Missing}}", {})).toBe("hi {{Nope.Missing}}");
+  });
+  it("replaces a token padded with inner whitespace (RSL-17)", () => {
+    expect(replaceTokens("hi {{ Client.Company }}", { "Client.Company": "Acme" })).toBe("hi Acme");
+  });
+});
+
+describe("findUnreplacedTokens (RSL-17 send-time safety net)", () => {
+  it("flags a whitespace-padded placeholder the renderer could not fill", () => {
+    // The guard must share the replacer's token grammar; otherwise {{ spaced }} ships unflagged.
+    const blocks = replaceTokensInBlocks(parseMsa("Prepared for {{ Client.Company }}."), {});
+    expect(findUnreplacedTokens(blocks)).toContain("Client.Company");
   });
 });
