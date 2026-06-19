@@ -1,5 +1,50 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-19 — Wave 8: Sid's re-verification follow-ups (RSL-27..33) SHIPPED to prod
+
+Sid re-verified the completed 21-issue audit at HEAD `05342ed` and filed **7 new issues** (RSL-27..33):
+3 "residuals" (the same bug class the audit already fixed, surviving in a sibling code path the original
+patch didn't sweep) + 4 new-feature bugs (from `05342ed` discounts/decline + `8359612` LastName-optional).
+All fixed TDD-style and **deployed**: branch `audit/wave8-rsl-27-33`, three themed commits — `69fe9d3`
+(exactly-once side effects), `fcae3e9` (money/CRM), `d088737` (legal-text + UI tests) — ff-merged to `main`
+(`05342ed..d088737`), Vercel git deploy `9lmckinns` (`dpl_6bjwp5Fp…`) READY → proposals.rsla.io (landing 200,
+dashboard/docs/health 307, bad-token document route 404). **264 tests** (+63), tsc + `next build` + eslint(src)
+clean; no schema migration. Plan: `~/.claude/plans/create-a-plan-to-warm-kay.md`.
+
+- **RSL-27 (High) — client receipt durable.** `applyPaidState` now enqueues the client receipt
+  unconditionally and resolves the payer INSIDE the `SEND_EMAIL` job (`resolvePartyByRole`), so a transient
+  payer lookup can't strand it (no payer = clean no-op; a throw retries via the queue). `paymentState.ts` + `jobRunner.ts`.
+- **RSL-28 — webhook first-send idempotency.** `payment_failed_client` / `payment_link` first-sends carry a
+  deterministic `emailkey-<event.id>-<template>` Resend key (a reaper re-run reuses it → no double-deliver);
+  `sendTemplateEmail` gained an optional `idempotencyKey`.
+- **RSL-29 — CRM monthly fee.** `jobRunner` derives the monthly fee via the shared `monthlyRecurringCents`
+  util (the RSL-18 source of truth) — quarterly/annual retainers + recurring add-ons normalize instead of $0.
+- **RSL-30 — Stripe $0.50 floor.** `validatePaymentConfigForSend` enumerates every charged amount across all
+  selectable combos (each tier's first charged line incl. the deposit, recurring, flat lines, add-ons;
+  `futureItems` excluded) and blocks sub-50c at authoring; `buildLineItems` throws as a backstop. `STRIPE_MIN_CHARGE_CENTS`.
+- **RSL-31 — MSA legal-text.** The blank-surname gap-collapse is scoped to the single party-line run
+  (`First , Company`), never document-wide; attorney text stays byte-identical (surname-present unchanged).
+  `pdfSmoke` now renders a blank-surname variant.
+- **RSL-32 — decline exactly-once.** `declineProposal` claims via a `declinedAt`-null guarded `updateMany` +
+  returns `firstDecline`; the route emails `declined_admin` only on the first decline; the post-commit log is
+  wrapped in `safeLogEvent`. Client `handleDecline` gained a `catch` + branches on `data.code` (extracted pure
+  `declineOutcome`).
+- **RSL-33 — UI test coverage.** jsdom + RTL harness (per-file `@vitest-environment jsdom` opt-in; node stays
+  default). Component tests for decline routing, `MoneyFields` discount inputs, `DiscountNote`/`FlatPricing`;
+  struck-price `aria-label` (a11y); `readDiscount` via `inferFlatPricingFromImport`.
+
+**Rehearsal (Stripe test-mode, local dev against prod DB).** Verified LIVE: **RSL-32** — a double-submitted
+decline produced exactly one `PARTY_DECLINED` + one `declined_admin` email (Resend SENT); the 2nd submit
+returned `code:declined`. **RSL-27 + RSL-29** — fired a real HMAC-signed `checkout.session.completed` at the
+webhook → PAID + `Payment` row + **both receipts DELIVERED** (the client receipt resolved-in-job to the client
+inbox) + `NOTION_SYNCED` (quarterly $300/qtr → $100/mo). `[TEST]` rows cleaned up (cascade); dashboard/DB clean.
+**Limitation:** the literal Stripe Checkout UI couldn't be driven locally — the local `BLOB_READ_WRITE_TOKEN`
+can't write to the prod Blob store, so *signing* fails locally (Blob is prod-only by design). Worked around by
+driving the webhook directly (the identical post-Checkout code path; the only un-exercised surface is Stripe's
+hosted card page, which holds no wave-8 logic). The full sign→checkout UI walk on a valid-Blob env stays on the
+ROADMAP rehearsal item. **Linear:** RSL-29 marked Done; the other six are pending (permission gate on writing
+others' tickets — awaiting Rahul's OK).
+
 ## 2026-06-19 — Decline confirmation + Stripe product naming + per-line discounts (SHIPPED to prod)
 
 Three features Rahul requested, all touching the signing / money path. Built, self-audited, and

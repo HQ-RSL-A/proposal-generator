@@ -48,6 +48,13 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       **label as the product name** (no proposal-title suffix) and **charges the net discounted
       amount** on a proposal carrying a per-line discount, and exercise the **two-stage decline
       confirmation** on a separate test row. See LOG 2026-06-19.
+      **PARTIAL 2026-06-19 (wave 8 rehearsal):** decline exactly-once verified live (one
+      `PARTY_DECLINED` + one `declined_admin`); the paid pipeline verified by firing a real
+      signed `checkout.session.completed` at the webhook → PAID + both receipts DELIVERED +
+      `NOTION_SYNCED` ($300/qtr → $100/mo). **Still open:** the literal sign → Stripe Checkout UI
+      walk — blocked locally because the local `BLOB_READ_WRITE_TOKEN` can't write to the prod Blob
+      store (signing needs Blob). Finish on a valid-Blob env (pull prod Blob token, or run the
+      hosted-checkout walk in Stripe test mode on a preview deploy). See LOG 2026-06-19 (wave 8).
 
 ## Payments: add-ons + deposit (added 2026-06-13)
 
