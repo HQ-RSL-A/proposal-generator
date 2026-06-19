@@ -1,10 +1,11 @@
 # LOG.md — proposalGenerator
 
-## 2026-06-19 — Decline confirmation + Stripe product naming + per-line discounts (built, NOT deployed)
+## 2026-06-19 — Decline confirmation + Stripe product naming + per-line discounts (SHIPPED to prod)
 
-Three features Rahul requested, all touching the signing / money path. Built + verified locally,
-**not committed, not deployed** (awaiting his go-ahead). Plan:
-`~/.claude/plans/parsed-giggling-graham.md`.
+Three features Rahul requested, all touching the signing / money path. Built, self-audited, and
+**deployed to prod 2026-06-19**: committed `05342ed`, pushed to `main` (`07e972d..05342ed`), Vercel
+git deploy `nzs7n1x01` READY and serving proposals.rsla.io (landing 200, sign-in 200, dashboard/docs
+307 auth-gated, unauthed `/api/.../pdf` 401). Plan: `~/.claude/plans/parsed-giggling-graham.md`.
 
 - **Decline confirmation (Feature 1).** A real signer once declined by accident when he meant to go
   back. The decline dialog (`signingExperience.tsx`) is now two-stage: pick a reason -> **Continue**

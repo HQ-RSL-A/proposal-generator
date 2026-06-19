@@ -28,7 +28,10 @@ Resend (+svix webhooks) · Notion API (raw fetch) · Vitest.
    signature row, remaining-signer count; persists `selectedTierId` + `selectedAddOnIds`; last
    signer flips status → SIGNED and (unless sign-only) gets the Stripe Checkout URL built by
    `effectiveCheckout` (base tier/flat + selected add-ons; inline `price_data`; subscription
-   mode when recurring present; ACH supported; `idempotencyKey` per proposal+generation).
+   mode when recurring present; ACH supported; `idempotencyKey` per proposal+generation). Each
+   Stripe line's product **name is the line label verbatim** (the name typed in the form, no
+   proposal-title suffix); the proposal title rides in the session / subscription / payment-intent
+   `metadata` instead. Built by the pure, tested `buildLineItems` in `stripe.ts`.
 5. Webhook `checkout.session.completed`/`async_payment_succeeded` → `applyPaidState`
    (guarded) → Payment row, receipts, Notion CRM update, Stripe customer metadata
    (`proposal_url`, `signed_pdf`, `agreement_version`, `content_hash` — MSA §11 chargeback
@@ -55,9 +58,28 @@ no schema column of their own):
 
 **`effectiveCheckout(config, tierId, addOnIds)`** (`src/lib/types.ts`) is the charge resolver
 that applies all of this. **`effectiveLineItems` is left untouched** and still returns the full
-base amounts — the Notion CRM sync uses it so it records full contract value (base + add-ons),
-never the deposit. The deposit payment schedule is communicated via `computeDepositSchedule`
+base amounts — the Notion CRM sync uses it so it records full contract value (base + add-ons, net
+of any discount, since `amountCents` is the net), never the deposit. The deposit payment schedule is communicated via `computeDepositSchedule`
 (shown on the proposal, PDF, the `/paid` screen, and the receipt). All documented on `/docs`.
+
+## Discounts
+
+Any charged line (flat one-time/recurring, a tier's one-time/recurring, each add-on; plus FutureItems
+for display) can carry an optional `discount: { amountCents, reason }` (`Discount` in
+`src/lib/types.ts`). **The line's `amountCents` is ALWAYS the NET (post-discount) charged amount** —
+the existing source of truth — so `effectiveCheckout`, Stripe `unit_amount`, the deposit % (taken on
+the net one-time), and the Notion contract value are all **unchanged**. The discount is additive
+metadata: the original is derived as `amountCents + discount.amountCents` (`originalCents` /
+`discountDisplay` in `currency.ts`). In the form you turn on "Apply a discount" and enter the **list
+price + a fixed-$ discount + a reason**; the app stores the net and shows the client "was -> now
+(reason)" on tier cards, add-on rows, future-phase rows, and a **flat-pricing block** that renders
+only when a flat line is discounted (flat prices otherwise live in free-text copy). Web + PDF render
+identically (shared `discountDisplay`). Rules: fixed-$ only for v1 (percent is a trivial follow-up);
+a discount on a recurring line is an ongoing reduced rate ("first N cycles" = Stripe-coupon territory,
+out of scope); **no Stripe Coupons** (charge the net directly, like the deposit). Validation requires
+a positive discount + non-empty reason, enforced by `paymentConfigSchema` at save AND send. Importable
+via `discount: { amount, reason }` on `Investment.Structure` tiers / `Investment.AddOns` (price = list),
+or the internal flat shape's `discount: { amountCents, reason }` (amountCents = net).
 
 ## Track Record
 
