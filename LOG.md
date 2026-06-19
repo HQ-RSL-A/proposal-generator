@@ -28,11 +28,17 @@ pre-push: **201 tests**, `tsc`, `next build`, `eslint src` (0 errors) all clean.
 RSL-19 moved to Done on this deploy; RSL-12/RSL-20 carry follow-up comments noting the refined
 behavior.
 
-**Next (deferred, per Rahul — now that it's deployed):** the Stripe test-mode rehearsal + full e2e
-rehearsal still stand before relying on it for a real send (Wave 4's money-path is live but not yet
-exercised e2e). NB: bare `eslint` reports ~23k problems from build artifacts in the untracked
-`.claude/worktrees/dashboard-upgrade/.next/` leftover worktree — unrelated noise; `eslint src` is the
-real gate (consider ignoring `**/.next/` or removing the stale worktree).
+**Repo housekeeping (done this session):** removed the stale 1.2GB `.claude/worktrees/dashboard-upgrade`
+worktree (verified fully merged + clean first), then fixed the bare-`eslint` noise at its root — the
+config's root-anchored `.next/**` missed nested build output, so added `**/.next/**`, `.claude/**`, and
+the vendored `docs/mockups/**` to `eslint.config.mjs` ignores (commit `55bb0d0`); bare `eslint` is now
+0 errors, matching `eslint src`. Deleted stale merged branches `worktree-dashboard-upgrade`
+(local+remote) and `fix-future-item-currency` (local); **kept `audit/remediation`** (local+`origin`) as
+the audit record — delete once prod is proven stable.
+
+**Next (deferred, per Rahul):** the **Stripe test-mode rehearsal + full e2e rehearsal** are the only
+open item — run before the next real send (Wave 4's money-path is live but not yet exercised e2e). See
+ROADMAP.
 
 ## 2026-06-17 — Security/correctness audit remediation (Sid's RSL-6..26) — IN PROGRESS
 

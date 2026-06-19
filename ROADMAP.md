@@ -37,6 +37,14 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       customer metadata). The live webhook subscribes `invoice.paid` at the Stripe swap.
       Plan: [`docs/plans/transactionReceipts.md`](docs/plans/transactionReceipts.md).
 
+- [ ] **Post-audit money-path rehearsal (before the next real send).** Sid's 2026-06-17/18 security
+      audit (RSL-6..26, all shipped + live) rewrote parts of the live money path — exactly-once
+      webhook + durable receipt (RSL-6/8), checkout idempotency (RSL-7), payer-token continuity
+      (RSL-14), queue/cron resilience (RSL-13/16). All unit-tested + deployed, but NOT yet exercised
+      end-to-end. Run a Stripe **test-mode** sign->checkout->pay on a `[TEST]` fake-company proposal,
+      then the full e2e rehearsal (`e2eSeed` -> sign drawn+typed -> pay -> executed PDF + cert via
+      `pdfSmoke` -> 14 emails via `emailPreview` -> Notion fake co -> dashboard). See LOG 2026-06-18.
+
 ## Payments: add-ons + deposit (added 2026-06-13)
 
 - [x] **Optional add-ons.** DONE 2026-06-13 (built + verified; pending commit/deploy). Global

@@ -87,11 +87,13 @@ Read frozen-first via `frozenTrackRecord(proposal)` (`signingService.ts`). Impor
   server actions call `requireUser`/`requireAdmin`; API routes call `getActiveApiUser` (returns
   null → 401) — all re-read the live `User` row + `active` flag, so deactivating/deleting a user
   revokes access immediately despite the ~30-day JWT. Each admin RSC page guards itself (the
-  `(admin)` layout does NOT gate child fetches). The party utilities `remindParty`,
-  `getFreshSigningLink`, `updatePartyEmail` are **ADMIN-only**. `middleware.ts` is a **UX-only
-  cookie-presence** fast-path, NOT JWT validation (auth.ts pulls Prisma → not Edge-safe) — never
-  rely on it for authorization; the guards above are the real gate. (Wave-6 audit hardening,
-  RSL-11/12/26.)
+  `(admin)` layout does NOT gate child fetches). Of the party utilities, `getFreshSigningLink`
+  (copy-link — returns a usable signing URL) and `updatePartyEmail` (repoints the signer) are
+  **ADMIN-only**; `remindParty` is **MEMBER-allowed** (it only re-emails the existing signer, so it
+  can't change who signs). `middleware.ts` is a **UX-only cookie-presence** fast-path, NOT JWT
+  validation (auth.ts pulls Prisma → not Edge-safe) — never rely on it for authorization; the guards
+  above are the real gate. (Wave-6 audit hardening RSL-11/12/26; remind relaxed to MEMBER in the
+  RSL-12 refinement.)
 
 ## Copy rules
 
@@ -121,6 +123,9 @@ outcome-screen copy is shared in `src/lib/outcomeCopy.ts` and keyed to payment S
   `Signature.signerTitle/signerCompany`, migration 0003); shown as "Name / Title, Company"
   in signature blocks and the certificate. Admin pre-applied = "Managing Member, RSL/A LLC".
 - `status`: DRAFT → SENT → VIEWED → PARTIALLY_SIGNED → SIGNED | DECLINED | EXPIRED | VOIDED
+- A party **decline** terminates SENT / VIEWED / **PARTIALLY_SIGNED** → DECLINED (committed
+  signatures preserved as a record; every party must sign for the contract to execute). A fully
+  SIGNED proposal is never declined — it can only be VOIDED. (RSL-20 refinement.)
 - `paymentStatus`: NOT_REQUIRED | AWAITING | PROCESSING (ACH in transit) | PAID | FAILED |
   SESSION_EXPIRED
 - Revise = new Proposal row (`parentId`, versionNumber+1); old one voided + tokens expired.
