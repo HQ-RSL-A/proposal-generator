@@ -362,7 +362,7 @@ export async function declineProposal(input: {
   reason: string | null;
   ipAddress: string | null;
   userAgent: string | null;
-}): Promise<{ proposalId: string }> {
+}): Promise<{ proposalId: string; firstDecline: boolean }> {
   const gate = await gateToken(input.rawToken);
   if (!gate.ok) {
     throw new SigningError(
@@ -379,23 +379,31 @@ export async function declineProposal(input: {
   // party's decline ends it (RSL-20). Committed signatures are preserved (we never touch
   // Signature rows) as a record; they're just no longer part of an executed contract.
   // A fully SIGNED (executed) proposal is excluded — that one can only be VOIDED.
+  let firstDecline = false;
   await prisma.$transaction(async (tx) => {
-    await tx.party.update({
-      where: { id: party.id },
+    // Guarded claim: only the first decline flips declinedAt, so a double-submit / retry
+    // is a no-op here and below — the same exactly-once pattern as the signature claim (RSL-32).
+    const claimed = await tx.party.updateMany({
+      where: { id: party.id, declinedAt: null },
       data: { declinedAt: now, declinedReason: input.reason },
     });
+    firstDecline = claimed.count > 0;
     await tx.proposal.updateMany({
       where: { id: party.proposalId, status: { in: ["SENT", "VIEWED", "PARTIALLY_SIGNED"] } },
       data: { status: "DECLINED" },
     });
   });
-  await logEvent({
-    proposalId: party.proposalId,
-    partyId: party.id,
-    eventType: "PARTY_DECLINED",
-    metadata: { reason: input.reason, ipAddress: input.ipAddress, userAgent: input.userAgent },
-  });
-  return { proposalId: party.proposalId };
+  // Side effects fire only on the first decline; a repeat must not re-log or (via the route)
+  // re-email. Post-commit, so best-effort — a logEvent throw can't reject a committed decline.
+  if (firstDecline) {
+    await safeLogEvent({
+      proposalId: party.proposalId,
+      partyId: party.id,
+      eventType: "PARTY_DECLINED",
+      metadata: { reason: input.reason, ipAddress: input.ipAddress, userAgent: input.userAgent },
+    });
+  }
+  return { proposalId: party.proposalId, firstDecline };
 }
 
 export function frozenPaymentConfig(proposal: Proposal): PaymentConfig {

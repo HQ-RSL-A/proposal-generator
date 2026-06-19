@@ -26,7 +26,21 @@ async function executeJob(job: PendingJob): Promise<void> {
 
     case "SEND_EMAIL": {
       const templateId = payload.templateId as EmailTemplateId;
-      const partyId = (payload.partyId as string | null) ?? null;
+      let partyId = (payload.partyId as string | null) ?? null;
+      // RSL-27: resolve the payer at execution time when asked, so a transient payer lookup
+      // can't strand the client receipt — the durable queue retries it instead of the read
+      // silently aborting applyPaidState's post-200 after() block.
+      if (!partyId && payload.resolvePartyByRole === "CLIENT_SIGNER_PAYER") {
+        const payer = await prisma.party.findFirst({
+          where: {
+            proposalId: (payload.proposalId as string) ?? job.proposalId!,
+            role: "CLIENT_SIGNER",
+            payer: true,
+          },
+        });
+        if (!payer) return; // no payer to receipt (sign-only / admin-pays) — clean no-op
+        partyId = payer.id;
+      }
       const context = ((payload.context as Record<string, unknown>) ?? {}) as NonNullable<
         Parameters<typeof sendTemplateEmail>[3]
       >;
@@ -47,7 +61,8 @@ async function executeJob(job: PendingJob): Promise<void> {
         (payload.proposalId as string) ?? job.proposalId!,
         partyId,
         context,
-        payload.emailLogId as string | undefined
+        payload.emailLogId as string | undefined,
+        payload.idempotencyKey as string | undefined
       );
       if (!result.ok) throw new Error("Email send failed (will retry)");
       return;

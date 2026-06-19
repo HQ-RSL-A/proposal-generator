@@ -307,7 +307,8 @@ export async function sendTemplateEmail(
   proposalId: string,
   partyId: string | null,
   context: Parameters<typeof buildTemplate>[3] = {},
-  existingLogId?: string
+  existingLogId?: string,
+  idempotencyKey?: string
 ): Promise<{ ok: boolean; logId: string }> {
   const proposal = await prisma.proposal.findUniqueOrThrow({
     where: { id: proposalId },
@@ -353,7 +354,9 @@ export async function sendTemplateEmail(
         react: built.react,
         attachments: attachments.length > 0 ? attachments : undefined,
       },
-      { idempotencyKey: `emaillog-${log.id}` }
+      // A caller-supplied key (webhook first-sends, RSL-28) overrides the per-log default,
+      // so a reaper re-run of a first-send job reuses the same Resend key and can't double-send.
+      { idempotencyKey: idempotencyKey ?? `emaillog-${log.id}` }
     );
     if (result.error) throw new Error(result.error.message);
 

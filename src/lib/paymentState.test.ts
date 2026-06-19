@@ -28,7 +28,7 @@ vi.mock("@/lib/audit", () => ({ logEvent }));
 
 import type Stripe from "stripe";
 import { prismaMock } from "@/test/db";
-import { makeParty, makeProposal } from "@/test/factories";
+import { makeProposal } from "@/test/factories";
 import { applyPaidState, markWebhookProcessed, wasWebhookProcessed } from "@/lib/paymentState";
 
 const session = {
@@ -114,7 +114,6 @@ describe("applyPaidState — receipts are durable (RSL-8)", () => {
 
   it("enqueues admin + client receipts as SEND_EMAIL jobs, not inline sends", async () => {
     prismaMock.proposal.findUnique.mockResolvedValueOnce(makeProposal({ id: "p1" }));
-    prismaMock.party.findFirst.mockResolvedValueOnce(makeParty({ id: "payer1", payer: true }));
 
     await applyPaidState("p1", session);
     await runAfters();
@@ -126,7 +125,6 @@ describe("applyPaidState — receipts are durable (RSL-8)", () => {
   it("still enqueues both receipts when the deposit-note read throws", async () => {
     // This is the read that used to silently lose the receipt entirely.
     prismaMock.proposal.findUnique.mockRejectedValueOnce(new Error("transient read"));
-    prismaMock.party.findFirst.mockResolvedValueOnce(makeParty({ id: "payer1", payer: true }));
 
     await applyPaidState("p1", session);
     await runAfters();
@@ -140,14 +138,21 @@ describe("applyPaidState — receipts are durable (RSL-8)", () => {
     expect((adminCall![0].payload as { context: { depositNote?: string } }).context.depositNote).toBeUndefined();
   });
 
-  it("still enqueues the admin receipt even if the payer lookup throws", async () => {
+  it("enqueues the client receipt unconditionally, resolving the payer inside the job (RSL-27)", async () => {
     prismaMock.proposal.findUnique.mockResolvedValueOnce(makeProposal({ id: "p1" }));
-    prismaMock.party.findFirst.mockRejectedValueOnce(new Error("payer lookup failed"));
 
     await applyPaidState("p1", session);
-    await expect(runAfters()).rejects.toThrow("payer lookup failed");
+    await runAfters();
 
-    // Admin receipt was enqueued before the payer query, so it's durable.
-    expect(enqueuedTemplates()).toContain("payment_received_admin");
+    // The payer lookup moved into the durable SEND_EMAIL job, so a transient failure
+    // can no longer strand the client receipt (it used to gate the enqueue with `if (payer)`).
+    expect(prismaMock.party.findFirst).not.toHaveBeenCalled();
+    const clientCall = enqueueJob.mock.calls.find(
+      (c) => (c[0].payload as { templateId?: string }).templateId === "payment_received_client"
+    );
+    expect(clientCall).toBeDefined();
+    const payload = clientCall![0].payload as { resolvePartyByRole?: string; partyId?: string };
+    expect(payload.resolvePartyByRole).toBe("CLIENT_SIGNER_PAYER");
+    expect(payload.partyId).toBeUndefined();
   });
 });

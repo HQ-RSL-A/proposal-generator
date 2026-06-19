@@ -86,6 +86,9 @@ export async function POST(request: NextRequest) {
               partyId: payer.id,
               context: {},
               needsToken: true,
+              // RSL-28: a deterministic, event-derived Resend key so a reaper re-run of this
+              // first-send reuses it and can't double-deliver (a duplicate EmailLog row is harmless).
+              idempotencyKey: `emailkey-${event.id}-payment_failed_client`,
             },
           });
           await runJobNow(job.id);
@@ -122,6 +125,8 @@ export async function POST(request: NextRequest) {
                 partyId: payer.id,
                 context: {},
                 needsToken: true,
+                // RSL-28: deterministic Resend key — see the async_payment_failed handler above.
+                idempotencyKey: `emailkey-${event.id}-payment_link`,
               },
             });
             await runJobNow(job.id);

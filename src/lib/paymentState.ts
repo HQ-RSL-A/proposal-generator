@@ -172,8 +172,7 @@ export async function applyPaidState(
 
     const receiptContext = { amountCents: session.amount_total ?? undefined, depositNote };
 
-    // Admin receipt first — it needs no payer lookup, so it's enqueued (durable)
-    // even if the payer query below throws.
+    // Admin receipt (no party to resolve).
     enqueuedJobIds.push(
       (
         await enqueueJob({
@@ -189,25 +188,23 @@ export async function applyPaidState(
       ).id
     );
 
-    const payer = await prisma.party.findFirst({
-      where: { proposalId, role: "CLIENT_SIGNER", payer: true },
-    });
-    if (payer) {
-      enqueuedJobIds.push(
-        (
-          await enqueueJob({
-            jobType: "SEND_EMAIL",
+    // Client receipt: enqueued unconditionally. The payer is resolved inside the job
+    // (resolvePartyByRole) so a transient payer-lookup failure is retried by the queue
+    // instead of aborting this post-200 after() block and stranding the receipt (RSL-27).
+    enqueuedJobIds.push(
+      (
+        await enqueueJob({
+          jobType: "SEND_EMAIL",
+          proposalId,
+          payload: {
+            templateId: "payment_received_client",
             proposalId,
-            payload: {
-              templateId: "payment_received_client",
-              proposalId,
-              partyId: payer.id,
-              context: receiptContext,
-            },
-          })
-        ).id
-      );
-    }
+            resolvePartyByRole: "CLIENT_SIGNER_PAYER",
+            context: receiptContext,
+          },
+        })
+      ).id
+    );
 
     // Opportunistic immediate runs; the cron is the safety net for any that
     // fail, and one failed run must not block the others.

@@ -243,7 +243,7 @@ describe("declineProposal — a decline terminates the deal, even when partially
     prismaMock.$transaction.mockImplementation(
       ((cb: (tx: typeof prismaMock) => unknown) => cb(prismaMock)) as never
     );
-    prismaMock.party.update.mockResolvedValue({} as never);
+    prismaMock.party.updateMany.mockResolvedValue({ count: 1 } as never);
     prismaMock.proposal.updateMany.mockResolvedValue({
       count: ["SENT", "VIEWED", "PARTIALLY_SIGNED"].includes(status) ? 1 : 0,
     });
@@ -253,7 +253,7 @@ describe("declineProposal — a decline terminates the deal, even when partially
     programDecline("PARTIALLY_SIGNED");
     await declineProposal({ rawToken: "tok", reason: "changed mind", ipAddress: null, userAgent: null });
 
-    expect(prismaMock.party.update).toHaveBeenCalledOnce(); // the decline is recorded
+    expect(prismaMock.party.updateMany).toHaveBeenCalledOnce(); // the decline is recorded
     const call = prismaMock.proposal.updateMany.mock.calls[0][0] as {
       where: { status: unknown };
       data: { status: string };
@@ -281,9 +281,61 @@ describe("declineProposal — a decline terminates the deal, even when partially
     programDecline("SIGNED");
     await declineProposal({ rawToken: "tok", reason: null, ipAddress: null, userAgent: null });
 
-    expect(prismaMock.party.update).toHaveBeenCalledOnce(); // the decline is still recorded
+    expect(prismaMock.party.updateMany).toHaveBeenCalledOnce(); // the decline is still recorded
     const call = prismaMock.proposal.updateMany.mock.calls[0][0] as { where: { status: unknown } };
     // SIGNED is excluded, so the gated updateMany matches no rows and status is unchanged
     expect(call.where.status).toEqual({ in: ["SENT", "VIEWED", "PARTIALLY_SIGNED"] });
+  });
+});
+
+describe("declineProposal — exactly-once side effects (RSL-32)", () => {
+  function program(partyClaimCount: number) {
+    const proposal = makeProposal({ id: "p1", status: "SENT" });
+    const party = { ...makeParty({ id: "party1", proposalId: "p1", signedAt: null }), proposal };
+    gateToken.mockResolvedValue({ ok: true, party });
+    prismaMock.$transaction.mockImplementation(
+      ((cb: (tx: typeof prismaMock) => unknown) => cb(prismaMock)) as never
+    );
+    prismaMock.party.updateMany.mockResolvedValue({ count: partyClaimCount } as never);
+    prismaMock.proposal.updateMany.mockResolvedValue({ count: 1 } as never);
+  }
+
+  beforeEach(() => {
+    logEvent.mockClear();
+  });
+
+  it("guards the party decline with a declinedAt-null precondition", async () => {
+    program(1);
+    await declineProposal({ rawToken: "tok", reason: "x", ipAddress: null, userAgent: null });
+
+    const call = prismaMock.party.updateMany.mock.calls[0][0] as {
+      where: { id: string; declinedAt: unknown };
+    };
+    expect(call.where.declinedAt).toBeNull();
+  });
+
+  it("returns firstDecline=true and logs PARTY_DECLINED on the first decline", async () => {
+    program(1);
+    const result = await declineProposal({ rawToken: "tok", reason: "x", ipAddress: null, userAgent: null });
+
+    expect(result.firstDecline).toBe(true);
+    expect(logEvent).toHaveBeenCalledWith(expect.objectContaining({ eventType: "PARTY_DECLINED" }));
+  });
+
+  it("returns firstDecline=false and skips the audit log on a repeat decline", async () => {
+    program(0);
+    const result = await declineProposal({ rawToken: "tok", reason: "x", ipAddress: null, userAgent: null });
+
+    expect(result.firstDecline).toBe(false);
+    expect(logEvent).not.toHaveBeenCalledWith(expect.objectContaining({ eventType: "PARTY_DECLINED" }));
+  });
+
+  it("does not throw when the post-commit audit write fails (safeLogEvent)", async () => {
+    program(1);
+    logEvent.mockRejectedValueOnce(new Error("audit down"));
+
+    await expect(
+      declineProposal({ rawToken: "tok", reason: "x", ipAddress: null, userAgent: null })
+    ).resolves.toMatchObject({ firstDecline: true });
   });
 });

@@ -26,22 +26,26 @@ export async function POST(
   }
 
   try {
-    const { proposalId } = await declineProposal({
+    const { proposalId, firstDecline } = await declineProposal({
       rawToken: token,
       reason: parsed.reason,
       ipAddress: ip,
       userAgent: getUserAgent(request.headers),
     });
-    after(async () => {
-      const decliner = await prisma.party.findFirst({
-        where: { proposalId, declinedAt: { not: null } },
-        orderBy: { declinedAt: "desc" },
+    // Only the first decline notifies the admin — a double-submit re-runs this route but
+    // declineProposal reports firstDecline=false, so no duplicate email goes out (RSL-32).
+    if (firstDecline) {
+      after(async () => {
+        const decliner = await prisma.party.findFirst({
+          where: { proposalId, declinedAt: { not: null } },
+          orderBy: { declinedAt: "desc" },
+        });
+        await sendTemplateEmail("declined_admin", proposalId, null, {
+          signedByName: decliner?.name,
+          declinedReason: parsed.reason,
+        });
       });
-      await sendTemplateEmail("declined_admin", proposalId, null, {
-        signedByName: decliner?.name,
-        declinedReason: parsed.reason,
-      });
-    });
+    }
     return NextResponse.json({ ok: true, redirectUrl: `/sign/${token}/declined` });
   } catch (error) {
     if (error instanceof SigningError) {

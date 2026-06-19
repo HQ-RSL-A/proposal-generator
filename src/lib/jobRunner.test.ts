@@ -11,7 +11,9 @@ const { claimJobs, completeJob, failJob, reapStuckJobs } = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/jobs", () => ({ claimJobs, completeJob, failJob, reapStuckJobs }));
 
-const { sendTemplateEmail } = vi.hoisted(() => ({ sendTemplateEmail: vi.fn(async () => ({ ok: true })) }));
+const { sendTemplateEmail } = vi.hoisted(() => ({
+  sendTemplateEmail: vi.fn(async (..._args: unknown[]) => ({ ok: true })),
+}));
 vi.mock("@/lib/email", () => ({ sendTemplateEmail }));
 
 const { rotatePartyToken } = vi.hoisted(() => ({ rotatePartyToken: vi.fn(async () => "rawtok") }));
@@ -141,6 +143,76 @@ describe("SEND_EMAIL retry (RSL-14 payer-token guard)", () => {
     await processDueJobs(10);
 
     expect(rotatePartyToken).toHaveBeenCalledWith("cosigner");
+  });
+});
+
+describe("SEND_EMAIL deferred payer resolution (RSL-27)", () => {
+  const payerReceiptJob = () =>
+    makePendingJob({
+      jobType: "SEND_EMAIL",
+      proposalId: "p1",
+      payload: {
+        templateId: "payment_received_client",
+        proposalId: "p1",
+        resolvePartyByRole: "CLIENT_SIGNER_PAYER",
+        context: {},
+      },
+    });
+
+  it("resolves the payer at execution time and sends the client receipt", async () => {
+    claimJobs.mockResolvedValue([payerReceiptJob()]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    prismaMock.party.findFirst.mockResolvedValue({ id: "payer1", payer: true } as any);
+
+    await processDueJobs(10);
+
+    expect(prismaMock.party.findFirst).toHaveBeenCalled();
+    const call = sendTemplateEmail.mock.calls[0];
+    expect(call[0]).toBe("payment_received_client");
+    expect(call[2]).toBe("payer1"); // payer resolved into partyId
+    expect(completeJob).toHaveBeenCalled();
+    expect(failJob).not.toHaveBeenCalled();
+  });
+
+  it("is a clean no-op (job completes, no send) when no payer party exists", async () => {
+    claimJobs.mockResolvedValue([payerReceiptJob()]);
+    prismaMock.party.findFirst.mockResolvedValue(null);
+
+    await processDueJobs(10);
+
+    expect(sendTemplateEmail).not.toHaveBeenCalled();
+    expect(completeJob).toHaveBeenCalledTimes(1);
+    expect(failJob).not.toHaveBeenCalled();
+  });
+
+  it("fails the job (queue retries) when payer resolution throws", async () => {
+    claimJobs.mockResolvedValue([payerReceiptJob()]);
+    prismaMock.party.findFirst.mockRejectedValue(new Error("db down"));
+
+    await processDueJobs(10);
+
+    expect(sendTemplateEmail).not.toHaveBeenCalled();
+    expect(failJob).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("SEND_EMAIL idempotency key passthrough (RSL-28)", () => {
+  it("forwards payload.idempotencyKey to sendTemplateEmail", async () => {
+    const job = makePendingJob({
+      jobType: "SEND_EMAIL",
+      proposalId: "p1",
+      payload: {
+        templateId: "payment_failed_client",
+        partyId: "payer1",
+        proposalId: "p1",
+        idempotencyKey: "emailkey-evt_x-payment_failed_client",
+      },
+    });
+    claimJobs.mockResolvedValue([job]);
+
+    await processDueJobs(10);
+
+    expect(sendTemplateEmail.mock.calls[0][5]).toBe("emailkey-evt_x-payment_failed_client");
   });
 });
 
