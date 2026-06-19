@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TOKEN_KEYS, type PaymentConfig, type TokensJson } from "@/lib/types";
-import { displayMatchesCents } from "@/lib/currency";
+import { displayMatchesCents, formatCents } from "@/lib/currency";
+import { STRIPE_MIN_CHARGE_CENTS } from "@/lib/constants";
 import { MAX_CASE_STUDIES } from "@/lib/trackRecord";
 import { humanizeZodError } from "@/lib/zodErrors";
 
@@ -196,8 +197,48 @@ export const paymentConfigSchema = z
   });
 
 /**
- * Send-time validation: every display string must match its structured cents.
- * Catches the "edited the display but not the amount" class of mistakes.
+ * Every amount that can become a charged Stripe line across all selectable combinations: each
+ * tier's first charged line (the deposit `round(pct x oneTime / 100)` when a deposit is set,
+ * else the one-time) plus its recurring, the flat one-time/recurring, and each individually
+ * selectable add-on. `futureItems` are display-only (never charged) and excluded. Mirrors
+ * effectiveCheckout's deposit math so the floor agrees with the real charge (RSL-30).
+ */
+function chargedAmountsForFloor(config: PaymentConfig): { label: string; amountCents: number }[] {
+  const out: { label: string; amountCents: number }[] = [];
+  const depositPct = config.deposit?.depositPercent ?? null;
+
+  const addBase = (
+    oneTime: { amountCents: number; label: string } | null,
+    recurring: { amountCents: number; label: string } | null
+  ) => {
+    if (oneTime) {
+      if (depositPct != null && oneTime.amountCents > 0) {
+        out.push({
+          label: `${depositPct}% deposit on "${oneTime.label}"`,
+          amountCents: Math.round((oneTime.amountCents * depositPct) / 100),
+        });
+      } else {
+        out.push({ label: `"${oneTime.label}"`, amountCents: oneTime.amountCents });
+      }
+    }
+    if (recurring) out.push({ label: `"${recurring.label}"`, amountCents: recurring.amountCents });
+  };
+
+  if (config.tiers && config.tiers.length > 0) {
+    for (const tier of config.tiers) addBase(tier.oneTime, tier.recurring);
+  } else {
+    addBase(config.oneTime, config.recurring);
+  }
+  for (const addOn of config.addOns ?? []) {
+    out.push({ label: `"${addOn.label}"`, amountCents: addOn.amountCents });
+  }
+  return out;
+}
+
+/**
+ * Send-time validation: every display string must match its structured cents, and every charged
+ * line must clear Stripe's $0.50 minimum. Catches "edited the display but not the amount" and
+ * "a discount/deposit drove a charge below what Stripe will accept" before the proposal goes out.
  */
 export function validatePaymentConfigForSend(config: PaymentConfig): string[] {
   const errors: string[] = [];
@@ -220,6 +261,13 @@ export function validatePaymentConfigForSend(config: PaymentConfig): string[] {
   }
   for (const item of config.futureItems ?? []) {
     check(item);
+  }
+  for (const { label, amountCents } of chargedAmountsForFloor(config)) {
+    if (amountCents < STRIPE_MIN_CHARGE_CENTS) {
+      errors.push(
+        `${label} charges ${formatCents(amountCents)}, below the ${formatCents(STRIPE_MIN_CHARGE_CENTS)} minimum a card charge allows. Raise the amount or drop the discount/deposit.`
+      );
+    }
   }
   return errors;
 }

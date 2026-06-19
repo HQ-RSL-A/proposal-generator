@@ -7,6 +7,7 @@ import { updateCrmOnPaid, noteOnSigned } from "@/lib/notion";
 import { attachCustomerMetadata } from "@/lib/stripe";
 import { logEvent } from "@/lib/audit";
 import { effectiveLineItems, type PaymentConfig, type TokensJson } from "@/lib/types";
+import { monthlyRecurringCents } from "@/lib/dashboardMetrics";
 import type { PendingJob } from "@/generated/prisma/client";
 
 async function executeJob(job: PendingJob): Promise<void> {
@@ -110,12 +111,11 @@ async function executeJob(job: PendingJob): Promise<void> {
         const addOnOneTimeCents = selectedAddOns
           .filter((a) => a.intervalMonths === null)
           .reduce((sum, a) => sum + a.amountCents, 0);
-        const addOnMonthlyCents = selectedAddOns
-          .filter((a) => a.intervalMonths === 1)
-          .reduce((sum, a) => sum + a.amountCents, 0);
         const oneTimeTotal = (oneTime?.amountCents ?? 0) + addOnOneTimeCents;
-        const monthlyBase = recurring && recurring.intervalMonths === 1 ? recurring.amountCents : 0;
-        const monthlyTotal = monthlyBase + addOnMonthlyCents;
+        // Period-normalized monthly fee via the shared util (RSL-29 — the RSL-18 dashboard fix's
+        // single source of truth), so a quarterly/annual retainer or recurring add-on is never
+        // dropped to $0 in the CRM record.
+        const monthlyTotal = monthlyRecurringCents(recurring, selectedAddOns);
         const { pageId } = await updateCrmOnPaid({
           company: tokens["Client.Company"],
           monthlyFeeCents: monthlyTotal > 0 ? monthlyTotal : null,

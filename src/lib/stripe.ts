@@ -1,5 +1,6 @@
 import Stripe from "stripe";
 import type { EffectiveCheckout, PaymentConfig } from "@/lib/types";
+import { STRIPE_MIN_CHARGE_CENTS } from "@/lib/constants";
 
 let stripeClient: Stripe | null = null;
 
@@ -28,15 +29,24 @@ export function buildLineItems(
   checkout: EffectiveCheckout,
   currency: PaymentConfig["currency"]
 ): Stripe.Checkout.SessionCreateParams.LineItem[] {
-  return checkout.lineItems.map((li) => ({
-    quantity: 1,
-    price_data: {
-      currency,
-      unit_amount: li.amountCents,
-      ...(li.intervalMonths !== null ? { recurring: intervalMap[li.intervalMonths] } : {}),
-      product_data: { name: li.label },
-    },
-  }));
+  return checkout.lineItems.map((li) => {
+    // Backstop for any frozen config sent before the send-time floor (RSL-30): never hand Stripe
+    // a sub-50c line — it would reject the whole session on the client's post-signature pay attempt.
+    if (li.amountCents < STRIPE_MIN_CHARGE_CENTS) {
+      throw new Error(
+        `Refusing to build a Stripe line below the $0.50 minimum: "${li.label}" is ${li.amountCents}c (RSL-30)`
+      );
+    }
+    return {
+      quantity: 1,
+      price_data: {
+        currency,
+        unit_amount: li.amountCents,
+        ...(li.intervalMonths !== null ? { recurring: intervalMap[li.intervalMonths] } : {}),
+        product_data: { name: li.label },
+      },
+    };
+  });
 }
 
 /** Find-or-create the Stripe customer for a payer, keyed by email. */

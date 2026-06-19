@@ -288,6 +288,91 @@ describe("paymentConfigSchema discounts", () => {
   });
 });
 
+describe("validatePaymentConfigForSend Stripe minimum floor (RSL-30)", () => {
+  it("blocks a deposit percent that drops the deposit below 50c", async () => {
+    const config = {
+      ...flatConfig,
+      oneTime: { amountCents: 900, displayString: "$9", label: "Build" },
+      recurring: null,
+      deposit: { depositPercent: 5 }, // 5% of $9 = 45c < 50c
+    } as PaymentConfig;
+    const errors = validatePaymentConfigForSend(config);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("minimum");
+    expect(errors[0]).toContain("Build");
+  });
+
+  it("blocks a discounted line whose net is below 50c", async () => {
+    const config = {
+      ...flatConfig,
+      oneTime: {
+        amountCents: 40,
+        displayString: "$0.40",
+        label: "Tiny build",
+        discount: { amountCents: 9960, reason: "Loyalty" },
+      },
+      recurring: null,
+    } as PaymentConfig;
+    const errors = validatePaymentConfigForSend(config);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("Tiny build");
+  });
+
+  it("blocks a charged add-on below 50c", async () => {
+    const config = {
+      ...flatConfig,
+      oneTime: null,
+      recurring: null,
+      addOns: [{ id: "tiny", label: "Tiny", displayString: "$0.40", amountCents: 40, intervalMonths: null }],
+    } as PaymentConfig;
+    const errors = validatePaymentConfigForSend(config);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("Tiny");
+  });
+
+  it("does NOT block a sub-50c future item (never charged)", async () => {
+    const config = {
+      ...flatConfig,
+      futureItems: [
+        { id: "f", label: "Future", displayString: "$0.25", amountCents: 25, intervalMonths: null, startsNote: "later" },
+      ],
+    } as PaymentConfig;
+    expect(validatePaymentConfigForSend(config)).toEqual([]);
+  });
+
+  it("blocks each tier's deposit-derived first line independently", async () => {
+    const config = {
+      currency: "usd",
+      paymentMethods: ["card"],
+      oneTime: null,
+      recurring: null,
+      preferAch: false,
+      deposit: { depositPercent: 5 },
+      tiers: [
+        { id: "a", label: "Starter", recommended: false, includes: [], oneTime: { amountCents: 900, displayString: "$9", label: "A build" }, recurring: null },
+        { id: "b", label: "Pro", recommended: true, includes: [], oneTime: { amountCents: 400000, displayString: "$4,000", label: "B build" }, recurring: null },
+      ],
+    } as PaymentConfig;
+    const errors = validatePaymentConfigForSend(config);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("A build");
+  });
+
+  it("passes a valid config with a healthy deposit", async () => {
+    expect(validatePaymentConfigForSend({ ...flatConfig, deposit: { depositPercent: 50 } } as PaymentConfig)).toEqual([]);
+  });
+
+  it("passes a deposit that rounds to exactly 50c", async () => {
+    const config = {
+      ...flatConfig,
+      oneTime: { amountCents: 100, displayString: "$1", label: "Build" },
+      recurring: null,
+      deposit: { depositPercent: 50 }, // 50% of $1 = 50c, exactly at the floor
+    } as PaymentConfig;
+    expect(validatePaymentConfigForSend(config)).toEqual([]);
+  });
+});
+
 describe("trackRecordConfigSchema", () => {
   it("accepts an intro plus case studies with and without a URL", () => {
     const ok = {

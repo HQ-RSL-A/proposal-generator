@@ -31,6 +31,17 @@ describe("buildLineItems", () => {
     expect(pd.recurring).toBeUndefined();
   });
 
+  it("throws when a resolved line is below the Stripe $0.50 minimum (backstop, RSL-30)", () => {
+    const config: PaymentConfig = {
+      ...base,
+      oneTime: { amountCents: 900, displayString: "$9", label: "Build" },
+      recurring: null,
+      tiers: null,
+      deposit: { depositPercent: 5 }, // resolves to a 45c deposit line
+    };
+    expect(() => buildLineItems(effectiveCheckout(config, null, []), "usd")).toThrow(/0\.50|minimum/);
+  });
+
   it("maps recurring cadence (quarterly -> month x3)", () => {
     const config: PaymentConfig = {
       ...base,

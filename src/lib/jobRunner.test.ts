@@ -114,6 +114,89 @@ describe("NOTION_SYNC paid (RSL-15 idempotent append)", () => {
   });
 });
 
+describe("NOTION_SYNC paid monthly normalization (RSL-29)", () => {
+  const baseConfig = {
+    currency: "usd",
+    paymentMethods: ["card"],
+    preferAch: false,
+    oneTime: null,
+    recurring: null,
+    tiers: null,
+    addOns: [] as Record<string, unknown>[],
+  };
+
+  function runPaidSync(paymentConfig: Record<string, unknown>, selectedAddOnIds: string[] = []) {
+    const job = makePendingJob({
+      jobType: "NOTION_SYNC",
+      proposalId: "p1",
+      payload: { proposalId: "p1", kind: "paid" },
+    });
+    claimJobs.mockResolvedValue([job]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    prismaMock.auditEvent.findFirst.mockResolvedValueOnce(null as any);
+    prismaMock.proposal.findUniqueOrThrow.mockResolvedValue({
+      id: "p1",
+      frozenContent: { tokens: { "Client.Company": "Acme" }, paymentConfig },
+      tokens: {},
+      paymentConfig: {},
+      selectedTierId: null,
+      selectedAddOnIds,
+      stripeCustomerId: "cus_1",
+      documents: [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+    return processDueJobs(10);
+  }
+
+  it("reports $100/mo to the CRM for a quarterly retainer, not $0", async () => {
+    await runPaidSync({
+      ...baseConfig,
+      recurring: { amountCents: 30000, intervalMonths: 3, displayString: "$300", label: "Retainer" },
+    });
+    expect(updateCrmOnPaid).toHaveBeenCalledWith(expect.objectContaining({ monthlyFeeCents: 10000 }));
+  });
+
+  it("normalizes an annual retainer to a monthly figure", async () => {
+    await runPaidSync({
+      ...baseConfig,
+      recurring: { amountCents: 1200000, intervalMonths: 12, displayString: "$12,000", label: "Retainer" },
+    });
+    expect(updateCrmOnPaid).toHaveBeenCalledWith(expect.objectContaining({ monthlyFeeCents: 100000 }));
+  });
+
+  it("normalizes a recurring quarterly add-on into the monthly fee", async () => {
+    await runPaidSync(
+      {
+        ...baseConfig,
+        addOns: [{ id: "a1", amountCents: 30000, intervalMonths: 3, displayString: "$300", label: "SEO" }],
+      },
+      ["a1"]
+    );
+    expect(updateCrmOnPaid).toHaveBeenCalledWith(expect.objectContaining({ monthlyFeeCents: 10000 }));
+  });
+
+  it("excludes a one-time add-on from the monthly fee but counts it in the one-time total", async () => {
+    await runPaidSync(
+      {
+        ...baseConfig,
+        addOns: [{ id: "a2", amountCents: 80000, intervalMonths: null, displayString: "$800", label: "Setup" }],
+      },
+      ["a2"]
+    );
+    expect(updateCrmOnPaid).toHaveBeenCalledWith(
+      expect.objectContaining({ monthlyFeeCents: null, oneTimeFeeCents: 80000 })
+    );
+  });
+
+  it("leaves a monthly retainer unchanged (regression guard)", async () => {
+    await runPaidSync({
+      ...baseConfig,
+      recurring: { amountCents: 49700, intervalMonths: 1, displayString: "$497", label: "Retainer" },
+    });
+    expect(updateCrmOnPaid).toHaveBeenCalledWith(expect.objectContaining({ monthlyFeeCents: 49700 }));
+  });
+});
+
 describe("SEND_EMAIL retry (RSL-14 payer-token guard)", () => {
   it("does not rotate the payer's token while their payment is in flight", async () => {
     const job = makePendingJob({
