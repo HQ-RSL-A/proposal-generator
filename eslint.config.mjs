@@ -12,10 +12,13 @@ const eslintConfig = defineConfig([
   },
   globalIgnores([
     ".next/**",
+    "**/.next/**", // nested .next (e.g. a leftover git worktree) — root-anchored ".next/**" misses these
     "out/**",
     "build/**",
     "next-env.d.ts",
     "src/generated/**",
+    ".claude/**", // Claude Code working dir (worktrees, plans) — never lint
+    "docs/mockups/**", // archived design exports (vendored), kept only so the .dc.html mockups render
   ]),
 ]);
 
