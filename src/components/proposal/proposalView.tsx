@@ -58,7 +58,10 @@ function DiscountNote({
   if (!d) return null;
   return (
     <span className={cn("block text-xs text-muted-foreground", align === "right" && "text-right")}>
-      <span className="line-through">{d.originalLabel}</span>{" "}
+      {/* The strike-through is visual only; give assistive tech the was/now context (RSL-33). */}
+      <span className="line-through" aria-label={`Was ${d.originalLabel}, now ${d.netLabel}`}>
+        {d.originalLabel}
+      </span>{" "}
       <span className="text-primary">{d.reason}</span>
     </span>
   );

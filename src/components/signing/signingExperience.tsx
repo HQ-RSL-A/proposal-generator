@@ -21,6 +21,7 @@ import { SignatureModal, type AdoptedSignature } from "@/components/signing/sign
 import { computeDepositSchedule, type ProposalSections } from "@/lib/proposalContent";
 import type { PaymentConfig } from "@/lib/types";
 import { brandToast } from "@/lib/toast";
+import { declineOutcome } from "@/lib/signingOutcome";
 
 const PLACE_ORDER: SignaturePlace[] = ["proposal", "agreement"];
 
@@ -235,11 +236,16 @@ export function SigningExperience({
         body: JSON.stringify({ reason: declineReason.trim() || null }),
       });
       const data = await response.json();
-      if (!response.ok) {
-        brandToast("error", data.error ?? "Something went wrong");
-        return;
-      }
-      router.push(data.redirectUrl ?? `/sign/${token}/declined`);
+      // Branch on data.code for already-terminal cases (signed/expired/declined), mirroring
+      // handleSubmit — an ignored code used to strand the client on a generic toast (RSL-32).
+      const outcome = declineOutcome(response.ok, data, token);
+      if (outcome.kind === "redirect") router.push(outcome.url);
+      else brandToast("error", outcome.message, undefined, { id: "decline-submit" });
+    } catch {
+      // No catch before RSL-32: a dropped connection failed silently with no client feedback.
+      brandToast("error", "Could not submit", "Check your connection and try again.", {
+        id: "decline-submit",
+      });
     } finally {
       setSubmitting(false);
     }

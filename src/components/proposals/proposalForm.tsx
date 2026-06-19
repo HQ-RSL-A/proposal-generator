@@ -608,7 +608,7 @@ const tokenFieldGroups: { heading: string; fields: { key: keyof TokensJson; labe
   },
 ];
 
-function MoneyFields({
+export function MoneyFields({
   value,
   onChange,
   withInterval,

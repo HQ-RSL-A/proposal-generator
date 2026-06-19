@@ -113,6 +113,52 @@ describe("buildProposalSections", () => {
     expect(msaText).not.toContain("{{Client.");
   });
 
+  it("renders the MSA body byte-identical whether or not the surname is blank (RSL-31)", () => {
+    const synthMsa = [
+      "## Agreement",
+      "",
+      '**{{Client.FirstName}} {{Client.LastName}}, {{Client.Company}} (the "Client").**',
+      "",
+      "The parties  agree as follows.",
+      "",
+      "Fees are due on receipt ; no exceptions.",
+    ].join("\n");
+
+    const withSurname = buildProposalSections({
+      tokens,
+      paymentConfig: paidConfig,
+      trackRecord,
+      msaBodyMarkdown: synthMsa,
+    });
+    const blankSurname = buildProposalSections({
+      tokens: { ...tokens, "Client.LastName": "" },
+      paymentConfig: paidConfig,
+      trackRecord,
+      msaBodyMarkdown: synthMsa,
+    });
+
+    // Attorney body text — an intentional double space and a space before a semicolon — must
+    // survive in BOTH renders. The bug ran a document-wide regex for a blank surname and
+    // silently rewrote this legally-binding text.
+    for (const sections of [withSurname, blankSurname]) {
+      const body = JSON.stringify(sections.msa.blocks);
+      expect(body).toContain("The parties  agree as follows.");
+      expect(body).toContain("receipt ; no exceptions.");
+    }
+
+    // Every non-party block is identical between the two renders (only the party line may differ).
+    const bodyBlocks = (s: typeof withSurname) =>
+      s.msa.blocks.filter((b) => !JSON.stringify(b).includes("Scorpion"));
+    expect(bodyBlocks(blankSurname)).toEqual(bodyBlocks(withSurname));
+
+    // ...and the party line itself is still correctly de-gapped for the blank surname.
+    const partyRun = blankSurname.msa.blocks
+      .flatMap((b) => (b.type === "heading" ? [] : b.runs))
+      .find((r) => r.text.includes("Scorpion"));
+    expect(partyRun?.text).toBe('Dominique, Scorpion Junk Removal (the "Client").');
+    expect(partyRun?.text).not.toContain("Dominique ,");
+  });
+
   it("adapts How to Proceed copy to the payment mode", () => {
     const paid = buildProposalSections({ tokens, paymentConfig: paidConfig, trackRecord, msaBodyMarkdown: msa });
     const signOnly = buildProposalSections({

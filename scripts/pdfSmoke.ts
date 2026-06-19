@@ -118,9 +118,13 @@ const pdfProps = {
   },
 };
 
-async function renderVariant(trackRecordVariant: TrackRecordConfig, outName: string) {
+async function renderVariant(
+  trackRecordVariant: TrackRecordConfig,
+  outName: string,
+  tokenOverrides: Partial<TokensJson> = {}
+) {
   const sections = buildProposalSections({
-    tokens,
+    tokens: { ...tokens, ...tokenOverrides },
     paymentConfig,
     trackRecord: trackRecordVariant,
     msaBodyMarkdown: msa,
@@ -137,6 +141,9 @@ async function renderVariant(trackRecordVariant: TrackRecordConfig, outName: str
 async function main() {
   await renderVariant(trackRecord, "pdfSmoke.pdf");
   await renderVariant({ intro: "", caseStudies: [] }, "pdfSmoke-empty.pdf");
+  // Blank optional surname (RSL-31): the party line must read "Dominique, Brightline Test Co" with
+  // no gap, and the rest of the attorney-owned MSA body must be byte-identical to the surname case.
+  await renderVariant(trackRecord, "pdfSmoke-noSurname.pdf", { "Client.LastName": "" });
 }
 
 main().catch((error) => {

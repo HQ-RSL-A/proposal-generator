@@ -104,3 +104,30 @@ describe("inferFlatPricingFromImport", () => {
     expect(result!.preferAch).toBeNull();
   });
 });
+
+describe("inferFlatPricingFromImport discounts (readDiscount, RSL-33)", () => {
+  const withDiscount = (discount: unknown) =>
+    inferFlatPricingFromImport({
+      oneTime: { amountCents: 900000, displayString: "$9,000", label: "Build", discount },
+    });
+
+  test("carries a well-formed discount through to the pricing item", () => {
+    expect(withDiscount({ amountCents: 100000, reason: "Loyalty" })!.oneTime!.discount).toEqual({
+      amountCents: 100000,
+      reason: "Loyalty",
+    });
+  });
+
+  test("drops a discount with a non-positive or non-integer amount", () => {
+    expect(withDiscount({ amountCents: 0, reason: "x" })!.oneTime!.discount).toBeUndefined();
+    expect(withDiscount({ amountCents: 12.5, reason: "x" })!.oneTime!.discount).toBeUndefined();
+  });
+
+  test("drops a discount with a blank reason", () => {
+    expect(withDiscount({ amountCents: 100000, reason: "   " })!.oneTime!.discount).toBeUndefined();
+  });
+
+  test("ignores a non-object discount", () => {
+    expect(withDiscount("nope")!.oneTime!.discount).toBeUndefined();
+  });
+});
