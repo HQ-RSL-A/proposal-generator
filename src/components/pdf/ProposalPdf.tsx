@@ -11,8 +11,8 @@ import {
   View,
 } from "@react-pdf/renderer";
 import type { DepositScheduleInfo, ProposalSections } from "@/lib/proposalContent";
-import type { AddOn, FutureItem, TierConfig } from "@/lib/types";
-import { formatCents, formatPricedLine } from "@/lib/currency";
+import type { AddOn, FutureItem, OneTimeItem, RecurringItem, TierConfig } from "@/lib/types";
+import { discountDisplay, formatCents, formatPricedLine, hasDiscount } from "@/lib/currency";
 
 const fontsDir = path.join(process.cwd(), "public", "fonts");
 const logoPath = path.join(process.cwd(), "public", "logomark.png");
@@ -373,6 +373,55 @@ function GlanceTable({ rows }: { rows: { label: string; value: string }[] }) {
   );
 }
 
+/** Struck-through original + reason under a discounted line. Mirrors the web DiscountNote. */
+function DiscountNote({
+  item,
+  intervalMonths,
+}: {
+  item: { amountCents: number; discount?: { amountCents: number; reason: string } | null };
+  intervalMonths: 1 | 3 | 12 | null;
+}) {
+  const d = discountDisplay(item, intervalMonths);
+  if (!d) return null;
+  return (
+    <Text style={{ fontSize: 7.5, color: MUTED, marginTop: 1 }}>
+      <Text style={{ textDecoration: "line-through" }}>{d.originalLabel}</Text>
+      {" "}
+      <Text style={{ color: BLUE }}>{d.reason}</Text>
+    </Text>
+  );
+}
+
+/** Flat pricing summary, shown only when a flat line is discounted. Mirrors the web FlatPricing. */
+function FlatPricingTable({
+  oneTime,
+  recurring,
+}: {
+  oneTime: OneTimeItem | null;
+  recurring: RecurringItem | null;
+}) {
+  const lines: { item: OneTimeItem | RecurringItem; intervalMonths: 1 | 3 | 12 | null }[] = [];
+  if (oneTime) lines.push({ item: oneTime, intervalMonths: null });
+  if (recurring) lines.push({ item: recurring, intervalMonths: recurring.intervalMonths });
+  if (!lines.some((l) => hasDiscount(l.item))) return null;
+  return (
+    <View style={{ marginTop: 14 }} wrap={false}>
+      <Text style={[s.microLabel, { marginBottom: 6 }]}>Pricing</Text>
+      {lines.map((l, i) => (
+        <View key={i} style={s.addOnRow}>
+          <Text style={{ flex: 1, fontWeight: 500 }}>{l.item.label}</Text>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={{ fontWeight: 700, color: SLATE }}>
+              {formatPricedLine(l.item.amountCents, l.intervalMonths)}
+            </Text>
+            <DiscountNote item={l.item} intervalMonths={l.intervalMonths} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTierId: string | null }) {
   return (
     <View style={s.tierGrid} wrap={false}>
@@ -419,12 +468,21 @@ function TierTable({ tiers, selectedTierId }: { tiers: TierConfig[]; selectedTie
             </View>
             <View style={{ marginTop: 5 }}>
               {tier.oneTime ? (
-                <Text style={{ fontWeight: 600, fontSize: 10 }}>{tier.oneTime.displayString}</Text>
+                <>
+                  <Text style={{ fontWeight: 600, fontSize: 10 }}>{tier.oneTime.displayString}</Text>
+                  <DiscountNote item={tier.oneTime} intervalMonths={null} />
+                </>
               ) : null}
               {tier.recurring ? (
-                <Text style={{ fontWeight: 600, fontSize: 10, marginTop: tier.oneTime ? 1 : 0 }}>
-                  {tier.recurring.displayString}
-                </Text>
+                <>
+                  <Text style={{ fontWeight: 600, fontSize: 10, marginTop: tier.oneTime ? 1 : 0 }}>
+                    {tier.recurring.displayString}
+                  </Text>
+                  <DiscountNote
+                    item={tier.recurring}
+                    intervalMonths={tier.recurring.intervalMonths}
+                  />
+                </>
               ) : null}
             </View>
             <View
@@ -462,7 +520,10 @@ function AddOnsTable({ addOns, selectedIds }: { addOns: AddOn[]; selectedIds: st
               {selected ? <Text style={s.checkGlyph}>✓</Text> : null}
             </View>
             <Text style={{ flex: 1, fontWeight: 500 }}>{addOn.label}</Text>
-            <Text style={{ fontWeight: 700, color: SLATE }}>{addOn.displayString}</Text>
+            <View style={{ alignItems: "flex-end" }}>
+              <Text style={{ fontWeight: 700, color: SLATE }}>{addOn.displayString}</Text>
+              <DiscountNote item={addOn} intervalMonths={addOn.intervalMonths} />
+            </View>
           </View>
         );
       })}
@@ -523,9 +584,12 @@ function FutureItemsTable({ items }: { items: FutureItem[] }) {
               Starts: {item.startsNote}
             </Text>
           </View>
-          <Text style={{ fontWeight: 700, color: SLATE }}>
-            {formatPricedLine(item.amountCents, item.intervalMonths)}
-          </Text>
+          <View style={{ alignItems: "flex-end" }}>
+            <Text style={{ fontWeight: 700, color: SLATE }}>
+              {formatPricedLine(item.amountCents, item.intervalMonths)}
+            </Text>
+            <DiscountNote item={item} intervalMonths={item.intervalMonths} />
+          </View>
         </View>
       ))}
     </View>
@@ -752,6 +816,10 @@ export function ProposalPdf({
             {line}
           </Text>
         ))}
+        <FlatPricingTable
+          oneTime={sections.investment.flatOneTime}
+          recurring={sections.investment.flatRecurring}
+        />
         {sections.investment.tiers ? (
           <TierTable tiers={sections.investment.tiers} selectedTierId={selectedTierId} />
         ) : null}

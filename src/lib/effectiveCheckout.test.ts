@@ -135,6 +135,63 @@ describe("effectiveCheckout", () => {
     expect(r.lineItems[0].intervalMonths).toBe(1); // charges the tier recurring normally
   });
 
+  // Discounts are additive metadata: amountCents is already the net, so checkout charges the net
+  // and never re-applies the discount. A discounted line and the equivalent plain-net line are
+  // identical to the charge resolver.
+  it("charges the net amountCents and ignores discount metadata", () => {
+    const discounted: PaymentConfig = {
+      ...flatBuild,
+      oneTime: {
+        amountCents: 900000,
+        displayString: "$9,000",
+        label: "Website build",
+        discount: { amountCents: 100000, reason: "Loyalty" },
+      },
+    };
+    const plainNet: PaymentConfig = {
+      ...flatBuild,
+      oneTime: { amountCents: 900000, displayString: "$9,000", label: "Website build" },
+    };
+    const a = effectiveCheckout(discounted, null, []);
+    const b = effectiveCheckout(plainNet, null, []);
+    expect(a.lineItems.map((li) => li.amountCents)).toEqual(b.lineItems.map((li) => li.amountCents));
+    expect(a.lineItems[0].amountCents).toBe(900000);
+  });
+
+  it("deposit % applies to the net (post-discount) one-time", () => {
+    const discounted: PaymentConfig = {
+      ...flatBuild,
+      oneTime: {
+        amountCents: 900000,
+        displayString: "$9,000",
+        label: "Build",
+        discount: { amountCents: 100000, reason: "Loyalty" },
+      },
+      deposit: { depositPercent: 50 },
+    };
+    const r = effectiveCheckout(discounted, null, []);
+    expect(r.depositAmountCents).toBe(450000); // 50% of the net $9,000, not the $10,000 list
+  });
+
+  it("never bills a discounted future item", () => {
+    const withFuture: PaymentConfig = {
+      ...flatBuild,
+      futureItems: [
+        {
+          id: "future-seo",
+          label: "Monthly SEO",
+          displayString: "$1,500/month",
+          amountCents: 150000,
+          intervalMonths: 1,
+          startsNote: "After launch",
+          discount: { amountCents: 50000, reason: "Intro rate" },
+        },
+      ],
+    };
+    const r = effectiveCheckout(withFuture, null, []);
+    expect(r.lineItems).toHaveLength(1); // just the build fee — discounted future item excluded
+  });
+
   // Invariant guard: display-only future items must NEVER reach checkout, by construction.
   it("never bills display-only future items", () => {
     const withFuture: PaymentConfig = {

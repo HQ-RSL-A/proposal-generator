@@ -26,10 +26,20 @@ function resolveCents(amountCents: unknown, displayString: string): number | nul
   return parsed !== null && parsed > 0 ? parsed : null;
 }
 
-function readMoney(
-  value: unknown,
-  defaultLabel: string
-): { label: string; displayString: string; amountCents: number } | null {
+/** Optional discount in the internal shape: { amountCents (net already applied), reason }. */
+function readDiscount(value: unknown): { amountCents: number; reason: string } | null {
+  const obj = asRecord(value);
+  if (!obj) return null;
+  const amountCents =
+    typeof obj.amountCents === "number" && Number.isInteger(obj.amountCents) && obj.amountCents > 0
+      ? obj.amountCents
+      : null;
+  const reason = typeof obj.reason === "string" ? obj.reason.trim() : "";
+  if (amountCents === null || !reason) return null;
+  return { amountCents, reason };
+}
+
+function readMoney(value: unknown, defaultLabel: string): OneTimeItem | null {
   const obj = asRecord(value);
   if (!obj) return null;
   const displayString = typeof obj.displayString === "string" ? obj.displayString.trim() : "";
@@ -37,7 +47,8 @@ function readMoney(
   if (amountCents === null) return null;
   const label =
     typeof obj.label === "string" && obj.label.trim() ? obj.label.trim() : defaultLabel;
-  return { label, displayString, amountCents };
+  const discount = readDiscount(obj.discount);
+  return { label, displayString, amountCents, ...(discount ? { discount } : {}) };
 }
 
 function readInterval(value: unknown): 1 | 3 | 12 {

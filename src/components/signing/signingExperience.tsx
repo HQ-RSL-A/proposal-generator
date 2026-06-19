@@ -62,6 +62,9 @@ export function SigningExperience({
   const [modalOpen, setModalOpen] = React.useState(false);
   const [declineOpen, setDeclineOpen] = React.useState(false);
   const [declineReason, setDeclineReason] = React.useState("");
+  // Two-stage decline: pick a reason, then an explicit "are you sure?" gate so a stray click
+  // (someone meaning to go back) can't decline the deal.
+  const [declineStage, setDeclineStage] = React.useState<"reason" | "confirm">("reason");
   const [submitting, setSubmitting] = React.useState(false);
   const [adopted, setAdopted] = React.useState<AdoptedSignature | null>(null);
   const [stamped, setStamped] = React.useState<Record<SignaturePlace, boolean>>({
@@ -299,7 +302,14 @@ export function SigningExperience({
                 Redo
               </Button>
             ) : (
-              <Button variant="ghost" size="sm" onClick={() => setDeclineOpen(true)}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setDeclineStage("reason");
+                  setDeclineOpen(true);
+                }}
+              >
                 Decline
               </Button>
             )}
@@ -374,28 +384,54 @@ export function SigningExperience({
         })()}
       />
 
-      <Dialog open={declineOpen} onOpenChange={setDeclineOpen}>
+      <Dialog
+        open={declineOpen}
+        onOpenChange={(open) => {
+          setDeclineOpen(open);
+          if (!open) setDeclineStage("reason");
+        }}
+      >
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-heading">Decline this proposal?</DialogTitle>
-            <DialogDescription>
-              Our team will be notified. You can optionally say why. It helps.
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            value={declineReason}
-            onChange={(e) => setDeclineReason(e.target.value)}
-            placeholder="Optional reason…"
-            className="min-h-24"
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setDeclineOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDecline} disabled={submitting}>
-              Decline proposal
-            </Button>
-          </div>
+          {declineStage === "reason" ? (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-heading">Decline this proposal?</DialogTitle>
+                <DialogDescription>
+                  Our team will be notified. You can optionally say why. It helps.
+                </DialogDescription>
+              </DialogHeader>
+              <Textarea
+                value={declineReason}
+                onChange={(e) => setDeclineReason(e.target.value)}
+                placeholder="Optional reason…"
+                className="min-h-24"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setDeclineOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => setDeclineStage("confirm")}>Continue</Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle className="font-heading">Are you sure?</DialogTitle>
+                <DialogDescription>
+                  This permanently declines the proposal and notifies RSL/A. You can&apos;t undo
+                  this.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2">
+                <Button autoFocus onClick={() => setDeclineStage("reason")} disabled={submitting}>
+                  Go back
+                </Button>
+                <Button variant="destructive" onClick={handleDecline} disabled={submitting}>
+                  {submitting ? "Declining…" : "Yes, decline"}
+                </Button>
+              </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </div>

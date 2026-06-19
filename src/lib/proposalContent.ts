@@ -6,6 +6,7 @@ import type {
   AddOn,
   FrozenContent,
   FutureItem,
+  OneTimeItem,
   PaymentConfig,
   RecurringItem,
   TierConfig,
@@ -117,6 +118,9 @@ export interface ProposalSections {
     heading: string;
     note: string;
     details: string;
+    /** Flat (non-tier) charged lines. Rendered structurally only when one carries a discount. */
+    flatOneTime: OneTimeItem | null;
+    flatRecurring: RecurringItem | null;
     tiers: TierConfig[] | null;
     addOns: AddOn[] | null;
     futureItems: FutureItem[] | null;
@@ -266,6 +270,8 @@ export function buildProposalSections(input: {
       heading: "Your Investment",
       note: tokens["Client.InvestmentNote"],
       details: tokens["Client.InvestmentDetails"],
+      flatOneTime: paymentConfig.oneTime,
+      flatRecurring: paymentConfig.recurring,
       tiers: paymentConfig.tiers,
       addOns: paymentConfig.addOns ?? null,
       futureItems: paymentConfig.futureItems ?? null,

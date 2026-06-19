@@ -1,5 +1,65 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-19 — Decline confirmation + Stripe product naming + per-line discounts (built, NOT deployed)
+
+Three features Rahul requested, all touching the signing / money path. Built + verified locally,
+**not committed, not deployed** (awaiting his go-ahead). Plan:
+`~/.claude/plans/parsed-giggling-graham.md`.
+
+- **Decline confirmation (Feature 1).** A real signer once declined by accident when he meant to go
+  back. The decline dialog (`signingExperience.tsx`) is now two-stage: pick a reason -> **Continue**
+  -> a hard "Are you sure? This permanently declines and notifies RSL/A. You can't undo this." gate
+  where only **Yes, decline** commits (**Go back** is the prominent default). No server/API change.
+
+- **Stripe product name = the line label (Feature 2).** `stripe.ts` previously named the Stripe
+  product `"{label} · {proposalTitle}"`; now it's **exactly the label** Rahul types per line. The
+  proposal title moved into the Checkout Session/subscription/payment-intent `metadata` so the
+  dashboard stays searchable. Extracted a pure, exported `buildLineItems(checkout, currency)` for
+  unit testing (asserts product name == label, unit_amount == net).
+
+- **Per-line discounts (Feature 3).** Enter the **list price + a fixed-$ discount + a reason**; the
+  app charges the **net** and shows the client "was -> now (reason)". **Design keystone:** each
+  line's `amountCents` stays the NET (the existing source of truth), and `discount: { amountCents,
+  reason }` is **additive metadata** (original = net + discount, derived). So **no amount math
+  changed** — `effectiveCheckout`, Stripe `unit_amount`, the deposit %, and the Notion contract
+  value all already key off `amountCents` (= net). Touched: `types.ts` (Discount + optional field on
+  OneTimeItem/AddOn/FutureItem; RecurringItem + tiers inherit), `currency.ts` (`originalCents`,
+  `hasDiscount`, `discountDisplay`), `validation.ts` (discountSchema), `proposalForm.tsx`
+  (MoneyFields "Apply a discount" sub-section: list price + discount + reason + computed "Charged on
+  Stripe"; state hydrate/build via `moneyToDraft`/`buildMoney`/`draftToDiscount`), `proposalContent.ts`
+  (flat one-time/recurring now surfaced in the investment section), web `proposalView.tsx` +
+  `ProposalPdf.tsx` (was/now/reason inline on tiers + add-ons; a new structured **Pricing** block for
+  flat deals that renders only when a flat line is discounted), import inference (flat passthrough +
+  `Investment.Structure`/`Investment.AddOns` `discount: { amount, reason }`), `/docs`,
+  `testProposalTokens.json` (Logo refresh now $800 list - $200 = $600), jobRunner comment.
+
+**Decisions:** fixed-$ discount only for v1 (percent is a trivial follow-up); a discount on a
+recurring line is an ongoing reduced rate ("first N cycles" = Stripe-coupon territory, out of scope);
+no Stripe Coupons (charge the net directly, like the deposit feature); **future items get no discount
+FORM UI** (display-only lines — you don't set a discount there in the builder), but the renderers DO
+show one if present (forward-compat / hand-authored); the label hint reads "(name on Stripe)" on every
+charged line.
+
+**Self-audit (adversarial, 3 parallel reviewers + grep):** money path, web/PDF parity, decline, Stripe
+naming, and import all reviewed. Confirmed: nothing reads the old Stripe product-name format back
+(webhook/reconcile/receipts key off `metadata.proposalId` / session id); an empty discount reason is
+blocked at save AND send by `paymentConfigSchema` with a clean "Reason is required." message
+(humanizeZodError). Two consistency gaps found and FIXED: (1) `FutureItem.discount` was allowed by the
+type/schema but rendered nowhere — now rendered on web + PDF (closed the set-but-not-shown gap); (2) PDF
+discount note used a double space vs the web's single — matched. Re-verified: tsc, 215 tests, eslint 0
+errors, pdfSmoke re-read (tier/add-on/flat/future discounts all show was -> now + reason, parity holds).
+
+**Verified:** `tsc` clean, **215 tests** (+14: currency discount helpers, validation discount schema,
+effectiveCheckout net-invariance + discounted-future-item-never-charged, `buildLineItems`), `eslint
+src` 0 errors, `npm run build` green, and `pdfSmoke` rendered + visually Read — the Growth tier shows
+$6,000 with $7,000 struck + "Launch promo", the Rush add-on shows $800 with $1,000 struck +
+"First-time client", deposit correctly = 50% of the net $6,000. (pdfSmoke fixture now carries a
+discount as permanent regression coverage.)
+
+**Next:** fold these into the **deferred Stripe test-mode + e2e rehearsal** before the next real send
+(now also covers: Stripe shows the label as product name + charges the net discounted amount; the
+two-stage decline gate). See ROADMAP.
+
 ## 2026-06-18 — Audit remediation COMPLETE (Wave 7) + RSL-12/20 product refinements
 
 **All 21 audit issues (RSL-6..26) are now fixed AND deployed to prod — the audit is complete.**

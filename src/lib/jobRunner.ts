@@ -87,7 +87,8 @@ async function executeJob(job: PendingJob): Promise<void> {
         }
       } else {
         const config = (frozen?.paymentConfig ?? proposal.paymentConfig) as PaymentConfig;
-        // Notion records the full contract value (base + selected add-ons), never the deposit.
+        // Notion records the full contract value (base + selected add-ons), net of any discount
+        // (amountCents is already the net), never the deposit.
         const { oneTime, recurring } = effectiveLineItems(config, proposal.selectedTierId);
         const selectedAddOnIds = (proposal.selectedAddOnIds as unknown as string[] | null) ?? [];
         const selectedAddOns = (config.addOns ?? []).filter((a) => selectedAddOnIds.includes(a.id));

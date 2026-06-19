@@ -44,6 +44,10 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       end-to-end. Run a Stripe **test-mode** sign->checkout->pay on a `[TEST]` fake-company proposal,
       then the full e2e rehearsal (`e2eSeed` -> sign drawn+typed -> pay -> executed PDF + cert via
       `pdfSmoke` -> 14 emails via `emailPreview` -> Notion fake co -> dashboard). See LOG 2026-06-18.
+      **Now also covers the 2026-06-19 features (built, not deployed):** confirm Stripe shows the line
+      **label as the product name** (no proposal-title suffix) and **charges the net discounted
+      amount** on a proposal carrying a per-line discount, and exercise the **two-stage decline
+      confirmation** on a separate test row. See LOG 2026-06-19.
 
 ## Payments: add-ons + deposit (added 2026-06-13)
 

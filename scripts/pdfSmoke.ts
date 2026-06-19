@@ -38,15 +38,15 @@ const paymentConfig: PaymentConfig = {
   recurring: null,
   tiers: [
     { id: "tier-foundation", label: "Foundation", recommended: false, includes: ["Website rebuild included", "One rotating service per quarter"], oneTime: { amountCents: 400000, displayString: "$4,000", label: "Website build" }, recurring: { amountCents: 180000, displayString: "$1,800/month", label: "Retainer", intervalMonths: 1 } },
-    { id: "tier-growth", label: "Growth", recommended: true, includes: ["Website rebuild included", "One rotating service per month"], oneTime: { amountCents: 600000, displayString: "$6,000", label: "Website build" }, recurring: { amountCents: 300000, displayString: "$3,000/month", label: "Retainer", intervalMonths: 1 } },
+    { id: "tier-growth", label: "Growth", recommended: true, includes: ["Website rebuild included", "One rotating service per month"], oneTime: { amountCents: 600000, displayString: "$6,000", label: "Website build", discount: { amountCents: 100000, reason: "Launch promo" } }, recurring: { amountCents: 300000, displayString: "$3,000/month", label: "Retainer", intervalMonths: 1 } },
   ],
   addOns: [
-    { id: "addon-rush", label: "Rush delivery (two-week build)", displayString: "$800", amountCents: 80000, intervalMonths: null },
+    { id: "addon-rush", label: "Rush delivery (two-week build)", displayString: "$800", amountCents: 80000, intervalMonths: null, discount: { amountCents: 20000, reason: "First-time client" } },
     { id: "addon-extra-channel", label: "Extra ad channel each month", displayString: "$500/month", amountCents: 50000, intervalMonths: 1 },
   ],
   futureItems: [
     { id: "future-seo", label: "Monthly SEO retainer", displayString: "$1,500/month", amountCents: 150000, intervalMonths: 1, startsNote: "After launch" },
-    { id: "future-brand", label: "Brand refresh (Phase 2)", displayString: "$3,000", amountCents: 300000, intervalMonths: null, startsNote: "Q4 2026" },
+    { id: "future-brand", label: "Brand refresh (Phase 2)", displayString: "$3,000", amountCents: 300000, intervalMonths: null, startsNote: "Q4 2026", discount: { amountCents: 50000, reason: "Bundle rate" } },
   ],
   deposit: { depositPercent: 50 },
 };

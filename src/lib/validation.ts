@@ -78,10 +78,22 @@ export const trackRecordConfigSchema = z.object({
 
 // ---------- Payment config ----------
 
+// Optional per-line discount. amountCents on the line is already the NET, so a positive integer
+// discount + a positive net means the original (net + discount) is always > 0 — no extra net guard
+// is needed beyond the int().positive() on each line's amountCents.
+const discountSchema = z
+  .object({
+    amountCents: z.number().int().positive(),
+    reason: nonEmpty,
+  })
+  .nullable()
+  .optional();
+
 const oneTimeItemSchema = z.object({
   amountCents: z.number().int().positive(),
   displayString: nonEmpty,
   label: nonEmpty,
+  discount: discountSchema,
 });
 
 const recurringItemSchema = oneTimeItemSchema.extend({
@@ -103,6 +115,7 @@ const addOnSchema = z.object({
   displayString: nonEmpty,
   amountCents: z.number().int().positive(),
   intervalMonths: z.union([z.literal(1), z.literal(3), z.literal(12)]).nullable(),
+  discount: discountSchema,
 });
 
 const futureItemSchema = z.object({
@@ -112,6 +125,7 @@ const futureItemSchema = z.object({
   amountCents: z.number().int().positive(),
   intervalMonths: z.union([z.literal(1), z.literal(3), z.literal(12)]).nullable(),
   startsNote: nonEmpty,
+  discount: discountSchema,
 });
 
 const depositConfigSchema = z.object({

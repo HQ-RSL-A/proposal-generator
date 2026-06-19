@@ -3,9 +3,9 @@
 import * as React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { formatCents, formatPricedLine } from "@/lib/currency";
+import { discountDisplay, formatCents, formatPricedLine, hasDiscount } from "@/lib/currency";
 import type { DepositScheduleInfo, ProposalSections } from "@/lib/proposalContent";
-import type { AddOn, FutureItem, TierConfig } from "@/lib/types";
+import type { AddOn, FutureItem, OneTimeItem, RecurringItem, TierConfig } from "@/lib/types";
 import { Check, PenLine } from "lucide-react";
 
 function SectionHeading({ children }: { children: React.ReactNode }) {
@@ -41,6 +41,67 @@ function NoteMark({ n }: { n: number }) {
         {n}
       </a>
     </sup>
+  );
+}
+
+/** The struck-through original price + reason, shown under a discounted line. Null when no discount. */
+function DiscountNote({
+  item,
+  intervalMonths,
+  align,
+}: {
+  item: { amountCents: number; discount?: { amountCents: number; reason: string } | null };
+  intervalMonths: 1 | 3 | 12 | null;
+  align?: "right";
+}) {
+  const d = discountDisplay(item, intervalMonths);
+  if (!d) return null;
+  return (
+    <span className={cn("block text-xs text-muted-foreground", align === "right" && "text-right")}>
+      <span className="line-through">{d.originalLabel}</span>{" "}
+      <span className="text-primary">{d.reason}</span>
+    </span>
+  );
+}
+
+/**
+ * Flat (non-tier) pricing summary. Rendered ONLY when a flat line carries a discount, so the
+ * client sees the "was -> now (reason)" breakdown (flat prices otherwise live in the free-text
+ * Investment copy). Non-discounted flat proposals render nothing here, unchanged from before.
+ */
+export function FlatPricing({
+  oneTime,
+  recurring,
+}: {
+  oneTime: OneTimeItem | null;
+  recurring: RecurringItem | null;
+}) {
+  const lines: { item: OneTimeItem | RecurringItem; intervalMonths: 1 | 3 | 12 | null }[] = [];
+  if (oneTime) lines.push({ item: oneTime, intervalMonths: null });
+  if (recurring) lines.push({ item: recurring, intervalMonths: recurring.intervalMonths });
+  if (!lines.some((l) => hasDiscount(l.item))) return null;
+  return (
+    <div className="mt-6">
+      <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+        Pricing
+      </p>
+      <div className="mt-3 space-y-2">
+        {lines.map((l, i) => (
+          <div
+            key={i}
+            className="flex items-start justify-between gap-3 rounded-xl border border-border bg-white p-3.5"
+          >
+            <span className="text-sm font-medium">{l.item.label}</span>
+            <span className="whitespace-nowrap text-right">
+              <span className="block text-sm font-bold">
+                {formatPricedLine(l.item.amountCents, l.intervalMonths)}
+              </span>
+              <DiscountNote item={l.item} intervalMonths={l.intervalMonths} align="right" />
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -103,10 +164,16 @@ export function TierCards({
             </div>
             <div className="mt-2 space-y-0.5">
               {tier.oneTime ? (
-                <p className="text-base font-bold">{tier.oneTime.displayString}</p>
+                <div>
+                  <p className="text-base font-bold">{tier.oneTime.displayString}</p>
+                  <DiscountNote item={tier.oneTime} intervalMonths={null} />
+                </div>
               ) : null}
               {tier.recurring ? (
-                <p className="text-base font-bold">{tier.recurring.displayString}</p>
+                <div>
+                  <p className="text-base font-bold">{tier.recurring.displayString}</p>
+                  <DiscountNote item={tier.recurring} intervalMonths={tier.recurring.intervalMonths} />
+                </div>
               ) : null}
             </div>
             <ul className="mt-3 space-y-1.5">
@@ -170,7 +237,10 @@ export function AddOnPicker({
               />
               <span className="flex flex-1 items-center justify-between gap-3">
                 <span className="text-sm font-medium">{addOn.label}</span>
-                <span className="whitespace-nowrap text-sm font-bold">{addOn.displayString}</span>
+                <span className="whitespace-nowrap text-right">
+                  <span className="block text-sm font-bold">{addOn.displayString}</span>
+                  <DiscountNote item={addOn} intervalMonths={addOn.intervalMonths} align="right" />
+                </span>
               </span>
             </label>
           );
@@ -203,8 +273,11 @@ export function FutureItems({ items }: { items: FutureItem[] }) {
                 Starts: {item.startsNote}
               </span>
             </span>
-            <span className="whitespace-nowrap text-sm font-bold">
-              {formatPricedLine(item.amountCents, item.intervalMonths)}
+            <span className="whitespace-nowrap text-right">
+              <span className="block text-sm font-bold">
+                {formatPricedLine(item.amountCents, item.intervalMonths)}
+              </span>
+              <DiscountNote item={item} intervalMonths={item.intervalMonths} align="right" />
             </span>
           </div>
         ))}
@@ -508,6 +581,10 @@ export function ProposalView({
               </p>
             ))}
         </div>
+        <FlatPricing
+          oneTime={sections.investment.flatOneTime}
+          recurring={sections.investment.flatRecurring}
+        />
         {sections.investment.tiers ? (
           <TierCards
             tiers={sections.investment.tiers}

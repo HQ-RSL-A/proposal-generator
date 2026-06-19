@@ -13,14 +13,17 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { createProposal, updateProposal } from "@/actions/proposals";
 import { normalizeImportedTokens } from "@/lib/validation";
-import { parseCentsFromDisplayString } from "@/lib/currency";
+import { formatCents, formatPricedLine, parseCentsFromDisplayString } from "@/lib/currency";
 import { inferFlatPricingFromImport } from "@/lib/importPricing";
 import {
   TOKEN_KEYS,
   type AddOn,
   type DepositConfig,
+  type Discount,
   type FutureItem,
+  type OneTimeItem,
   type PaymentConfig,
+  type RecurringItem,
   type TierConfig,
   type TokensJson,
   type TrackRecordConfig,
@@ -33,6 +36,25 @@ import {
 
 type PricingMode = "flat" | "tiers" | "signOnly";
 
+/**
+ * A draft money line in the form. `amountCents` is always the NET (what Stripe charges).
+ * When `discountEnabled`, the admin types the list price and a discount; net = list - discount
+ * (handled in MoneyFields). On save, `discountCents`/`discountReason` become the line's
+ * `discount`; the original is derived as net + discount, never stored.
+ */
+interface MoneyDraft {
+  label: string;
+  displayString: string;
+  amountCents: number;
+  discountEnabled?: boolean;
+  discountCents?: number;
+  discountReason?: string;
+}
+
+interface RecurringDraft extends MoneyDraft {
+  intervalMonths: 1 | 3 | 12;
+}
+
 interface FormState {
   title: string;
   tokens: Record<string, string>;
@@ -41,14 +63,9 @@ interface FormState {
   caseStudies: CaseStudyDraft[];
   pricingMode: PricingMode;
   oneTimeEnabled: boolean;
-  oneTime: { label: string; displayString: string; amountCents: number };
+  oneTime: MoneyDraft;
   recurringEnabled: boolean;
-  recurring: {
-    label: string;
-    displayString: string;
-    amountCents: number;
-    intervalMonths: 1 | 3 | 12;
-  };
+  recurring: RecurringDraft;
   tiers: TierDraft[];
   /** Global optional add-ons; apply across flat + tiers, not sign-only. */
   addOns: AddOnDraft[];
@@ -67,6 +84,9 @@ interface AddOnDraft {
   amountCents: number;
   isRecurring: boolean;
   intervalMonths: 1 | 3 | 12;
+  discountEnabled?: boolean;
+  discountCents?: number;
+  discountReason?: string;
 }
 
 interface FutureItemDraft {
@@ -90,14 +110,9 @@ interface TierDraft {
   recommended: boolean;
   includesText: string;
   oneTimeEnabled: boolean;
-  oneTime: { label: string; displayString: string; amountCents: number };
+  oneTime: MoneyDraft;
   recurringEnabled: boolean;
-  recurring: {
-    label: string;
-    displayString: string;
-    amountCents: number;
-    intervalMonths: 1 | 3 | 12;
-  };
+  recurring: RecurringDraft;
 }
 
 const emptyMoney = { label: "", displayString: "", amountCents: 0 };
@@ -171,6 +186,59 @@ function blankTokens(): Record<string, string> {
   return tokens;
 }
 
+// ---- Discount <-> draft helpers. amountCents is always the NET; the original is net + discount.
+
+/** The 3 draft discount fields from a stored Discount (or none). */
+function discountToDraft(d: Discount | null | undefined): {
+  discountEnabled: boolean;
+  discountCents: number;
+  discountReason: string;
+} {
+  return {
+    discountEnabled: !!d,
+    discountCents: d?.amountCents ?? 0,
+    discountReason: d?.reason ?? "",
+  };
+}
+
+function moneyToDraft(m: OneTimeItem): MoneyDraft {
+  return {
+    label: m.label,
+    displayString: m.displayString,
+    amountCents: m.amountCents,
+    ...discountToDraft(m.discount),
+  };
+}
+
+function recurringToDraft(r: RecurringItem): RecurringDraft {
+  return { ...moneyToDraft(r), intervalMonths: r.intervalMonths };
+}
+
+/** Build a stored Discount from a draft, or null when disabled / zero. */
+function draftToDiscount(d: {
+  discountEnabled?: boolean;
+  discountCents?: number;
+  discountReason?: string;
+}): Discount | null {
+  return d.discountEnabled && (d.discountCents ?? 0) > 0
+    ? { amountCents: d.discountCents!, reason: (d.discountReason ?? "").trim() }
+    : null;
+}
+
+/** A draft money line -> the stored OneTimeItem, stripping draft-only discount fields. */
+function buildMoney(m: MoneyDraft): OneTimeItem {
+  return {
+    label: m.label,
+    displayString: m.displayString,
+    amountCents: m.amountCents,
+    discount: draftToDiscount(m),
+  };
+}
+
+function buildRecurring(m: RecurringDraft): RecurringItem {
+  return { ...buildMoney(m), intervalMonths: m.intervalMonths };
+}
+
 function configToState(config: PaymentConfig | null): Partial<FormState> {
   if (!config) return {};
   const mode: PricingMode = config.tiers?.length
@@ -181,9 +249,13 @@ function configToState(config: PaymentConfig | null): Partial<FormState> {
   return {
     pricingMode: mode,
     oneTimeEnabled: Boolean(config.oneTime),
-    oneTime: config.oneTime ?? { ...emptyMoney, label: "One-time build" },
+    oneTime: config.oneTime
+      ? moneyToDraft(config.oneTime)
+      : { ...emptyMoney, label: "One-time build" },
     recurringEnabled: Boolean(config.recurring),
-    recurring: config.recurring ?? { ...emptyMoney, label: "Monthly retainer", intervalMonths: 1 },
+    recurring: config.recurring
+      ? recurringToDraft(config.recurring)
+      : { ...emptyMoney, label: "Monthly retainer", intervalMonths: 1 },
     tiers:
       config.tiers?.map((tier) => ({
         id: tier.id,
@@ -191,13 +263,11 @@ function configToState(config: PaymentConfig | null): Partial<FormState> {
         recommended: tier.recommended,
         includesText: tier.includes.join("\n"),
         oneTimeEnabled: Boolean(tier.oneTime),
-        oneTime: tier.oneTime ?? { ...emptyMoney, label: "Setup" },
+        oneTime: tier.oneTime ? moneyToDraft(tier.oneTime) : { ...emptyMoney, label: "Setup" },
         recurringEnabled: Boolean(tier.recurring),
-        recurring: tier.recurring ?? {
-          ...emptyMoney,
-          label: "Monthly retainer",
-          intervalMonths: 1,
-        },
+        recurring: tier.recurring
+          ? recurringToDraft(tier.recurring)
+          : { ...emptyMoney, label: "Monthly retainer", intervalMonths: 1 },
       })) ?? [],
     addOns:
       config.addOns?.map((a) => ({
@@ -207,6 +277,7 @@ function configToState(config: PaymentConfig | null): Partial<FormState> {
         amountCents: a.amountCents,
         isRecurring: a.intervalMonths !== null,
         intervalMonths: (a.intervalMonths ?? 1) as 1 | 3 | 12,
+        ...discountToDraft(a.discount),
       })) ?? [],
     futureItems:
       config.futureItems?.map((f) => ({
@@ -264,6 +335,7 @@ function stateToConfig(state: FormState): PaymentConfig {
       displayString: a.displayString,
       amountCents: a.amountCents,
       intervalMonths: a.isRecurring ? a.intervalMonths : null,
+      discount: draftToDiscount(a),
     }));
   const addOns = cleanedAddOns.length > 0 ? cleanedAddOns : null;
 
@@ -289,8 +361,8 @@ function stateToConfig(state: FormState): PaymentConfig {
         .split("\n")
         .map((line) => line.replace(/^\s*[•\-–]\s*/, "").trim())
         .filter(Boolean),
-      oneTime: tier.oneTimeEnabled ? { ...tier.oneTime } : null,
-      recurring: tier.recurringEnabled ? { ...tier.recurring } : null,
+      oneTime: tier.oneTimeEnabled ? buildMoney(tier.oneTime) : null,
+      recurring: tier.recurringEnabled ? buildRecurring(tier.recurring) : null,
     }));
     // Deposit needs a one-time on at least one tier.
     const tiersHaveOneTime = tiers.some((t) => t.oneTime);
@@ -309,14 +381,14 @@ function stateToConfig(state: FormState): PaymentConfig {
     };
   }
 
-  const oneTime = state.oneTimeEnabled ? { ...state.oneTime } : null;
+  const oneTime = state.oneTimeEnabled ? buildMoney(state.oneTime) : null;
   const deposit: DepositConfig | null =
     state.depositEnabled && oneTime ? { depositPercent: state.depositPercent } : null;
   return {
     currency: "usd",
     paymentMethods: methods.length ? methods : ["card"],
     oneTime,
-    recurring: state.recurringEnabled ? { ...state.recurring } : null,
+    recurring: state.recurringEnabled ? buildRecurring(state.recurring) : null,
     tiers: null,
     preferAch: state.preferAch,
     addOns,
@@ -332,47 +404,115 @@ function stateToTrackRecord(state: FormState): TrackRecordConfig {
   return { intro: state.trackRecordIntro.trim(), caseStudies };
 }
 
+/**
+ * Parse an optional import discount on a priced line. The line's `price` is treated as the LIST
+ * price; net = list - discount. Returns the draft fields (net amount + discount), or null.
+ */
+function importDiscount(
+  rawDiscount: unknown,
+  listCents: number
+): {
+  amountCents: number;
+  displayString: string;
+  discountEnabled: true;
+  discountCents: number;
+  discountReason: string;
+} | null {
+  const obj =
+    rawDiscount && typeof rawDiscount === "object" && !Array.isArray(rawDiscount)
+      ? (rawDiscount as Record<string, unknown>)
+      : null;
+  if (!obj) return null;
+  const cents =
+    typeof obj.amountCents === "number" && Number.isInteger(obj.amountCents) && obj.amountCents > 0
+      ? obj.amountCents
+      : typeof obj.amount === "string"
+        ? parseCentsFromDisplayString(obj.amount)
+        : null;
+  const reason = typeof obj.reason === "string" ? obj.reason.trim() : "";
+  if (!cents || cents <= 0 || cents >= listCents || !reason) return null;
+  const net = listCents - cents;
+  return {
+    amountCents: net,
+    displayString: formatCents(net),
+    discountEnabled: true,
+    discountCents: cents,
+    discountReason: reason,
+  };
+}
+
 /** Best-effort mapping of the skill's Investment.Structure to tier drafts. */
 function inferTiersFromImport(raw: Record<string, unknown>): TierDraft[] | null {
   const structure = raw["Investment.Structure"] as
-    | { type?: string; tiers?: { name: string; price: string; includes: string[]; recommended?: boolean }[] }
+    | {
+        type?: string;
+        tiers?: {
+          name: string;
+          price: string;
+          includes: string[];
+          recommended?: boolean;
+          discount?: unknown;
+        }[];
+      }
     | undefined;
   if (structure?.type !== "tiers" || !structure.tiers?.length) return null;
   return structure.tiers.map((tier) => {
     const cents = parseCentsFromDisplayString(tier.price) ?? 0;
     const isRecurring = /\/\s*(mo|month|quarter|yr|year)/i.test(tier.price);
+    // A tier discount applies to whichever line its single price represents.
+    const disc = importDiscount(tier.discount, cents);
+    const active: MoneyDraft = disc
+      ? {
+          label: "",
+          displayString: disc.displayString,
+          amountCents: disc.amountCents,
+          discountEnabled: true,
+          discountCents: disc.discountCents,
+          discountReason: disc.discountReason,
+        }
+      : { label: "", displayString: tier.price, amountCents: cents };
+    const plain = { displayString: tier.price, amountCents: cents };
     return {
       id: `tier-${tier.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`,
       label: tier.name,
       recommended: Boolean(tier.recommended),
       includesText: (tier.includes ?? []).join("\n"),
       oneTimeEnabled: !isRecurring && cents > 0,
-      oneTime: { label: "One-time", displayString: tier.price, amountCents: cents },
+      oneTime: isRecurring
+        ? { label: "One-time", ...plain }
+        : { ...active, label: "One-time" },
       recurringEnabled: isRecurring,
-      recurring: {
-        label: "Monthly retainer",
-        displayString: tier.price,
-        amountCents: cents,
-        intervalMonths: 1 as const,
-      },
+      recurring: isRecurring
+        ? { ...active, label: "Monthly retainer", intervalMonths: 1 as const }
+        : { label: "Monthly retainer", ...plain, intervalMonths: 1 as const },
     };
   });
 }
 
 /** Best-effort mapping of the skill's Investment.AddOns to add-on drafts. */
 function inferAddOnsFromImport(raw: Record<string, unknown>): AddOnDraft[] | null {
-  const list = raw["Investment.AddOns"] as { name: string; price: string }[] | undefined;
+  const list = raw["Investment.AddOns"] as
+    | { name: string; price: string; discount?: unknown }[]
+    | undefined;
   if (!Array.isArray(list) || list.length === 0) return null;
   return list.slice(0, 10).map((addOn, i) => {
     const cents = parseCentsFromDisplayString(addOn.price) ?? 0;
     const isRecurring = /\/\s*(mo|month|quarter|yr|year)/i.test(addOn.price);
+    const disc = importDiscount(addOn.discount, cents);
     return {
       id: slugifyAddOn(addOn.name, i),
       label: addOn.name,
-      displayString: addOn.price,
-      amountCents: cents,
+      displayString: disc ? disc.displayString : addOn.price,
+      amountCents: disc ? disc.amountCents : cents,
       isRecurring,
       intervalMonths: 1 as const,
+      ...(disc
+        ? {
+            discountEnabled: true,
+            discountCents: disc.discountCents,
+            discountReason: disc.discountReason,
+          }
+        : {}),
     };
   });
 }
@@ -472,67 +612,180 @@ function MoneyFields({
   value,
   onChange,
   withInterval,
+  withDiscount,
 }: {
-  value: { label: string; displayString: string; amountCents: number; intervalMonths?: 1 | 3 | 12 };
+  value: {
+    label: string;
+    displayString: string;
+    amountCents: number;
+    intervalMonths?: 1 | 3 | 12;
+    discountEnabled?: boolean;
+    discountCents?: number;
+    discountReason?: string;
+  };
   onChange: (next: typeof value) => void;
   withInterval?: boolean;
+  withDiscount?: boolean;
 }) {
+  const discountOn = Boolean(withDiscount && value.discountEnabled);
+  const discountCents = value.discountCents ?? 0;
+  // amountCents is the NET; the list price is what the client would pay without the discount.
+  const listCents = value.amountCents + discountCents;
+  const cadence = withInterval ? (value.intervalMonths ?? 1) : null;
+
   const parsed = parseCentsFromDisplayString(value.displayString);
-  const mismatch = parsed !== null && Math.abs(parsed - value.amountCents) > 1;
+  const mismatch = !discountOn && parsed !== null && Math.abs(parsed - value.amountCents) > 1;
+  const netTooLow = discountOn && discountCents > 0 && discountCents >= listCents;
+
+  // Editing the list price or the discount recomputes the net + the client-facing display string.
+  const setList = (dollars: string) => {
+    const newList = Math.max(0, Math.round(Number(dollars || 0) * 100));
+    const net = Math.max(0, newList - discountCents);
+    onChange({ ...value, amountCents: net, displayString: formatCents(net) });
+  };
+  const setDiscount = (dollars: string) => {
+    const newDiscount = Math.max(0, Math.round(Number(dollars || 0) * 100));
+    const net = Math.max(0, listCents - newDiscount);
+    onChange({ ...value, amountCents: net, discountCents: newDiscount, displayString: formatCents(net) });
+  };
+
   return (
-    <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-12">
-      <div className="col-span-2 sm:col-span-4">
-        <Label className="text-xs">Label</Label>
-        <Input
-          value={value.label}
-          onChange={(e) => onChange({ ...value, label: e.target.value })}
-          placeholder="Website build"
-        />
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-12">
+        <div className="col-span-2 sm:col-span-4">
+          <Label className="text-xs">Label{withDiscount ? " (name on Stripe)" : ""}</Label>
+          <Input
+            value={value.label}
+            onChange={(e) => onChange({ ...value, label: e.target.value })}
+            placeholder="Website build"
+          />
+        </div>
+        {discountOn ? (
+          <>
+            <div className="col-span-1 sm:col-span-3">
+              <Label className="text-xs">List price ($)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={listCents ? (listCents / 100).toString() : ""}
+                onChange={(e) => setList(e.target.value)}
+              />
+            </div>
+            <div className="col-span-1 sm:col-span-3">
+              <Label className="text-xs">Discount ($)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={discountCents ? (discountCents / 100).toString() : ""}
+                onChange={(e) => setDiscount(e.target.value)}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="col-span-2 sm:col-span-4">
+              <Label className="text-xs">Shown to client</Label>
+              <Input
+                value={value.displayString}
+                onChange={(e) => {
+                  const displayString = e.target.value;
+                  const cents = parseCentsFromDisplayString(displayString);
+                  onChange({ ...value, displayString, amountCents: cents ?? value.amountCents });
+                }}
+                placeholder="$1,997"
+              />
+            </div>
+            <div className="col-span-1 sm:col-span-2">
+              <Label className="text-xs">Charged ($)</Label>
+              <Input
+                type="number"
+                min={0}
+                step="0.01"
+                value={value.amountCents ? (value.amountCents / 100).toString() : ""}
+                onChange={(e) =>
+                  onChange({ ...value, amountCents: Math.round(Number(e.target.value || 0) * 100) })
+                }
+              />
+            </div>
+          </>
+        )}
+        {withInterval ? (
+          <div className="col-span-1 sm:col-span-2">
+            <Label className="text-xs">Every</Label>
+            <select
+              className="border-input h-9 w-full rounded-md border bg-transparent px-2 text-sm"
+              value={value.intervalMonths ?? 1}
+              onChange={(e) =>
+                onChange({ ...value, intervalMonths: Number(e.target.value) as 1 | 3 | 12 })
+              }
+            >
+              <option value={1}>Month</option>
+              <option value={3}>Quarter</option>
+              <option value={12}>Year</option>
+            </select>
+          </div>
+        ) : null}
       </div>
-      <div className="col-span-2 sm:col-span-4">
-        <Label className="text-xs">Shown to client</Label>
-        <Input
-          value={value.displayString}
-          onChange={(e) => {
-            const displayString = e.target.value;
-            const cents = parseCentsFromDisplayString(displayString);
-            onChange({ ...value, displayString, amountCents: cents ?? value.amountCents });
-          }}
-          placeholder="$1,997"
-        />
-      </div>
-      <div className="col-span-1 sm:col-span-2">
-        <Label className="text-xs">Charged ($)</Label>
-        <Input
-          type="number"
-          min={0}
-          step="0.01"
-          value={value.amountCents ? (value.amountCents / 100).toString() : ""}
-          onChange={(e) =>
-            onChange({ ...value, amountCents: Math.round(Number(e.target.value || 0) * 100) })
-          }
-        />
-      </div>
-      {withInterval ? (
-        <div className="col-span-1 sm:col-span-2">
-          <Label className="text-xs">Every</Label>
-          <select
-            className="border-input h-9 w-full rounded-md border bg-transparent px-2 text-sm"
-            value={value.intervalMonths ?? 1}
-            onChange={(e) =>
-              onChange({ ...value, intervalMonths: Number(e.target.value) as 1 | 3 | 12 })
-            }
-          >
-            <option value={1}>Month</option>
-            <option value={3}>Quarter</option>
-            <option value={12}>Year</option>
-          </select>
+
+      {discountOn ? (
+        <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
+          <div className="sm:col-span-8">
+            <Label className="text-xs">Discount reason (shown to client)</Label>
+            <Input
+              value={value.discountReason ?? ""}
+              onChange={(e) => onChange({ ...value, discountReason: e.target.value })}
+              placeholder="Loyalty discount"
+            />
+          </div>
+          <div className="sm:col-span-4">
+            <p className="text-xs text-muted-foreground">
+              Charged on Stripe:{" "}
+              <span className="font-medium text-foreground">
+                {formatPricedLine(value.amountCents, cadence)}
+              </span>
+            </p>
+          </div>
         </div>
       ) : null}
+
+      {withDiscount ? (
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={discountOn}
+            onCheckedChange={(v) => {
+              if (v) {
+                onChange({
+                  ...value,
+                  discountEnabled: true,
+                  discountCents: value.discountCents ?? 0,
+                  discountReason: value.discountReason ?? "",
+                });
+              } else {
+                // Removing the discount restores the list price as the charged amount.
+                onChange({
+                  ...value,
+                  discountEnabled: false,
+                  amountCents: listCents,
+                  discountCents: 0,
+                  discountReason: "",
+                  displayString: formatCents(listCents),
+                });
+              }
+            }}
+          />
+          <Label className="text-xs">Apply a discount</Label>
+        </div>
+      ) : null}
+
       {mismatch ? (
-        <p className="col-span-2 text-xs text-destructive sm:col-span-12">
+        <p className="text-xs text-destructive">
           Display says {value.displayString} but {(value.amountCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} will be charged. Make them match before sending.
         </p>
+      ) : null}
+      {netTooLow ? (
+        <p className="text-xs text-destructive">The discount can&apos;t be the whole price.</p>
       ) : null}
     </div>
   );
@@ -617,9 +870,11 @@ export function ProposalForm({
         ? {
             pricingMode: "flat" as PricingMode,
             oneTimeEnabled: Boolean(inferredFlat.oneTime),
-            oneTime: inferredFlat.oneTime ?? prev.oneTime,
+            oneTime: inferredFlat.oneTime ? moneyToDraft(inferredFlat.oneTime) : prev.oneTime,
             recurringEnabled: Boolean(inferredFlat.recurring),
-            recurring: inferredFlat.recurring ?? prev.recurring,
+            recurring: inferredFlat.recurring
+              ? recurringToDraft(inferredFlat.recurring)
+              : prev.recurring,
             ...(inferredFlat.methods ? { methods: inferredFlat.methods } : {}),
             ...(inferredFlat.preferAch !== null ? { preferAch: inferredFlat.preferAch } : {}),
           }
@@ -850,7 +1105,7 @@ export function ProposalForm({
                   <Label>One-time amount due at checkout</Label>
                 </div>
                 {state.oneTimeEnabled ? (
-                  <MoneyFields value={state.oneTime} onChange={(v) => set("oneTime", v)} />
+                  <MoneyFields value={state.oneTime} onChange={(v) => set("oneTime", v)} withDiscount />
                 ) : null}
               </div>
               <div className="space-y-2 rounded-lg border border-border p-3">
@@ -866,6 +1121,7 @@ export function ProposalForm({
                     value={state.recurring}
                     onChange={(v) => set("recurring", v as FormState["recurring"])}
                     withInterval
+                    withDiscount
                   />
                 ) : null}
               </div>
@@ -950,6 +1206,7 @@ export function ProposalForm({
                           tiers[index] = { ...tier, oneTime: v };
                           set("tiers", tiers);
                         }}
+                        withDiscount
                       />
                     ) : null}
                     <div className="flex items-center gap-2">
@@ -972,6 +1229,7 @@ export function ProposalForm({
                           set("tiers", tiers);
                         }}
                         withInterval
+                        withDiscount
                       />
                     ) : null}
                   </div>
@@ -1066,6 +1324,9 @@ export function ProposalForm({
                       displayString: addOn.displayString,
                       amountCents: addOn.amountCents,
                       intervalMonths: addOn.intervalMonths,
+                      discountEnabled: addOn.discountEnabled,
+                      discountCents: addOn.discountCents,
+                      discountReason: addOn.discountReason,
                     }}
                     onChange={(v) => {
                       const addOns = [...state.addOns];
@@ -1075,10 +1336,14 @@ export function ProposalForm({
                         displayString: v.displayString,
                         amountCents: v.amountCents,
                         intervalMonths: (v.intervalMonths ?? addOn.intervalMonths) as 1 | 3 | 12,
+                        discountEnabled: v.discountEnabled,
+                        discountCents: v.discountCents,
+                        discountReason: v.discountReason,
                       };
                       set("addOns", addOns);
                     }}
                     withInterval={addOn.isRecurring}
+                    withDiscount
                   />
                 </div>
               ))}

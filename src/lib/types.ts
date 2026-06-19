@@ -41,10 +41,26 @@ export const TOKEN_KEYS: (keyof TokensJson)[] = [
   "Client.ValidUntil",
 ];
 
+/**
+ * An optional per-line discount. Purely additive metadata: it never changes what's charged.
+ * `amountCents` on the priced line is ALWAYS the net (post-discount) amount — the source of
+ * truth that effectiveCheckout / Stripe / deposit / Notion all read. The original (pre-discount)
+ * price is derived as `line.amountCents + discount.amountCents` (see originalCents in currency.ts).
+ */
+export interface Discount {
+  /** The discount amount in integer cents (positive). */
+  amountCents: number;
+  /** What the discount is for, shown to the client, e.g. "Loyalty discount". */
+  reason: string;
+}
+
 export interface OneTimeItem {
+  /** Net (post-discount) amount in integer cents — exactly what Stripe charges. */
   amountCents: number;
   displayString: string;
   label: string;
+  /** Optional discount applied to reach amountCents. Display + record only; never re-applied. */
+  discount?: Discount | null;
 }
 
 export interface RecurringItem extends OneTimeItem {
@@ -71,9 +87,12 @@ export interface AddOn {
   label: string;
   /** Shown to the client and on receipts. */
   displayString: string;
+  /** Net (post-discount) amount in integer cents — exactly what Stripe charges. */
   amountCents: number;
   /** null = one-time charge; 1 | 3 | 12 = recurring on the same model as tiers. */
   intervalMonths: 1 | 3 | 12 | null;
+  /** Optional discount applied to reach amountCents. Display + record only; never re-applied. */
+  discount?: Discount | null;
 }
 
 /**
@@ -92,6 +111,8 @@ export interface FutureItem {
   intervalMonths: 1 | 3 | 12 | null;
   /** When it begins, e.g. "After launch" or "Q3 2026". */
   startsNote: string;
+  /** Optional discount for display consistency. Never charged (FutureItems skip checkout). */
+  discount?: Discount | null;
 }
 
 export interface DepositConfig {
@@ -163,6 +184,7 @@ export function effectiveLineItems(
 
 /** A single thing Stripe charges at signing. intervalMonths null = one-time. */
 export interface CheckoutLineItem {
+  /** Net (post-discount) amount in cents — discounts are already baked into the line amounts. */
   amountCents: number;
   label: string;
   intervalMonths: 1 | 3 | 12 | null;

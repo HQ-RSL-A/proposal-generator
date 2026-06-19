@@ -379,6 +379,19 @@ export default function DocsPage() {
           <CodeBlock>{PAYMENT_ADDONS}</CodeBlock>
         </div>
         <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Discounts (any charged line)</h3>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Any charged line (flat one-time or recurring, a tier&apos;s one-time or recurring, or an
+            add-on) can carry a discount. In the form, turn on Apply a discount, enter the list price
+            plus the discount amount and a reason; the app charges the net (list minus discount) and
+            shows the client the original struck through with the reason. In a pasted JSON, add a
+            discount object to the line: on Investment.Structure tiers and Investment.AddOns it is{" "}
+            {"{ amount, reason }"} where the line price is the list price; on the internal flat
+            oneTime/recurring shape it is {"{ amountCents, reason }"} where amountCents is already the
+            net. A discount on a recurring line is an ongoing reduced rate.
+          </p>
+        </div>
+        <div className="space-y-2">
           <h3 className="text-sm font-semibold">Deposit (charge a percentage up front)</h3>
           <p className="max-w-2xl text-sm text-muted-foreground">
             deposit.depositPercent (1 to 99, usually 50) charges only that share of the one-time
@@ -397,6 +410,14 @@ export default function DocsPage() {
             unique id. It lives outside the checkout, so it can never be billed at signing.
           </p>
           <CodeBlock>{PAYMENT_FUTURE}</CodeBlock>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Product names on Stripe</h3>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Each line&apos;s label is the exact product name the client sees on the Stripe checkout
+            and receipt — for the flat one-time and recurring lines, the selected tier&apos;s lines,
+            and each add-on. Name them how you want them to read on the charge.
+          </p>
         </div>
       </section>
 

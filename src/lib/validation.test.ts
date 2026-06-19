@@ -250,6 +250,44 @@ describe("paymentConfigSchema future items (display-only)", () => {
   });
 });
 
+describe("paymentConfigSchema discounts", () => {
+  const withDiscount = (discount: unknown): PaymentConfig =>
+    ({ ...flatConfig, oneTime: { ...flatConfig.oneTime!, discount } }) as PaymentConfig;
+
+  it("accepts a valid per-line discount", () => {
+    expect(
+      paymentConfigSchema.safeParse(withDiscount({ amountCents: 10000, reason: "Loyalty" })).success
+    ).toBe(true);
+  });
+
+  it("accepts a null or absent discount", () => {
+    expect(paymentConfigSchema.safeParse(withDiscount(null)).success).toBe(true);
+    expect(paymentConfigSchema.safeParse(flatConfig).success).toBe(true);
+  });
+
+  it("rejects a zero or negative discount amount", () => {
+    expect(paymentConfigSchema.safeParse(withDiscount({ amountCents: 0, reason: "x" })).success).toBe(
+      false
+    );
+    expect(
+      paymentConfigSchema.safeParse(withDiscount({ amountCents: -100, reason: "x" })).success
+    ).toBe(false);
+  });
+
+  it("rejects a discount with no reason", () => {
+    expect(
+      paymentConfigSchema.safeParse(withDiscount({ amountCents: 10000, reason: "" })).success
+    ).toBe(false);
+  });
+
+  it("send-time validation passes when displayString equals the net amount", () => {
+    // net stays $997 (the discount only records the saving), so the display still matches.
+    expect(validatePaymentConfigForSend(withDiscount({ amountCents: 10000, reason: "Loyalty" }))).toEqual(
+      []
+    );
+  });
+});
+
 describe("trackRecordConfigSchema", () => {
   it("accepts an intro plus case studies with and without a URL", () => {
     const ok = {

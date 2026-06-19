@@ -51,7 +51,11 @@
     ]
   },
   "Investment.AddOns": [
-    { "name": "Logo refresh", "price": "$800" },
+    {
+      "name": "Logo refresh",
+      "price": "$800",
+      "discount": { "amount": "$200", "reason": "First-time client" }
+    },
     { "name": "Extra ad channel each month", "price": "$500/month" }
   ],
   "Content.TrackRecord": {

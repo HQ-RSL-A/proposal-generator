@@ -18,6 +18,27 @@ const intervalMap: Record<1 | 3 | 12, { interval: "month" | "year"; interval_cou
   12: { interval: "year", interval_count: 1 },
 };
 
+/**
+ * Maps the resolved checkout to Stripe line_items. Pure + exported for testing.
+ * The Stripe product name is the line LABEL verbatim (the name Rahul typed under Investment) —
+ * no proposal-title suffix. The proposal title rides in the session metadata instead, so the
+ * dashboard stays searchable. unit_amount is the net amountCents (discounts already applied).
+ */
+export function buildLineItems(
+  checkout: EffectiveCheckout,
+  currency: PaymentConfig["currency"]
+): Stripe.Checkout.SessionCreateParams.LineItem[] {
+  return checkout.lineItems.map((li) => ({
+    quantity: 1,
+    price_data: {
+      currency,
+      unit_amount: li.amountCents,
+      ...(li.intervalMonths !== null ? { recurring: intervalMap[li.intervalMonths] } : {}),
+      product_data: { name: li.label },
+    },
+  }));
+}
+
 /** Find-or-create the Stripe customer for a payer, keyed by email. */
 export async function findOrCreateCustomer(input: {
   email: string;
@@ -59,20 +80,16 @@ export async function createCheckoutSession(input: {
     ? "subscription"
     : "payment";
 
-  const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = items.map((li) => ({
-    quantity: 1,
-    price_data: {
-      currency: paymentConfig.currency,
-      unit_amount: li.amountCents,
-      ...(li.intervalMonths !== null ? { recurring: intervalMap[li.intervalMonths] } : {}),
-      product_data: { name: `${li.label} · ${input.proposalTitle}` },
-    },
-  }));
+  const lineItems = buildLineItems(checkout, paymentConfig.currency);
 
   const paymentMethodTypes = [...paymentConfig.paymentMethods];
   if (paymentConfig.preferAch && paymentMethodTypes.includes("us_bank_account")) {
     paymentMethodTypes.sort((a) => (a === "us_bank_account" ? -1 : 1));
   }
+
+  // The product names are now just the line labels, so the proposal title rides in metadata to
+  // keep the Stripe dashboard / payment searchable by deal.
+  const metadata = { proposalId: input.proposalId, proposalTitle: input.proposalTitle };
 
   const params: Stripe.Checkout.SessionCreateParams = {
     mode,
@@ -82,7 +99,7 @@ export async function createCheckoutSession(input: {
       paymentMethodTypes as Stripe.Checkout.SessionCreateParams.PaymentMethodType[],
     success_url: input.successUrl,
     cancel_url: input.cancelUrl,
-    metadata: { proposalId: input.proposalId },
+    metadata,
   };
 
   if (paymentMethodTypes.includes("us_bank_account")) {
@@ -94,9 +111,9 @@ export async function createCheckoutSession(input: {
   }
 
   if (mode === "subscription") {
-    params.subscription_data = { metadata: { proposalId: input.proposalId } };
+    params.subscription_data = { metadata };
   } else {
-    params.payment_intent_data = { metadata: { proposalId: input.proposalId } };
+    params.payment_intent_data = { metadata };
   }
 
   return stripe.checkout.sessions.create(params, {

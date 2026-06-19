@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  discountDisplay,
   displayMatchesCents,
   formatCents,
   formatPricedLine,
+  hasDiscount,
+  originalCents,
   parseCentsFromDisplayString,
 } from "@/lib/currency";
 
@@ -59,5 +62,40 @@ describe("formatPricedLine", () => {
   });
   it("keeps cents when present", () => {
     expect(formatPricedLine(114950, 1)).toBe("$1,149.50/month");
+  });
+});
+
+describe("discount helpers", () => {
+  const discounted = { amountCents: 900000, discount: { amountCents: 100000, reason: "Loyalty" } };
+  const plain = { amountCents: 900000 };
+
+  it("originalCents adds the discount back onto the net", () => {
+    expect(originalCents(discounted)).toBe(1000000);
+    expect(originalCents(plain)).toBe(900000);
+    expect(originalCents({ amountCents: 900000, discount: null })).toBe(900000);
+  });
+
+  it("hasDiscount is true only for a positive discount", () => {
+    expect(hasDiscount(discounted)).toBe(true);
+    expect(hasDiscount(plain)).toBe(false);
+    expect(hasDiscount({ amountCents: 900000, discount: { amountCents: 0, reason: "x" } })).toBe(
+      false
+    );
+  });
+
+  it("discountDisplay returns the was/now/saved pieces, or null without a discount", () => {
+    expect(discountDisplay(plain, null)).toBeNull();
+    expect(discountDisplay(discounted, null)).toEqual({
+      originalLabel: "$10,000",
+      netLabel: "$9,000",
+      savedLabel: "$1,000 off",
+      reason: "Loyalty",
+    });
+  });
+
+  it("discountDisplay carries the cadence on recurring lines", () => {
+    const d = discountDisplay(discounted, 1);
+    expect(d?.originalLabel).toBe("$10,000/month");
+    expect(d?.netLabel).toBe("$9,000/month");
   });
 });
