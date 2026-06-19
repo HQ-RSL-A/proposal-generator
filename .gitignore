@@ -30,3 +30,4 @@ npm-debug.log*
 
 # local scratch (auth browser profile, screenshots in flight)
 .tmp/
+.env*

@@ -38,6 +38,30 @@ decline produced exactly one `PARTY_DECLINED` + one `declined_admin` email (Rese
 returned `code:declined`. **RSL-27 + RSL-29** — fired a real HMAC-signed `checkout.session.completed` at the
 webhook → PAID + `Payment` row + **both receipts DELIVERED** (the client receipt resolved-in-job to the client
 inbox) + `NOTION_SYNCED` (quarterly $300/qtr → $100/mo). `[TEST]` rows cleaned up (cascade); dashboard/DB clean.
+
+**Rehearsal COMPLETED — full sign → Checkout → executed-PDF UI walk (2026-06-19).** The piece blocked since
+Wave 4 is now done. **Blob unblock:** the store has no static token by design (prod = ambient OIDC, see
+`src/lib/blob.ts`), but dev-env OIDC isn't enabled for it, so a `vercel env pull` token 403s
+("OIDC … not enabled for the development environment"). Fix: a static `BLOB_READ_WRITE_TOKEN` in `.env` +
+commenting out `VERCEL_OIDC_TOKEN` in `.env.local` — the `@vercel/blob` resolver prefers OIDC whenever both
+OIDC vars are present, so it must be absent for the token to win. **Walk:** `e2eSeed` → `e2eSend` (new;
+faithfully mirrors `sendProposal` minus `requireAuth`/`revalidatePath` — freeze, hash via `computeContentHash`,
+admin pre-sign copied from `AdminSettings`, client token via `generateSigningToken`) → headless Chrome (Chrome
+DevTools MCP) drove `/sign/<token>`: adopt typed signature (Dancing Script), two-place stamp (Proposal
+Acceptance + MSA execution), ESIGN consent, Finish → real Stripe **test** Checkout (card 4242, phone required) →
+`customer.subscription.created` + `payment_intent.succeeded` → `/paid` (`success_url` carried token +
+`session_id`). **Verified via `e2eVerify`:** `paymentStatus=PAID`, `amountTotalCents=149400` ($997 + $497),
+subscription `sub_…`; **all 4 emails DELIVERED** incl. `payment_received_client` (RSL-27); **6 PendingJobs DONE,
+attempts=1** (GENERATE_PDF, NOTION_SYNC×2, STRIPE_METADATA, SEND_EMAIL×2); clean audit trail (…ALL_SIGNED →
+CHECKOUT_CREATED → … → PAYMENT_PAID…); `notionPageId` null (fake co → no real CRM row touched). **Executed PDF**
+(19pp): both signatures in BOTH spots + E-Signature Certificate; **content-integrity SHA-256 == send-time
+`contentHash`** (`a21497b2…`). **RSL-30** floor passed at checkout. **Not exercised** (happy-path monthly run):
+RSL-28 (fail/link-email dedup) + RSL-29 (quarterly/annual $/mo) — both unit-tested; RSL-29 also covered by the
+partial pass above. **Cleanup:** `[TEST]` proposal cascade-deleted + its 3 blobs + 11 webhook events; dev +
+stripe listen stopped; `STRIPE_WEBHOOK_SECRET` cleared; `BLOB_READ_WRITE_TOKEN` kept for future local runs
+(commented note in `.env`). Helpers kept: `scripts/e2eSend.ts`, `e2eVerify.ts`, `e2eCleanup.ts`. Loose end:
+4 orphaned signature blobs from PRIOR rehearsals still sit in the store (their proposals were deleted, blobs
+never swept) — candidate for a one-off `del`.
 **Limitation:** the literal Stripe Checkout UI couldn't be driven locally — the local `BLOB_READ_WRITE_TOKEN`
 can't write to the prod Blob store, so *signing* fails locally (Blob is prod-only by design). Worked around by
 driving the webhook directly (the identical post-Checkout code path; the only un-exercised surface is Stripe's

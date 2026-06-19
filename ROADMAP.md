@@ -37,7 +37,7 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       customer metadata). The live webhook subscribes `invoice.paid` at the Stripe swap.
       Plan: [`docs/plans/transactionReceipts.md`](docs/plans/transactionReceipts.md).
 
-- [ ] **Post-audit money-path rehearsal (before the next real send).** Sid's 2026-06-17/18 security
+- [x] **Post-audit money-path rehearsal — DONE 2026-06-19 (full sign→checkout→PDF walk).** Sid's 2026-06-17/18 security
       audit (RSL-6..26, all shipped + live) rewrote parts of the live money path — exactly-once
       webhook + durable receipt (RSL-6/8), checkout idempotency (RSL-7), payer-token continuity
       (RSL-14), queue/cron resilience (RSL-13/16). All unit-tested + deployed, but NOT yet exercised
@@ -48,13 +48,19 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       **label as the product name** (no proposal-title suffix) and **charges the net discounted
       amount** on a proposal carrying a per-line discount, and exercise the **two-stage decline
       confirmation** on a separate test row. See LOG 2026-06-19.
-      **PARTIAL 2026-06-19 (wave 8 rehearsal):** decline exactly-once verified live (one
-      `PARTY_DECLINED` + one `declined_admin`); the paid pipeline verified by firing a real
-      signed `checkout.session.completed` at the webhook → PAID + both receipts DELIVERED +
-      `NOTION_SYNCED` ($300/qtr → $100/mo). **Still open:** the literal sign → Stripe Checkout UI
-      walk — blocked locally because the local `BLOB_READ_WRITE_TOKEN` can't write to the prod Blob
-      store (signing needs Blob). Finish on a valid-Blob env (pull prod Blob token, or run the
-      hosted-checkout walk in Stripe test mode on a preview deploy). See LOG 2026-06-19 (wave 8).
+      **DONE 2026-06-19 (wave 8 rehearsal), two passes.** (1) Decline exactly-once verified live (one
+      `PARTY_DECLINED` + one `declined_admin`); paid pipeline via a fired signed
+      `checkout.session.completed` → PAID + both receipts DELIVERED + `NOTION_SYNCED` ($300/qtr → $100/mo).
+      (2) **Full sign → Stripe Checkout UI walk** (the piece blocked since Wave 4): Blob unblocked with a
+      static `BLOB_READ_WRITE_TOKEN` (dev-env OIDC isn't enabled for the store; `VERCEL_OIDC_TOKEN`
+      commented in `.env.local` so the SDK uses the token). Headless Chrome drove adopt → two-place stamp →
+      ESIGN → test card 4242 → `customer.subscription.created` + `payment_intent.succeeded` → `/paid`.
+      Verified: `paymentStatus=PAID` ($1,494 = $997+$497), subscription created, **all 4 emails DELIVERED**
+      (incl. the RSL-27 client receipt), **6 jobs DONE attempts=1**, executed 19pp PDF + E-Sig cert with
+      content-integrity SHA-256 == send-time hash; `[TEST]` row + blobs cleaned up. **RSL-30** floor passed
+      at checkout. Helpers added: `scripts/e2eSend.ts` (faithful auth-less send), `e2eVerify.ts`,
+      `e2eCleanup.ts`. NOT exercised (happy-path monthly run): RSL-28 fail/link-email dedup, RSL-29
+      quarterly/annual Notion — both unit-tested; RSL-29 also covered by pass (1). See LOG 2026-06-19 (wave 8).
 
 ## Payments: add-ons + deposit (added 2026-06-13)
 
