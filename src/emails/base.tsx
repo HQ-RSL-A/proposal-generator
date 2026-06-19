@@ -24,9 +24,10 @@ export const brand = {
 
 export { SUPPORT_EMAIL };
 
-function logoUrl(): string {
-  return `${process.env.NEXT_PUBLIC_APP_URL ?? "https://proposals.rsla.io"}/logomark.png`;
-}
+// Emails render in external inboxes, so the logo must be an absolute, always-reachable URL — never
+// the env-dependent app URL, which is localhost in dev/preview and shows as a broken image. Served
+// from the stable prod domain (returns the asset 200).
+const EMAIL_LOGO_URL = "https://proposals.rsla.io/logomark.png";
 
 export function EmailShell({
   preview,
@@ -45,7 +46,7 @@ export function EmailShell({
             {/* Logomark only — the wordmark has its own letterforms, never
                 approximate it with text. */}
             <Img
-              src={logoUrl()}
+              src={EMAIL_LOGO_URL}
               alt="RSL/A"
               width={32}
               height={32}
@@ -64,12 +65,11 @@ export function EmailShell({
           </Section>
           <Section style={{ padding: "16px 8px 0" }}>
             <Text style={{ fontSize: "12px", color: brand.muted, margin: 0, lineHeight: "18px" }}>
-              RSL/A LLC · New York ·{" "}
               <Link href="https://rsla.io" style={{ color: brand.muted, textDecoration: "underline" }}>
-                rsla.io
+                RSL/A
               </Link>
               <br />
-              Questions? Just reply to this email and it reaches the whole team, or write to{" "}
+              Questions? Email us at{" "}
               <Link href={`mailto:${SUPPORT_EMAIL}`} style={{ color: brand.muted, textDecoration: "underline" }}>
                 {SUPPORT_EMAIL}
               </Link>
