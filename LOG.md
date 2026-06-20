@@ -23,6 +23,12 @@ was clear. Both fixed TDD-style and deployed.
 **272 tests** (+8: producer cadence interactive+import, consent-summary), tsc + `next build` + eslint(src,
 0 err) clean; no schema migration. Gate proportionate to display-only changes (unit + `pdfSmoke` visual;
 the money path is untouched and was fully rehearsed earlier today). **Linear:** RSL-34 + RSL-35 Done.
+**Browser-verified on live prod (post-deploy):** seeded a discounted-recurring tiered `[TEST]` proposal,
+opened its signing page on `proposals.rsla.io`, and confirmed the Growth tier renders "$600/month ·
+Was $700/month, now $600/month" and the adopt-modal **consent restatement reads "Growth at $5,000 +
+$600/month"** — the `/month` cadence is present on the binding text (the bug would read "...+ $600").
+`[TEST]` data + blob cleaned, throwaway seed removed. (The form *producer* path stays login-gated →
+covered by the 5 unit tests; the deployed *consumer*/consent rendering is now eyes-on confirmed.)
 
 ## 2026-06-19 — Wave 8: Sid's re-verification follow-ups (RSL-27..33) SHIPPED to prod
 
