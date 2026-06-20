@@ -1,5 +1,29 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-19 — RSL-34 / RSL-35: discount cadence + PDF discount a11y (Sid /review follow-ups)
+
+Sid's `/review` pass on the per-line-discount feature (commit `05342ed`) filed two more issues —
+**RSL-34** (Medium, Bug) + **RSL-35** (Low, a11y) — surfaced when Rahul asked to confirm Sid's backlog
+was clear. Both fixed TDD-style and deployed.
+
+- **RSL-34 — discounted recurring lines dropped the /month cadence.** A per-line discount overwrote a
+  line's `displayString` with `formatCents(net)` (cadence-less), and that string feeds the e-sign
+  **consent restatement** — so a discounted $600/month tier read "Growth at $600" in the *binding*
+  text. (The charge was always the correct net; only the legal-surface text was wrong.) All four
+  producers in `proposalForm.tsx` now use `formatPricedLine(net, interval)`: the two `MoneyFields`
+  editors (`setList`/`setDiscount`), the discount toggle-off, and the skill-import path (interval
+  threaded through `importDiscount`, now exported). Extracted the consent restatement to a pure
+  `buildSelectedSummary()` in `signingOutcome.ts` so the binding text is unit-tested. The flat-import
+  path (`importPricing.ts`) was already clean (it preserves the source displayString) — no RSL-36.
+- **RSL-35 — PDF discount note lacked was/now a11y context.** The web `DiscountNote` already carries
+  an `aria-label` (RSL-33); react-pdf can't, so the PDF twin (`ProposalPdf.tsx`) now prefixes a literal
+  "was " before the struck original. `pdfSmoke` gained a discounted recurring line; visual Read confirms
+  "was $3,500/month" struck.
+
+**272 tests** (+8: producer cadence interactive+import, consent-summary), tsc + `next build` + eslint(src,
+0 err) clean; no schema migration. Gate proportionate to display-only changes (unit + `pdfSmoke` visual;
+the money path is untouched and was fully rehearsed earlier today). **Linear:** RSL-34 + RSL-35 Done.
+
 ## 2026-06-19 — Wave 8: Sid's re-verification follow-ups (RSL-27..33) SHIPPED to prod
 
 Sid re-verified the completed 21-issue audit at HEAD `05342ed` and filed **7 new issues** (RSL-27..33):

@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { createProposal, updateProposal } from "@/actions/proposals";
 import { normalizeImportedTokens } from "@/lib/validation";
-import { formatCents, formatPricedLine, parseCentsFromDisplayString } from "@/lib/currency";
+import { formatPricedLine, parseCentsFromDisplayString } from "@/lib/currency";
 import { inferFlatPricingFromImport } from "@/lib/importPricing";
 import {
   TOKEN_KEYS,
@@ -408,9 +408,10 @@ function stateToTrackRecord(state: FormState): TrackRecordConfig {
  * Parse an optional import discount on a priced line. The line's `price` is treated as the LIST
  * price; net = list - discount. Returns the draft fields (net amount + discount), or null.
  */
-function importDiscount(
+export function importDiscount(
   rawDiscount: unknown,
-  listCents: number
+  listCents: number,
+  intervalMonths: 1 | 3 | 12 | null
 ): {
   amountCents: number;
   displayString: string;
@@ -434,7 +435,7 @@ function importDiscount(
   const net = listCents - cents;
   return {
     amountCents: net,
-    displayString: formatCents(net),
+    displayString: formatPricedLine(net, intervalMonths),
     discountEnabled: true,
     discountCents: cents,
     discountReason: reason,
@@ -460,7 +461,7 @@ function inferTiersFromImport(raw: Record<string, unknown>): TierDraft[] | null 
     const cents = parseCentsFromDisplayString(tier.price) ?? 0;
     const isRecurring = /\/\s*(mo|month|quarter|yr|year)/i.test(tier.price);
     // A tier discount applies to whichever line its single price represents.
-    const disc = importDiscount(tier.discount, cents);
+    const disc = importDiscount(tier.discount, cents, isRecurring ? 1 : null);
     const active: MoneyDraft = disc
       ? {
           label: "",
@@ -498,7 +499,7 @@ function inferAddOnsFromImport(raw: Record<string, unknown>): AddOnDraft[] | nul
   return list.slice(0, 10).map((addOn, i) => {
     const cents = parseCentsFromDisplayString(addOn.price) ?? 0;
     const isRecurring = /\/\s*(mo|month|quarter|yr|year)/i.test(addOn.price);
-    const disc = importDiscount(addOn.discount, cents);
+    const disc = importDiscount(addOn.discount, cents, isRecurring ? 1 : null);
     return {
       id: slugifyAddOn(addOn.name, i),
       label: addOn.name,
@@ -641,12 +642,12 @@ export function MoneyFields({
   const setList = (dollars: string) => {
     const newList = Math.max(0, Math.round(Number(dollars || 0) * 100));
     const net = Math.max(0, newList - discountCents);
-    onChange({ ...value, amountCents: net, displayString: formatCents(net) });
+    onChange({ ...value, amountCents: net, displayString: formatPricedLine(net, cadence) });
   };
   const setDiscount = (dollars: string) => {
     const newDiscount = Math.max(0, Math.round(Number(dollars || 0) * 100));
     const net = Math.max(0, listCents - newDiscount);
-    onChange({ ...value, amountCents: net, discountCents: newDiscount, displayString: formatCents(net) });
+    onChange({ ...value, amountCents: net, discountCents: newDiscount, displayString: formatPricedLine(net, cadence) });
   };
 
   return (
@@ -770,7 +771,7 @@ export function MoneyFields({
                   amountCents: listCents,
                   discountCents: 0,
                   discountReason: "",
-                  displayString: formatCents(listCents),
+                  displayString: formatPricedLine(listCents, cadence),
                 });
               }
             }}

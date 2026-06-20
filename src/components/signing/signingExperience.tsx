@@ -21,7 +21,7 @@ import { SignatureModal, type AdoptedSignature } from "@/components/signing/sign
 import { computeDepositSchedule, type ProposalSections } from "@/lib/proposalContent";
 import type { PaymentConfig } from "@/lib/types";
 import { brandToast } from "@/lib/toast";
-import { declineOutcome } from "@/lib/signingOutcome";
+import { buildSelectedSummary, declineOutcome } from "@/lib/signingOutcome";
 
 const PLACE_ORDER: SignaturePlace[] = ["proposal", "agreement"];
 
@@ -369,25 +369,12 @@ export function SigningExperience({
         submitting={submitting}
         onAdopt={handleAdopt}
         ctaLabel="Adopt signature"
-        selectedTierSummary={(() => {
-          const tier = sections.investment.tiers?.find((t) => t.id === selectedTierId);
-          const tierPart = tier
-            ? (() => {
-                const price = [tier.oneTime?.displayString, tier.recurring?.displayString]
-                  .filter(Boolean)
-                  .join(" + ");
-                return `${tier.label}${price ? ` at ${price}` : ""}`;
-              })()
-            : null;
-          const selectedAddOns = (paymentConfig.addOns ?? []).filter((a) =>
-            selectedAddOnIds.includes(a.id)
-          );
-          const addOnPart = selectedAddOns.length
-            ? `add-ons: ${selectedAddOns.map((a) => `${a.label} (${a.displayString})`).join(", ")}`
-            : null;
-          const parts = [tierPart, addOnPart].filter(Boolean);
-          return parts.length ? parts.join(", plus ") : null;
-        })()}
+        selectedTierSummary={buildSelectedSummary({
+          tiers: sections.investment.tiers,
+          selectedTierId,
+          addOns: paymentConfig.addOns,
+          selectedAddOnIds,
+        })}
       />
 
       <Dialog

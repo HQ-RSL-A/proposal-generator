@@ -38,7 +38,7 @@ const paymentConfig: PaymentConfig = {
   recurring: null,
   tiers: [
     { id: "tier-foundation", label: "Foundation", recommended: false, includes: ["Website rebuild included", "One rotating service per quarter"], oneTime: { amountCents: 400000, displayString: "$4,000", label: "Website build" }, recurring: { amountCents: 180000, displayString: "$1,800/month", label: "Retainer", intervalMonths: 1 } },
-    { id: "tier-growth", label: "Growth", recommended: true, includes: ["Website rebuild included", "One rotating service per month"], oneTime: { amountCents: 600000, displayString: "$6,000", label: "Website build", discount: { amountCents: 100000, reason: "Launch promo" } }, recurring: { amountCents: 300000, displayString: "$3,000/month", label: "Retainer", intervalMonths: 1 } },
+    { id: "tier-growth", label: "Growth", recommended: true, includes: ["Website rebuild included", "One rotating service per month"], oneTime: { amountCents: 600000, displayString: "$6,000", label: "Website build", discount: { amountCents: 100000, reason: "Launch promo" } }, recurring: { amountCents: 300000, displayString: "$3,000/month", label: "Retainer", intervalMonths: 1, discount: { amountCents: 50000, reason: "Annual commit" } } },
   ],
   addOns: [
     { id: "addon-rush", label: "Rush delivery (two-week build)", displayString: "$800", amountCents: 80000, intervalMonths: null, discount: { amountCents: 20000, reason: "First-time client" } },

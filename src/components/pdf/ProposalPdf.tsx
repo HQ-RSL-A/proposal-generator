@@ -385,6 +385,9 @@ function DiscountNote({
   if (!d) return null;
   return (
     <Text style={{ fontSize: 7.5, color: MUTED, marginTop: 1 }}>
+      {/* react-pdf can't carry an aria-label like the web DiscountNote (RSL-33), so a literal "was"
+          gives the struck original its was/now meaning when the PDF text is linearized. RSL-35. */}
+      {"was "}
       <Text style={{ textDecoration: "line-through" }}>{d.originalLabel}</Text>
       {" "}
       <Text style={{ color: BLUE }}>{d.reason}</Text>
