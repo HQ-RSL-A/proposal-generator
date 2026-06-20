@@ -1,5 +1,30 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-19 — Doc-accuracy pass: blob "delete the prefix" footgun + Stripe runbook reconcile
+
+Two pieces of standing documentation contradicted reality and read as safe-but-destructive
+instructions. Fixed both — docs only, no code/schema, nothing here is served (no prod impact).
+
+- **Blob "orphan" footgun.** BRAIN's Blob gotcha told you to "delete the `proposals/` prefix"
+  to clean up — safe only in its original clean-slate context (DB at 0 proposals), but a
+  standing landmine now: those keys are real signature PNGs + executed PDFs (MSA §11 evidence)
+  on live contracts. A 2026-06-19 spot-check found leftover blobs mapping to **live `Proposal`
+  rows**, so "orphan" can't be eyeballed. Reframed across three files: BRAIN gotcha now says
+  NEVER bulk-delete the prefix + defines orphan as "no `Proposal` row owns the `{id}`" (cuid);
+  ROADMAP "Orphaned-blob cleanup" rewritten as a DB-verified safe procedure (still low
+  priority); the two LOG handoffs that said "delete the prefix" got dated corrections (history
+  preserved, instruction superseded).
+- **Stripe live-key runbook reconcile.** `docs/stripeKeySwapGuide.md` was pre-swap tense though
+  the swap shipped + was verified 2026-06-15. Added a Status: COMPLETED banner (now an as-built
+  config + rollback reference), and fixed a stale Step-5 line that still claimed "the project is
+  NOT git-linked; this is the only ship path" (`main` IS git-linked — the exact false claim
+  behind the earlier prod-revert). Checked the ROADMAP runbook box. The runbook's content (6
+  events, scopes, ACH, rollback) was already accurate.
+
+Verified: only 4 doc files changed (`git diff --stat`), every `proposals/` prefix mention now
+carries a DON'T/superseded caveat, no "NOT git-linked" left in `docs/`. Not committed (no commit
+requested; `main` is git-linked, so a push would trigger a no-op rebuild).
+
 ## 2026-06-19 — RSL-34 / RSL-35: discount cadence + PDF discount a11y (Sid /review follow-ups)
 
 Sid's `/review` pass on the per-line-discount feature (commit `05342ed`) filed two more issues —
@@ -91,7 +116,11 @@ partial pass above. **Cleanup:** `[TEST]` proposal cascade-deleted + its 3 blobs
 stripe listen stopped; `STRIPE_WEBHOOK_SECRET` cleared; `BLOB_READ_WRITE_TOKEN` kept for future local runs
 (commented note in `.env`). Helpers kept: `scripts/e2eSend.ts`, `e2eVerify.ts`, `e2eCleanup.ts`. Loose end:
 4 orphaned signature blobs from PRIOR rehearsals still sit in the store (their proposals were deleted, blobs
-never swept) — candidate for a one-off `del`.
+never swept) — candidate for a one-off `del`. **Correction (2026-06-19):** a later spot-check found the
+leftover signature blobs under inspection map to **live `Proposal` rows**, not deleted ones — so "orphan"
+can't be assumed by eyeballing the store. Cross-check each blob's `{id}` against the DB (`Proposal.id`, a
+cuid) before any `del`; never bulk-delete the `proposals/` prefix. Safe procedure now in ROADMAP + the BRAIN
+Blob gotcha.
 **Limitation:** the literal Stripe Checkout UI couldn't be driven locally — the local `BLOB_READ_WRITE_TOKEN`
 can't write to the prod Blob store, so *signing* fails locally (Blob is prod-only by design). Worked around by
 driving the webhook directly (the identical post-Checkout code path; the only un-exercised surface is Stripe's
@@ -1356,7 +1385,10 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
     development-scoped and the store rejects it; no static RW token exists. **Next step:** in
     the Vercel dashboard Blob browser delete the `proposals/` prefix (KEEP
     `settings/admin-signature.png`), or paste a dashboard RW token and I'll
-    `vercel blob del`. (Details now in BRAIN Gotchas.)
+    `vercel blob del`. (Details now in BRAIN Gotchas.) **Superseded (2026-06-19):** do NOT
+    blanket-delete the `proposals/` prefix — a later spot-check found leftover blobs mapping to
+    live `Proposal` rows, so DB-verify each `{id}` first (orphan only if no `Proposal` row owns
+    it). See the reframed ROADMAP cleanup item + the BRAIN Blob gotcha.
   - **Stripe — left to auto-expire.** Any unpaid live Checkout Session from the Valley Oak
     test self-expires (~24h); declined to pull the live key (safety guard + needless exposure).
 - Upgraded Vercel CLI 53.1.1 → 54.14.0 (adds blob `--oidc-token`/`--store-id` flags).

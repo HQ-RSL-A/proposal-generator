@@ -21,12 +21,11 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       Rahul creates the key/webhook in the dashboard (secrets are shown once,
       unreadable via API); Claude does the env swap + verify. Deferred by Rahul.
 
-- [ ] **Stripe live-key swap guide (runbook).** A step-by-step doc that walks Rahul
-      through creating the live restricted key + live webhook in the Stripe
-      dashboard, then Claude does the Vercel env swap + verify, with a rollback
-      path. Runbook: [`docs/stripeKeySwapGuide.md`](docs/stripeKeySwapGuide.md).
-      Written ahead of time; the swap itself still waits until everything else is
-      locked and loaded.
+- [x] **Stripe live-key swap guide (runbook).** DONE — written ahead, then reconciled
+      2026-06-19 to a completed-swap record. [`docs/stripeKeySwapGuide.md`](docs/stripeKeySwapGuide.md)
+      walks creating the live restricted key + webhook and the Vercel env swap + verify, and now
+      opens with a **Status: COMPLETED** banner (swap done + verified 2026-06-15) so it reads as
+      the as-built config + rollback reference, not a pending task.
 
 - [x] **Receipts / invoices on every transaction (launch-critical).** DONE 2026-06-13.
       The `invoice.paid` renewal handler sends the branded receipt for every subscription
@@ -177,8 +176,16 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       feature: a "Request balance" action that opens a second Stripe checkout for the remaining
       build fee, and a one-click retainer start when the build completes. Needs a payments-schema
       change (one-to-many `Payment` + deposit-aware statuses). v1 collects both manually.
-- [ ] **Orphaned-blob cleanup (low priority).** Test-run signature PNGs + PDFs remain in
-      Vercel Blob after the DB clear; tiny + private. Purge script if ever wanted.
+- [ ] **Orphaned-blob cleanup (low priority, DB-verify first).** Some signature PNGs +
+      executed PDFs linger in Vercel Blob after past DB clears (tiny + private). **Safe
+      procedure:** list keys under `proposals/`, extract each `{id}` segment, and `del`
+      **only** those whose `{id}` has no matching `Proposal.id` row (`Proposal.id` is a cuid);
+      never touch `settings/` (the admin-signature template), and never bulk-delete the whole
+      `proposals/` prefix — live proposals' signature blobs are MSA §11 evidence (a 2026-06-19
+      spot-check found leftover blobs mapping to live rows, so eyeballing "orphan" is unsafe).
+      Access-gated: run from the Vercel dashboard Blob browser or a dashboard-minted one-off
+      RW token (local OIDC is dev-scoped, 403s) — see the BRAIN Blob gotcha. The cleanup itself
+      is minor; this only makes it safe to do.
 
 ## Detailed plans (added 2026-06-13)
 

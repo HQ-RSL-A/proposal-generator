@@ -264,10 +264,18 @@ resolves the proposal by session id whenever the path token is dead.
   the locally-minted OIDC token is *development*-scoped and the store rejects it ("OIDC …
   not enabled for the development environment"), and there's no static RW token to pull
   (`vercel env run/pull` don't expose one — it's runtime-only). To delete, either use the
-  **Vercel dashboard Blob browser** (Storage → store → delete the `proposals/` prefix; keep
-  `settings/`) or generate a one-off RW token in the dashboard and run
+  **Vercel dashboard Blob browser** or generate a one-off RW token in the dashboard and run
   `vercel blob del <pathname> --rw-token <token>` (CLI ≥ 54). "Folders" are just key
   prefixes — deleting the contents removes the folder.
+- **NEVER bulk-delete the `proposals/` prefix while any live proposal exists.** Those keys
+  (`proposals/{id}/signatures/{partyId}.png`, `proposals/{id}/v{n}/signed.pdf`) are real
+  signature PNGs + executed PDFs — MSA §11 chargeback evidence on executed contracts, not
+  test junk. A `proposals/{id}/…` blob is an **orphan only when no `Proposal` row has that
+  `id`** (`Proposal.id` is a cuid string — `prisma/schema.prisma`); DB-verify the `{id}`
+  before any `del`. Always keep `settings/` (the saved admin-signature template). The old
+  "delete the whole `proposals/` prefix" shortcut was a clean-slate-only move (DB at 0
+  proposals); a 2026-06-19 spot-check found leftover blobs that map to live rows, so
+  eyeballing "orphan" in the store is unsafe — cross-check the DB first.
 - Supabase pooler host is **aws-1**-us-west-1.pooler.supabase.com (aws-0 returns
   "tenant not found" and crashes sign-in via the auth allowlist lookup).
 - **Test/seed data must use fake company names.** The Notion paid-sync matches CRM pages by

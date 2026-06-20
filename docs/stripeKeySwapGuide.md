@@ -1,9 +1,18 @@
 # Stripe live-key swap runbook — proposalGenerator (proposals.rsla.io)
 
-Written 2026-06-13. Stripe is in TEST mode everywhere today. This is a one-way door:
-the live secret key and webhook secret are shown **once** and can't be read back via
-API. Go in order; don't skip verification. **Rahul** does the dashboard steps (1–3, 6);
-**Claude** does the Vercel env swap + deploy + verify (4–5, 7–8).
+> **Status: COMPLETED — swap executed and verified 2026-06-15.** Vercel Production has run
+> the live restricted key `rk_live_…` (`proposalGenerator-live`) + the live webhook since
+> **2026-06-12**. Verified **2026-06-15** by a live $1 smoke test (real card →
+> `checkout.session.completed` signature-verified → PAID → client + admin receipts + executed
+> PDF; Notion no-op on the fake company), plus recurring / ACH / renewal proven in a local
+> Stripe sandbox and a real sandbox subscription pay (card 4242). **All 6 live events confirmed
+> in the dashboard.** This doc is now the **as-built live-config record** and the **rollback /
+> re-issue reference** — the original pre-swap steps are preserved below.
+
+Written 2026-06-13 (pre-swap, for the rotation itself). This is a one-way door: the live
+secret key and webhook secret are shown **once** and can't be read back via API. Go in order;
+don't skip verification. **Rahul** does the dashboard steps (1–3, 6); **Claude** does the
+Vercel env swap + deploy + verify (4–5, 7–8).
 
 What changes: two Vercel env vars (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`) + one
 redeploy. No DB changes. Test-mode customers/sessions stay in their separate universe.
@@ -66,7 +75,12 @@ vercel env ls production | grep STRIPE           # confirm both present
 
 ## Step 5 — Deploy (Claude)
 ```bash
-vercel deploy --prod --yes   # the project is NOT git-linked; this is the only ship path
+# Redeploy prod so the swapped env vars take effect.
+# NOTE: main is git-linked — pushing main auto-deploys to prod (the normal ship path).
+# `vercel deploy --prod --yes` is a MANUAL deploy of the current dir, so only run it from a
+# clean, up-to-date `main` checkout — never a branch behind main (it supersedes + reverts
+# main's live deploy). Or redeploy the latest main deployment from the Vercel dashboard.
+vercel deploy --prod --yes
 ```
 
 ## Step 6 — Set live email settings so we don't double-send (Rahul)
