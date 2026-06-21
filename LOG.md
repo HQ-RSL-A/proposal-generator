@@ -1,6 +1,6 @@
 # LOG.md — proposalGenerator
 
-## 2026-06-21 — Manual-invoice (no-checkout) pricing mode — BUILT on branch `feat/manual-invoice`
+## 2026-06-21 — Manual-invoice (no-checkout) pricing mode — DEPLOYED to prod
 
 New pricing mode: a proposal can show its full pricing (amount + duration), sign normally, and **skip
 Stripe checkout** — the owner invoices manually and later clicks **Mark as paid**. Decoupled "show a
@@ -33,7 +33,10 @@ payment link / invoice language); mark-as-paid is internal only (no client email
 dashboard counting/attention tests); `pdfSmoke` + `emailPreview` clean; rendered a manual-invoice PDF and
 visually confirmed the Investment section shows "$9,000 one-time / $2,000/month" and the How-to-Proceed
 steps are payment-free. **NOT yet run:** a live sign→`MANUAL_INVOICE`→mark-paid DB rehearsal (needs the
-Blob token like the wave-8 rehearsal). **Status:** on branch `feat/manual-invoice`, not merged/deployed.
+Blob token like the wave-8 rehearsal). **Status:** DEPLOYED — `main` ff `b864595..e73dd20`, Vercel
+`dpl_5ksv…` READY → `proposals.rsla.io` (landing 200 / dashboard 307 / unauthed `/api/.../pdf` 401).
+Back-compat safe (the new path only activates when the admin ticks the toggle). Live manual-invoice
+sign→mark-paid rehearsal still recommended before the first real manual-invoice send.
 
 ## 2026-06-21 — Wrap: GEMINI.md synced to CLAUDE.md (git-linked drift) + blobSweep in Commands
 
