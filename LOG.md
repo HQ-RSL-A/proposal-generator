@@ -1,5 +1,46 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-20 — Mobile pass: internal admin surfaces audited + planned (no code yet)
+
+Audited the three still-open mobile surfaces (proposal form, detail/tabs, settings) via three
+parallel reads and wrote a prioritized plan:
+[`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md). Findings: the
+proposal form is the only thing that genuinely looks broken on a phone — the pricing grids
+(MoneyFields + tier editor) are `grid-cols-2` on mobile, jamming fields into a 2-col staircase
+(fix = `grid-cols-1 sm:grid-cols-12`); the detail view is mostly fine except the 4-tab strip
+compressing (fix = horizontal scroll); settings are minor (add-teammate grid + a few flex rows).
+Two calls: skipped the signature-pad `h-44` flag (false positive — the same canvas the signing
+flow already phone-tested) and deliberately NOT doing a 44px tap-target / bigger-text overhaul
+(would diverge from the app's shipped compact density). Scope tiers: P0 (grid crushes + tab
+strip) / P1 (collapsing rows) / P2 (optional sticky save bar). Presentational Tailwind only,
+~6 files; awaiting a go + scope to execute. ROADMAP mobile item updated to point at the plan.
+
+## 2026-06-19 — Fieldshare lineage collapse + first DB-verified blob sweep
+
+Two prod data operations (no code shipped). Both put today's doc-accuracy fix into practice
+and validated it.
+
+- **Fieldshare Marketing Retainer: 3 versions collapsed to 1.** Rahul asked to delete v2 + v1
+  and make v3 the new v1. Inspected first (`.tmp/inspectFieldshare.ts`): v1 (`cmqgb4fbu…`) and
+  v2 (`cmqiflptt…`) were both VOIDED ("Superseded by revision"), carrying only Rahul's
+  PRE_APPLIED admin signature — the client signers (Chris Kam / Sid Satoskar, fieldshare.io)
+  never signed, no payments, no executed PDFs. v3 (`cmqkncxl5…`) was a clean never-sent DRAFT.
+  Collapsed via a guarded transaction (`.tmp/fieldshareCollapse.ts`, aborts on any non-admin
+  signature or payment): detached v3 (versionNumber=1, parentId=null), then deleted v2 + v1
+  (cascade cleaned parties / admin sigs / audit / emails). One Fieldshare row remains: DRAFT
+  v1, root. This was a deliberate hand-SQL bypass of the app's `deleteDraft` guard (which only
+  deletes DRAFTs) — fine, voided revisions aren't deletable in-app and nothing was executed.
+- **First DB-verified orphaned-blob sweep (`.tmp/blobSweep.ts`).** Listed every `proposals/`
+  blob, grouped by `{id}`, kept only ids with a live Proposal row. The result proved the
+  reframed-doc point exactly: the store held just **4** `proposals/` blobs — **2 belong to live
+  proposals** (`cmqg642cx…`, `cmqhcsadf…`, KEPT) and **2 were true orphans** (the Fieldshare
+  v1/v2 admin sigs just orphaned by the delete). The old LOG's "4 orphans from prior rehearsals"
+  was wrong (already swept); a blanket "delete the `proposals/` prefix" would have destroyed the
+  2 real signature blobs. Deleted the 2 orphans (86.7KB); re-run shows 0 orphans, 2 kept. Blob
+  access used the wave-8 `BLOB_READ_WRITE_TOKEN` in `.env` (OIDC stays commented in `.env.local`).
+  Throwaway scripts left in `.tmp/` (gitignored); `blobSweep.ts` is promotable to `scripts/` if
+  we want the documented sweep one-command runnable.
+
 ## 2026-06-19 — Doc-accuracy pass: blob "delete the prefix" footgun + Stripe runbook reconcile
 
 Two pieces of standing documentation contradicted reality and read as safe-but-destructive

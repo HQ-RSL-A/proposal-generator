@@ -83,7 +83,11 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       becomes a tappable card list below md, plus a compact KPI strip. The **app nav/shell**
       is mobile-friendly too (2026-06-13): below md the nav links + New Proposal + account
       collapse into one hamburger. STILL OPEN: the proposal form, the detail tabs, and
-      settings. Audit each breakpoint.
+      settings. Audit each breakpoint. **Audited + planned 2026-06-20** →
+      [`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md): P0 = the
+      form pricing grids (2-col crush) + the detail 4-tab strip; P1 = collapsing flex rows in
+      form/detail/settings; P2 = optional (sticky mobile save bar). Presentational only; not
+      yet executed.
 
 - [x] **Landing + sign-in + dashboard design pass.** DONE 2026-06-13. Landing rebuilt
       bolder (gradient display headline, floating mock proposal card, radial glows, gradient
@@ -185,7 +189,10 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       spot-check found leftover blobs mapping to live rows, so eyeballing "orphan" is unsafe).
       Access-gated: run from the Vercel dashboard Blob browser or a dashboard-minted one-off
       RW token (local OIDC is dev-scoped, 403s) — see the BRAIN Blob gotcha. The cleanup itself
-      is minor; this only makes it safe to do.
+      is minor; this only makes it safe to do. **Swept 2026-06-20** (first DB-verified run):
+      the store held 4 `proposals/` blobs — 2 belong to live proposals (kept), 2 were true
+      orphans (deleted, 86.7KB); store now clean (0 orphans). Recurs as proposals are deleted —
+      re-run the procedure when needed.
 
 ## Detailed plans (added 2026-06-13)
 
@@ -202,6 +209,9 @@ Research-backed, code-grounded plans with file refs, risks, and open decisions:
   `/docs` schema reference (generic, industry-standard names).
 - [`docs/stripeKeySwapGuide.md`](docs/stripeKeySwapGuide.md) — step-by-step live-key
   swap runbook.
+- [`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md) — mobile pass
+  for the internal admin surfaces (proposal form, detail tabs, settings); audit + prioritized
+  P0/P1/P2 fixes, all presentational.
 
 ---
 
