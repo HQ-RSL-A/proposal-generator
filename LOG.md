@@ -20,9 +20,9 @@ P0 + P1, presentational Tailwind only (no logic/data/schema). 4 component files 
 
 **Verified:** `npm run build` green + `eslint src` 0 errors (10 pre-existing test-file warnings only).
 **Desktop (≥md) is provably unchanged** — every edit only adds mobile-first base classes overridden back
-to the originals at `sm`/`md`. **Not done:** live phone QA on the authed admin screens (no Google session
-headlessly) — recommend a quick eyeball, consistent with prior auth-gated admin UI. P2 (sticky mobile save
-bar) deferred as optional.
+to the originals at `sm`/`md`. **Phone-verified 2026-06-21** — Rahul confirmed the form, a proposal detail, and settings look good on a
+real phone (the headless gap was only that authed admin screens need a Google session, so they couldn't be
+screenshotted locally at build time). P2 (sticky mobile save bar) deferred as optional.
 
 ## 2026-06-20 — Mobile pass: internal admin surfaces audited + planned (no code yet)
 
