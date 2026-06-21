@@ -140,7 +140,7 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
           <p className="flex items-center gap-2 text-sm font-medium">
             <UserPlus className="h-4 w-4 text-primary" /> Add a teammate
           </p>
-          <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-12">
+          <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
             <div className="col-span-2 sm:col-span-4">
               <Label className="text-xs">Name</Label>
               <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="First Last" />

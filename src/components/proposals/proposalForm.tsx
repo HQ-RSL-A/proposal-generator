@@ -652,7 +652,7 @@ export function MoneyFields({
 
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-12">
+      <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
         <div className="col-span-2 sm:col-span-4">
           <Label className="text-xs">Label{withDiscount ? " (name on Stripe)" : ""}</Label>
           <Input
@@ -1133,7 +1133,7 @@ export function ProposalForm({
             <div className="space-y-4">
               {state.tiers.map((tier, index) => (
                 <div key={index} className="space-y-3 rounded-lg border border-border p-3">
-                  <div className="grid grid-cols-2 items-end gap-2 sm:grid-cols-12">
+                  <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
                     <div className="col-span-2 sm:col-span-5">
                       <Label className="text-xs">Tier name</Label>
                       <Input
@@ -1256,7 +1256,7 @@ export function ProposalForm({
           ) : null}
 
           {state.pricingMode !== "signOnly" ? (
-            <div className="flex flex-wrap items-center gap-6 border-t border-border pt-4">
+            <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 md:gap-6">
               <div className="flex items-center gap-2">
                 <Checkbox
                   checked={state.methods.card}

@@ -1,5 +1,29 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-20 — Mobile pass SHIPPED (P0 + P1) + blobSweep promoted to scripts/
+
+Executed the mobile plan ([`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md)),
+P0 + P1, presentational Tailwind only (no logic/data/schema). 4 component files + 1 script:
+
+- **P0** — form pricing grids (`proposalForm.tsx` MoneyFields + tier editor) `grid-cols-2` →
+  `grid-cols-1 sm:grid-cols-12` (fields stack full-width on a phone instead of a 2-col staircase);
+  detail **4-tab strip** (`proposals/[id]/page.tsx`) → mobile horizontal scroll (`overflow-x-auto`,
+  triggers `flex-none`, restored to `flex-1` at `sm`).
+- **P1** — form payment-methods row `gap-6` → `gap-3 md:gap-6`; detail documents row + settings
+  add-teammate grid + the 3 system-health rows stack on mobile (`flex-col md:flex-row`).
+- **Skipped as genuine non-issues:** deposit row (already `flex-wrap` + `flex-1` helper), party-actions
+  and team-user-row buttons (already stack at `sm`; two small buttons fit), signature-pad `h-44` (shared
+  with the phone-tested signing flow). No 44px tap-target / bigger-text overhaul (keeps the app's shipped
+  compact density).
+- **blobSweep promoted** `.tmp/` → `scripts/blobSweep.ts` — the documented DB-verified cleanup is now one
+  command (`npx tsx scripts/blobSweep.ts` dry-run; `APPLY=1` to delete).
+
+**Verified:** `npm run build` green + `eslint src` 0 errors (10 pre-existing test-file warnings only).
+**Desktop (≥md) is provably unchanged** — every edit only adds mobile-first base classes overridden back
+to the originals at `sm`/`md`. **Not done:** live phone QA on the authed admin screens (no Google session
+headlessly) — recommend a quick eyeball, consistent with prior auth-gated admin UI. P2 (sticky mobile save
+bar) deferred as optional.
+
 ## 2026-06-20 — Mobile pass: internal admin surfaces audited + planned (no code yet)
 
 Audited the three still-open mobile surfaces (proposal form, detail/tabs, settings) via three

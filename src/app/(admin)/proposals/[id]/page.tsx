@@ -148,7 +148,7 @@ export default async function ProposalDetailPage({
       ) : null}
 
       <Tabs defaultValue="preview">
-        <TabsList className="w-full sm:w-fit">
+        <TabsList className="w-full justify-start overflow-x-auto sm:w-fit sm:justify-center **:data-[slot=tabs-trigger]:flex-none sm:**:data-[slot=tabs-trigger]:flex-1">
           <TabsTrigger value="preview">Preview</TabsTrigger>
           <TabsTrigger value="parties">Parties</TabsTrigger>
           <TabsTrigger value="audit">Audit trail</TabsTrigger>
@@ -223,7 +223,7 @@ export default async function ProposalDetailPage({
           ) : (
             <div className="divide-y divide-border rounded-xl border border-border bg-white">
               {proposal.documents.map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between gap-3 p-4">
+                <div key={doc.id} className="flex flex-col items-start gap-2 p-4 md:flex-row md:items-center md:justify-between md:gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium">
                       {doc.isFinal ? "Executed agreement (current)" : "Superseded copy"}

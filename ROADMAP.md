@@ -77,7 +77,7 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
 
 ## Planned enhancements (added 2026-06-13)
 
-- [ ] **Mobile optimization, internal app.** The client-facing surfaces (signing
+- [x] **Mobile optimization, internal app.** The client-facing surfaces (signing
       ceremony, signature modal, tier cards, outcome/pay screens) were made mobile-clean
       2026-06-13. The **dashboard** is now mobile-clean too (2026-06-13): the wide table
       becomes a tappable card list below md, plus a compact KPI strip. The **app nav/shell**
@@ -86,8 +86,10 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       settings. Audit each breakpoint. **Audited + planned 2026-06-20** →
       [`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md): P0 = the
       form pricing grids (2-col crush) + the detail 4-tab strip; P1 = collapsing flex rows in
-      form/detail/settings; P2 = optional (sticky mobile save bar). Presentational only; not
-      yet executed.
+      form/detail/settings; P2 = optional (sticky mobile save bar). **P0 + P1 SHIPPED 2026-06-20**
+      (form pricing grids -> grid-cols-1; detail tab strip -> mobile horizontal scroll; form
+      payment-methods gap; detail documents row + settings add-teammate grid + system-health rows
+      stack on mobile). Desktop unchanged. P2 (sticky save bar) deferred as optional.
 
 - [x] **Landing + sign-in + dashboard design pass.** DONE 2026-06-13. Landing rebuilt
       bolder (gradient display headline, floating mock proposal card, radial glows, gradient
@@ -192,7 +194,7 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       is minor; this only makes it safe to do. **Swept 2026-06-20** (first DB-verified run):
       the store held 4 `proposals/` blobs — 2 belong to live proposals (kept), 2 were true
       orphans (deleted, 86.7KB); store now clean (0 orphans). Recurs as proposals are deleted —
-      re-run the procedure when needed.
+      re-run the procedure when needed (`scripts/blobSweep.ts`: dry-run by default, `APPLY=1` to delete).
 
 ## Detailed plans (added 2026-06-13)
 

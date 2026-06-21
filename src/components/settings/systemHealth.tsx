@@ -87,7 +87,7 @@ export async function SystemHealthPanel() {
                     "use server";
                     await retryJob(job.id);
                   }}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm"
+                  className="flex flex-col items-start gap-2 rounded-lg border border-border p-3 md:flex-row md:items-center md:justify-between md:gap-3 text-sm"
                 >
                   <div className="min-w-0">
                     <p className="font-medium">
@@ -121,7 +121,7 @@ export async function SystemHealthPanel() {
                 <Link
                   key={proposal.id}
                   href={`/proposals/${proposal.id}`}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-border p-3 text-sm hover:border-primary/50"
+                  className="flex flex-col items-start gap-2 rounded-lg border border-border p-3 md:flex-row md:items-center md:justify-between md:gap-3 text-sm hover:border-primary/50"
                 >
                   <div>
                     <p className="font-medium">{proposal.title}</p>
@@ -176,7 +176,7 @@ export async function SystemHealthPanel() {
           ) : (
             <div className="space-y-2 text-sm">
               {[...lastCronByPath.values()].map((log) => (
-                <div key={log.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                <div key={log.id} className="flex flex-col items-start gap-2 rounded-lg border border-border p-3 md:flex-row md:items-center md:justify-between md:gap-3">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{log.path}</p>
                     <p className="text-xs text-muted-foreground">
