@@ -1,5 +1,20 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-21 — Wrap: GEMINI.md synced to CLAUDE.md (git-linked drift) + blobSweep in Commands
+
+Session wrap. The mobile pass (P0+P1) shipped and was **phone-verified 2026-06-21** (folded into the
+entry below). Two doc-accuracy fixes at wrap:
+
+- **GEMINI.md was out of sync with CLAUDE.md on deployment** — it still claimed "the Vercel project is
+  NOT git-linked; push alone deploys nothing" and lacked the git-linked rule (the same stale footgun
+  corrected in the Stripe runbook on 2026-06-19). Mirrored CLAUDE.md: added the "`main` is git-linked →
+  pushing `main` auto-deploys" rule and fixed the Commands deploy line.
+- Added `npx tsx scripts/blobSweep.ts` to the Commands block in both CLAUDE.md and GEMINI.md (the script
+  was promoted to `scripts/` this session).
+
+No other rule/scope changes. In-app AI generation + tool-driven deposit balance/retainer remain **parked**
+per Rahul (captured in ROADMAP + the plan file); manual deposit collection stays.
+
 ## 2026-06-20 — Mobile pass SHIPPED (P0 + P1) + blobSweep promoted to scripts/
 
 Executed the mobile plan ([`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md)),

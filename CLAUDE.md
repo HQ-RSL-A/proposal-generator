@@ -63,5 +63,6 @@ npx prisma db seed             # seed MsaVersion v3 + AdminSettings
 npx tsx scripts/pdfSmoke.ts    # render the full PDF locally (required after any PDF change)
 npx tsx scripts/emailPreview.tsx  # render all 14 emails to docs/emailPreviews/
 npx tsx scripts/e2eSeed.ts     # fresh [TEST] rehearsal draft (fake company, prod DB)
+npx tsx scripts/blobSweep.ts   # DB-verified orphaned-blob sweep (dry-run; APPLY=1 to delete)
 vercel deploy --prod --yes     # manual deploy of the CWD (worktree, etc.); main is git-linked, so pushing main also ships
 ```
