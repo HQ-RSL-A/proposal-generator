@@ -1,5 +1,40 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-21 — Manual-invoice (no-checkout) pricing mode — BUILT on branch `feat/manual-invoice`
+
+New pricing mode: a proposal can show its full pricing (amount + duration), sign normally, and **skip
+Stripe checkout** — the owner invoices manually and later clicks **Mark as paid**. Decoupled "show a
+price" from "charge a price" via one toggle, instead of bolting amounts onto the empty sign-only branch.
+
+**Decisions (with Rahul):** full pricing model (toggle works on flat/tiered/recurring/add-ons); counts
+as contracted/MRR immediately + a "Mark as paid" admin action; generic post-sign confirmation (no
+payment link / invoice language); mark-as-paid is internal only (no client email).
+
+**Shape:**
+- `PaymentConfig.manualInvoice?: boolean` (back-compat optional) + helpers `isManualInvoice()` /
+  `skipsCheckout()` in `types.ts`. New `PaymentStatus.MANUAL_INVOICE` (migration `0007`, already applied
+  to the prod DB — additive `ALTER TYPE ... ADD VALUE`, harmless to live rows).
+- Signing: last signer with a manual config sets `MANUAL_INVOICE` and never mints a Stripe session
+  (`signingService.ts`). Pricing rendering + dashboard revenue math unchanged (revenue already counts on
+  `status === SIGNED`).
+- **No-payment-leak pass** (the careful part): `generatePdf` `paymentPending` excludes `MANUAL_INVOICE`
+  so the `fully_signed_client` email stays link-free; sign-page `willCheckout` via `skipsCheckout`;
+  `proposalContent` "How to Proceed" gets a generic, payment-free variant; `/pay` shows a benign
+  "nothing to pay here" for `MANUAL_INVOICE`.
+- Form: a "Don't collect payment — I'll invoice manually" checkbox in the Checkout card (flat/tiers),
+  hides payment methods + deposit when on; import accepts top-level `manualInvoice: true`.
+- Dashboard: `awaiting_invoice` attention reason ("N to invoice") + "Awaiting invoice" status chip.
+  Admin send-summary + signed-admin email get manual-invoice copy.
+- **Mark as paid** (`markPaidManually` action + button on the signed detail page): ADMIN-only,
+  status-guarded + idempotent `MANUAL_INVOICE → PAID`, logs `PAYMENT_PAID {kind:"manual"}`, syncs Notion
+  "paid" — **no** Stripe metadata, **no** receipt emails, **no** `Payment` row (that table is Stripe-only).
+
+**Verified:** `npm run build` green; `npm test` 278/278 (added helper truth-table, validation floor-skip,
+dashboard counting/attention tests); `pdfSmoke` + `emailPreview` clean; rendered a manual-invoice PDF and
+visually confirmed the Investment section shows "$9,000 one-time / $2,000/month" and the How-to-Proceed
+steps are payment-free. **NOT yet run:** a live sign→`MANUAL_INVOICE`→mark-paid DB rehearsal (needs the
+Blob token like the wave-8 rehearsal). **Status:** on branch `feat/manual-invoice`, not merged/deployed.
+
 ## 2026-06-21 — Wrap: GEMINI.md synced to CLAUDE.md (git-linked drift) + blobSweep in Commands
 
 Session wrap. The mobile pass (P0+P1) shipped and was **phone-verified 2026-06-21** (folded into the

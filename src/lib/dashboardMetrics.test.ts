@@ -244,6 +244,26 @@ describe("computeDashboardMetrics — attention detection", () => {
     expect(m.attention.find((a) => a.id === "await")?.reason).toBe("awaiting_payment");
   });
 
+  it("flags a signed manual-invoice deal as awaiting_invoice and still counts its value", () => {
+    const m = computeDashboardMetrics(
+      [
+        mk({
+          id: "manual",
+          status: "SIGNED",
+          paymentStatus: "MANUAL_INVOICE",
+          company: "Brightline Test Co",
+          oneTimeCents: 500_000,
+          recurringMonthlyCents: 200_000,
+        }),
+      ],
+      NOW
+    );
+    expect(m.attention.find((a) => a.id === "manual")?.reason).toBe("awaiting_invoice");
+    // Revenue counts on SIGNED (not PAID), so a manual-invoice deal contributes immediately.
+    expect(m.contractedCents).toBe(500_000);
+    expect(m.mrrCents).toBe(200_000);
+  });
+
   it("flags open proposals older than the attention threshold", () => {
     const m = computeDashboardMetrics(
       [

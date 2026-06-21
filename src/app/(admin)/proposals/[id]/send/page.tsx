@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/authGuard";
 import { prisma } from "@/lib/prisma";
 import { formatCents } from "@/lib/currency";
 import { validatePaymentConfigForSend } from "@/lib/validation";
-import { isSignOnly, type PaymentConfig, type TokensJson } from "@/lib/types";
+import { isManualInvoice, isSignOnly, type PaymentConfig, type TokensJson } from "@/lib/types";
 import { clientFullName } from "@/lib/clientName";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +25,8 @@ export default async function SendPage({ params }: { params: Promise<{ id: strin
   const signatureMissing = !settings?.signatureBlobUrl;
 
   const checkoutSummary = (() => {
+    if (isManualInvoice(config))
+      return "Manual invoice. Full pricing shows on the proposal, but no checkout runs — you'll invoice and mark it paid.";
     if (isSignOnly(config)) return "Sign-only. No checkout after signing.";
     if (config.tiers?.length) {
       return `Client picks one of ${config.tiers.length} tiers on the signing page; checkout charges the selected tier.`;

@@ -64,6 +64,17 @@ export default async function PayPage({
       </OutcomeCard>
     );
   }
+  if (proposal.paymentStatus === "MANUAL_INVOICE") {
+    // Manual-invoice deals collect nothing online — never mint a session; show a benign confirmation.
+    return (
+      <OutcomeCard icon={CheckCircle2} tone="success" title="You're all set">
+        <p>
+          This agreement is signed and in effect. There&apos;s nothing to pay here, we&apos;ll be in
+          touch directly about next steps.
+        </p>
+      </OutcomeCard>
+    );
+  }
   if (proposal.status !== "SIGNED" || proposal.paymentStatus === "NOT_REQUIRED") {
     return (
       <OutcomeCard icon={PenLine} tone="info" title="Signature comes first">

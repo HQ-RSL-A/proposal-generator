@@ -31,6 +31,7 @@ enum PaymentStatus {
   PAID
   FAILED
   SESSION_EXPIRED
+  MANUAL_INVOICE
 
   @@schema("proposals")
 }

@@ -206,9 +206,11 @@ export function buildTemplate(
             paymentStatusLine={
               proposal.paymentStatus === "NOT_REQUIRED"
                 ? "No checkout (invoiced separately)"
-                : proposal.paymentStatus === "PAID"
-                  ? "Paid"
-                  : "Awaiting payment"
+                : proposal.paymentStatus === "MANUAL_INVOICE"
+                  ? "Manual invoice (collect offline, then mark paid)"
+                  : proposal.paymentStatus === "PAID"
+                    ? "Paid"
+                    : "Awaiting payment"
             }
             dashboardUrl={dashboardUrl}
           />

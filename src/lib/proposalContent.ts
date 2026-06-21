@@ -14,7 +14,7 @@ import type {
   TrackRecordCaseStudy,
   TrackRecordConfig,
 } from "@/lib/types";
-import { effectiveLineItems, isSignOnly } from "@/lib/types";
+import { effectiveLineItems, isManualInvoice, isSignOnly } from "@/lib/types";
 import { clientFullName, collapseNameFieldGap } from "@/lib/clientName";
 import {
   parseMsa,
@@ -293,7 +293,13 @@ export function buildProposalSections(input: {
     howToProceed: {
       heading: "How to Proceed",
       intro: "Three steps and we're off:",
-      steps: signOnly
+      steps: isManualInvoice(paymentConfig)
+        ? [
+            "Sign below. You adopt your signature once and place it in two spots, the proposal acceptance and the agreement execution.",
+            "Once every party has signed, the agreement is in effect and your executed copy, signature certificate included, arrives by email.",
+            "From there, we'll be in touch directly to get you started.",
+          ]
+        : signOnly
         ? [
             "Sign below. You adopt your signature once and place it in two spots, the proposal acceptance and the agreement execution.",
             "Within 24 hours, you'll receive the invoice or payment link for the first payment shown in Your Investment.",

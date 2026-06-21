@@ -82,7 +82,7 @@ export function monthlyBuckets(now: Date, count = 6): MonthBucket[] {
   return buckets;
 }
 
-export type AttentionReason = "awaiting_payment" | "stale_open";
+export type AttentionReason = "awaiting_payment" | "awaiting_invoice" | "stale_open";
 
 export interface AttentionItem {
   id: string;
@@ -172,6 +172,9 @@ export function computeDashboardMetrics(
   for (const p of proposals) {
     if (p.status === "SIGNED" && (p.paymentStatus === "AWAITING" || p.paymentStatus === "FAILED")) {
       attention.push({ id: p.id, company: p.company, reason: "awaiting_payment" });
+    } else if (p.status === "SIGNED" && p.paymentStatus === "MANUAL_INVOICE") {
+      // Signed manual-invoice deals are an open loop: send the invoice, then mark it paid.
+      attention.push({ id: p.id, company: p.company, reason: "awaiting_invoice" });
     } else if (OPEN_STATUSES.includes(p.status) && p.sentAt) {
       // Continuous day comparison so the strip flags the deal the instant it crosses 14 days,
       // matching the headline's `oldestOpenMs > 14d` warn (RSL-24). `floor(days) > 14` lagged ~24h.

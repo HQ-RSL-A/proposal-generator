@@ -16,12 +16,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   deleteDraft,
+  markPaidManually,
   regeneratePdf,
   reviseProposal,
   voidProposal,
 } from "@/actions/proposals";
 import {
   Ban,
+  CircleDollarSign,
   Download,
   FileEdit,
   GitBranchPlus,
@@ -154,6 +156,31 @@ export function ProposalActions({
               }
             >
               <RefreshCcw className="h-3.5 w-3.5" /> Regenerate
+            </Button>
+          ) : null}
+          {paymentStatus === "MANUAL_INVOICE" && isAdmin ? (
+            <Button
+              size="sm"
+              disabled={busy}
+              onClick={async () => {
+                const ok = await brandConfirm({
+                  title: "Mark this proposal as paid?",
+                  description:
+                    "Use this once you've collected payment offline. It records the deal as paid, clears the to-invoice flag, and updates your dashboard and CRM. No email goes to the client.",
+                  confirmLabel: "Mark as paid",
+                  cancelLabel: "Not yet",
+                  icon: CircleDollarSign,
+                  tone: "default",
+                });
+                if (!ok) return;
+                run(
+                  () => markPaidManually({ id: proposalId }),
+                  "Marked as paid",
+                  "The deal now shows as paid on your dashboard."
+                );
+              }}
+            >
+              <CircleDollarSign className="h-3.5 w-3.5" /> Mark as paid
             </Button>
           ) : null}
         </>

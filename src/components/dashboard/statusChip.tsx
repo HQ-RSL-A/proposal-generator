@@ -20,6 +20,7 @@ const paymentStyles: Record<PaymentStatus, { label: string; className: string } 
   PAID: { label: "Paid", className: "bg-emerald-600 text-white" },
   FAILED: { label: "Payment failed", className: "bg-rose-100 text-rose-700" },
   SESSION_EXPIRED: { label: "Checkout expired", className: "bg-orange-100 text-orange-700" },
+  MANUAL_INVOICE: { label: "Awaiting invoice", className: "bg-amber-100 text-amber-700" },
 };
 
 export function StatusChip({ status }: { status: ProposalStatus }) {

@@ -373,6 +373,32 @@ describe("validatePaymentConfigForSend Stripe minimum floor (RSL-30)", () => {
   });
 });
 
+describe("validatePaymentConfigForSend manual invoice", () => {
+  it("skips the Stripe floor for a sub-50c line when manualInvoice is on (nothing is charged)", () => {
+    const base = {
+      ...flatConfig,
+      oneTime: { amountCents: 40, displayString: "$0.40", label: "Tiny build" },
+      recurring: null,
+    } as PaymentConfig;
+    // Without the flag this would be blocked by the $0.50 floor...
+    expect(validatePaymentConfigForSend(base)).toHaveLength(1);
+    // ...with it, the floor doesn't apply because no Stripe charge ever happens.
+    expect(validatePaymentConfigForSend({ ...base, manualInvoice: true })).toEqual([]);
+  });
+
+  it("still enforces display<->cents integrity when manualInvoice is on", () => {
+    const drifted = {
+      ...flatConfig,
+      oneTime: { amountCents: 500000, displayString: "$4,000", label: "Build" },
+      recurring: null,
+      manualInvoice: true,
+    } as PaymentConfig;
+    const errors = validatePaymentConfigForSend(drifted);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("Build");
+  });
+});
+
 describe("trackRecordConfigSchema", () => {
   it("accepts an intro plus case studies with and without a URL", () => {
     const ok = {

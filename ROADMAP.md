@@ -75,6 +75,18 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       + receipt; Notion records full contract value. Eventual upgrade (tool-driven balance +
       retainer auto-start) tracked under Eventual / backlog.
 
+## Payments: manual invoice / no checkout (added 2026-06-21)
+
+- [x] **Manual-invoice (no-checkout) pricing mode.** BUILT 2026-06-21 on branch
+      `feat/manual-invoice` (not yet merged/deployed). A `PaymentConfig.manualInvoice` toggle shows
+      full pricing (amount + duration, any shape) and signs normally, but skips Stripe entirely; the
+      deal counts toward contracted/MRR at signing and is reconciled with a `Mark as paid` admin
+      action (`MANUAL_INVOICE → PAID`, internal only — no client email, no Stripe metadata, no
+      `Payment` row). New `PaymentStatus.MANUAL_INVOICE` (migration `0007`, applied to prod DB).
+      Client post-sign stays generic (no payment link). Verified: build + 278 tests + a visual PDF
+      Read. **Remaining:** a live sign→mark-paid DB rehearsal, then merge + deploy. Details in
+      [`LOG.md`](LOG.md) 2026-06-21.
+
 ## Planned enhancements (added 2026-06-13)
 
 - [x] **Mobile optimization, internal app.** The client-facing surfaces (signing

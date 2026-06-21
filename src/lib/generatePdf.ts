@@ -132,8 +132,12 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
   // Executed-copy emails go out once the PDF exists. Per-party dedup (RSL-22): key each send on
   // its OWN email-log row (not the single admin row), so a regeneration re-sends only the copy
   // that actually failed — a failed admin send no longer re-mails every client.
+  // MANUAL_INVOICE joins NOT_REQUIRED/PAID as "no payment pending" so the executed-copy email
+  // stays generic — a manually-invoiced deal must never show the client a Complete Payment link.
   const paymentPending =
-    proposal.paymentStatus !== "NOT_REQUIRED" && proposal.paymentStatus !== "PAID";
+    proposal.paymentStatus !== "NOT_REQUIRED" &&
+    proposal.paymentStatus !== "PAID" &&
+    proposal.paymentStatus !== "MANUAL_INVOICE";
   for (const party of proposal.parties.filter((p) => p.role === "CLIENT_SIGNER")) {
     const alreadySent = await prisma.emailLog.findFirst({
       where: {

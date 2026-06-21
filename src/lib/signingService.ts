@@ -6,7 +6,9 @@ import { gateToken } from "@/lib/partyTokens";
 import { createCheckoutSession, findOrCreateCustomer } from "@/lib/stripe";
 import {
   effectiveCheckout,
+  isManualInvoice,
   isSignOnly,
+  skipsCheckout,
   type PaymentConfig,
   type TokensJson,
   type TrackRecordConfig,
@@ -199,7 +201,11 @@ export async function submitSignature(submission: SignSubmission): Promise<SignR
           completedAt: now,
           selectedTierId: tierId,
           selectedAddOnIds: addOnIds,
-          paymentStatus: isSignOnly(config) ? "NOT_REQUIRED" : "AWAITING",
+          paymentStatus: isSignOnly(config)
+            ? "NOT_REQUIRED"
+            : isManualInvoice(config)
+              ? "MANUAL_INVOICE"
+              : "AWAITING",
         },
       });
       return { allSigned: true };
@@ -252,7 +258,7 @@ export async function submitSignature(submission: SignSubmission): Promise<SignR
 
   await safeLogEvent({ proposalId: proposal.id, eventType: "ALL_SIGNED" });
 
-  if (isSignOnly(config)) {
+  if (skipsCheckout(config)) {
     return { allSigned: true, checkoutUrl: null, proposalId: proposal.id };
   }
 
@@ -289,7 +295,11 @@ export async function ensureCheckoutSession(
   // Stop condition (RSL-7): never mint a new payable session once payment is
   // settled or in flight — that is exactly how a client gets double-charged in
   // the gap between Stripe completing a session and the webhook flipping status.
-  if (proposal.paymentStatus === "PAID" || proposal.paymentStatus === "PROCESSING") {
+  if (
+    proposal.paymentStatus === "PAID" ||
+    proposal.paymentStatus === "PROCESSING" ||
+    proposal.paymentStatus === "MANUAL_INVOICE"
+  ) {
     throw new Error(`Refusing to mint a checkout session: payment is ${proposal.paymentStatus}`);
   }
 

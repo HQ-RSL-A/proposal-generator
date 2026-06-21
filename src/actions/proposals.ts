@@ -332,6 +332,62 @@ export async function voidProposal(input: {
   }
 }
 
+/**
+ * Reconcile a manually-invoiced deal to PAID once the owner has collected offline. Internal only:
+ * no Stripe metadata, no receipt emails (the owner receipts via their own invoicing), and no Payment
+ * row (that table is Stripe-shaped). Status-guarded + idempotent like applyPaidState — a double
+ * click flips exactly once. The CRM is synced to "paid" so Notion stays accurate.
+ */
+export async function markPaidManually(input: { id: string }): Promise<ActionResult> {
+  const user = await requireAuth();
+  try {
+    if (user.role !== "ADMIN") {
+      return { ok: false, error: "Only admins can mark a proposal paid." };
+    }
+    const proposal = await prisma.proposal.findUniqueOrThrow({ where: { id: input.id } });
+    if (proposal.paymentStatus !== "MANUAL_INVOICE") {
+      return {
+        ok: false,
+        error:
+          proposal.paymentStatus === "PAID"
+            ? "Already marked paid."
+            : "Only manual-invoice proposals can be marked paid here.",
+      };
+    }
+    const updated = await prisma.proposal.updateMany({
+      where: { id: input.id, paymentStatus: "MANUAL_INVOICE" },
+      data: { paymentStatus: "PAID", paidAt: new Date() },
+    });
+    if (updated.count === 0) return { ok: false, error: "Already marked paid." };
+
+    await logEvent({
+      proposalId: input.id,
+      eventType: "PAYMENT_PAID",
+      metadata: { kind: "manual", by: user.email },
+    });
+
+    // CRM "paid" sync only — durable + opportunistic, mirroring the Stripe path (minus receipts).
+    after(async () => {
+      try {
+        const job = await enqueueJob({
+          jobType: "NOTION_SYNC",
+          proposalId: input.id,
+          payload: { proposalId: input.id, kind: "paid" },
+        });
+        await runJobNow(job.id);
+      } catch (error) {
+        console.error("manual mark-paid Notion sync failed; cron will retry", error);
+      }
+    });
+
+    revalidatePath(`/proposals/${input.id}`);
+    revalidatePath("/dashboard");
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
 export async function reviseProposal(id: string): Promise<ActionResult<{ id: string }>> {
   await requireAuth();
   try {

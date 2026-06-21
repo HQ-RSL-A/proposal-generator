@@ -135,6 +135,11 @@ export interface PaymentConfig {
   deposit?: DepositConfig | null;
   /** Display-only future/Phase-2 lines: shown with pricing, never charged (excluded from checkout). */
   futureItems?: FutureItem[] | null;
+  /**
+   * When true, the full pricing renders and the proposal signs normally, but no Stripe checkout is
+   * created — the owner invoices manually and later marks it paid. Optional/absent = normal checkout.
+   */
+  manualInvoice?: boolean;
 }
 
 export interface TrackRecordCaseStudy {
@@ -167,6 +172,20 @@ export interface FrozenContent {
 /** True when nothing is collected at checkout (sign-only proposals, invoiced separately). */
 export function isSignOnly(config: PaymentConfig): boolean {
   return !config.oneTime && !config.recurring && (!config.tiers || config.tiers.length === 0);
+}
+
+/**
+ * Manual-invoice mode: pricing is shown and signed, but nothing is charged at checkout — the owner
+ * invoices manually and marks it paid later. Guarded by `!isSignOnly` so a stray flag on a $0
+ * config degrades to plain sign-only (NOT_REQUIRED) rather than a meaningless MANUAL_INVOICE state.
+ */
+export function isManualInvoice(config: PaymentConfig): boolean {
+  return config.manualInvoice === true && !isSignOnly(config);
+}
+
+/** No Stripe checkout follows signing — either nothing is priced, or it's manual-invoice. */
+export function skipsCheckout(config: PaymentConfig): boolean {
+  return isSignOnly(config) || config.manualInvoice === true;
 }
 
 /** The amounts that apply once a tier is (or isn't) selected. */

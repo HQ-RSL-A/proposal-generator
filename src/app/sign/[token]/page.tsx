@@ -3,7 +3,7 @@ import { gateToken } from "@/lib/partyTokens";
 import { sectionsFromFrozen, buildProposalSections } from "@/lib/proposalContent";
 import { frozenPaymentConfig, frozenTokens, frozenTrackRecord } from "@/lib/signingService";
 import { formatDate, formatDateTime } from "@/lib/dates";
-import { isSignOnly, type FrozenContent } from "@/lib/types";
+import { skipsCheckout, type FrozenContent } from "@/lib/types";
 import { SigningExperience } from "@/components/signing/signingExperience";
 import { OutcomeCard } from "@/components/signing/outcomeCard";
 import type { SignerSlot } from "@/components/proposal/proposalView";
@@ -66,7 +66,9 @@ export default async function SigningPage({
   });
 
   const config = frozenPaymentConfig(proposal);
-  const signOnly = isSignOnly(config);
+  // No checkout follows signing for sign-only OR manual-invoice proposals — drives the signing
+  // UI's "Finish & Submit" (vs "Finish & pay") copy and suppresses the "secure checkout" line.
+  const willCheckout = !skipsCheckout(config) && party.payer;
 
   // Already signed → status page (payer gets a payment CTA while checkout is open).
   if (party.signedAt) {
@@ -161,7 +163,7 @@ export default async function SigningPage({
       requiresTier={Boolean(config.tiers && config.tiers.length > 0 && !proposal.selectedTierId)}
       initialTierId={proposal.selectedTierId}
       initialAddOnIds={initialAddOnIds}
-      willCheckout={!signOnly && party.payer}
+      willCheckout={willCheckout}
       validUntilLabel={proposal.validUntil ? formatDate(proposal.validUntil) : null}
       clientSlots={clientSlots}
       rslaSlot={rslaSlot}

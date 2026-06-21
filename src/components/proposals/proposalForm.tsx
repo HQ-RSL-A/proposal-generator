@@ -75,6 +75,8 @@ interface FormState {
   depositPercent: number;
   methods: { card: boolean; ach: boolean };
   preferAch: boolean;
+  /** Manual-invoice mode: pricing shows + signs, but no Stripe checkout (owner invoices, marks paid). */
+  manualInvoice: boolean;
 }
 
 interface AddOnDraft {
@@ -296,6 +298,7 @@ function configToState(config: PaymentConfig | null): Partial<FormState> {
       ach: config.paymentMethods.includes("us_bank_account"),
     },
     preferAch: config.preferAch,
+    manualInvoice: Boolean(config.manualInvoice),
   };
 }
 
@@ -366,8 +369,11 @@ function stateToConfig(state: FormState): PaymentConfig {
     }));
     // Deposit needs a one-time on at least one tier.
     const tiersHaveOneTime = tiers.some((t) => t.oneTime);
+    // Manual invoice collects nothing online, so a deposit (a Stripe-charge concept) never applies.
     const deposit: DepositConfig | null =
-      state.depositEnabled && tiersHaveOneTime ? { depositPercent: state.depositPercent } : null;
+      state.depositEnabled && tiersHaveOneTime && !state.manualInvoice
+        ? { depositPercent: state.depositPercent }
+        : null;
     return {
       currency: "usd",
       paymentMethods: methods.length ? methods : ["card"],
@@ -378,12 +384,16 @@ function stateToConfig(state: FormState): PaymentConfig {
       addOns,
       deposit,
       futureItems,
+      manualInvoice: state.manualInvoice,
     };
   }
 
   const oneTime = state.oneTimeEnabled ? buildMoney(state.oneTime) : null;
+  // Manual invoice collects nothing online, so a deposit (a Stripe-charge concept) never applies.
   const deposit: DepositConfig | null =
-    state.depositEnabled && oneTime ? { depositPercent: state.depositPercent } : null;
+    state.depositEnabled && oneTime && !state.manualInvoice
+      ? { depositPercent: state.depositPercent }
+      : null;
   return {
     currency: "usd",
     paymentMethods: methods.length ? methods : ["card"],
@@ -394,6 +404,7 @@ function stateToConfig(state: FormState): PaymentConfig {
     addOns,
     deposit,
     futureItems,
+    manualInvoice: state.manualInvoice,
   };
 }
 
@@ -827,6 +838,7 @@ export function ProposalForm({
     depositPercent: 50,
     methods: { card: true, ach: false },
     preferAch: false,
+    manualInvoice: false,
     ...configToState(initialConfig ?? null),
     ...trackRecordToState(initialTrackRecord ?? null),
   }));
@@ -883,6 +895,8 @@ export function ProposalForm({
       ...(inferredAddOns ? { addOns: inferredAddOns } : {}),
       ...(inferredFutureItems ? { futureItems: inferredFutureItems } : {}),
       ...(inferredDeposit ? { depositEnabled: true, depositPercent: inferredDeposit } : {}),
+      // Top-level `manualInvoice: true` flows for flat and tiered alike (independent of pricing shape).
+      ...(typeof rawObj.manualInvoice === "boolean" ? { manualInvoice: rawObj.manualInvoice } : {}),
       ...(inferredTrackRecord
         ? {
             trackRecordIntro: inferredTrackRecord.intro,
@@ -1256,6 +1270,25 @@ export function ProposalForm({
           ) : null}
 
           {state.pricingMode !== "signOnly" ? (
+            <div className="space-y-2 rounded-lg border border-border p-3">
+              <label className="flex items-center gap-2">
+                <Checkbox
+                  checked={state.manualInvoice}
+                  onCheckedChange={(v) => set("manualInvoice", Boolean(v))}
+                />
+                <span className="text-sm font-medium">
+                  Don&apos;t collect payment — I&apos;ll invoice manually
+                </span>
+              </label>
+              <p className="text-xs text-muted-foreground">
+                The full pricing still shows on the proposal and PDF and the client signs as normal,
+                but no online checkout runs. The deal counts toward your dashboard revenue right away;
+                mark it paid once you&apos;ve collected.
+              </p>
+            </div>
+          ) : null}
+
+          {state.pricingMode !== "signOnly" && !state.manualInvoice ? (
             <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 md:gap-6">
               <div className="flex items-center gap-2">
                 <Checkbox
@@ -1443,6 +1476,7 @@ export function ProposalForm({
               ) : null}
             </div>
 
+            {!state.manualInvoice ? (
             <div className="space-y-2 border-t border-border pt-4">
               <div className="flex items-center gap-2">
                 <Switch
@@ -1481,6 +1515,7 @@ export function ProposalForm({
                 </div>
               ) : null}
             </div>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}

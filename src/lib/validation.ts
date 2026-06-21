@@ -144,6 +144,7 @@ export const paymentConfigSchema = z
     addOns: z.array(addOnSchema).max(10).nullable().optional(),
     deposit: depositConfigSchema.nullable().optional(),
     futureItems: z.array(futureItemSchema).max(6).nullable().optional(),
+    manualInvoice: z.boolean().optional(),
   })
   .superRefine((config, ctx) => {
     const hasFlat = Boolean(config.oneTime || config.recurring);
@@ -262,11 +263,15 @@ export function validatePaymentConfigForSend(config: PaymentConfig): string[] {
   for (const item of config.futureItems ?? []) {
     check(item);
   }
-  for (const { label, amountCents } of chargedAmountsForFloor(config)) {
-    if (amountCents < STRIPE_MIN_CHARGE_CENTS) {
-      errors.push(
-        `${label} charges ${formatCents(amountCents)}, below the ${formatCents(STRIPE_MIN_CHARGE_CENTS)} minimum a card charge allows. Raise the amount or drop the discount/deposit.`
-      );
+  // Manual-invoice proposals never reach Stripe, so the $0.50 card-charge floor doesn't apply.
+  // The display<->cents integrity checks above still run — the priced config is what ships + signs.
+  if (!config.manualInvoice) {
+    for (const { label, amountCents } of chargedAmountsForFloor(config)) {
+      if (amountCents < STRIPE_MIN_CHARGE_CENTS) {
+        errors.push(
+          `${label} charges ${formatCents(amountCents)}, below the ${formatCents(STRIPE_MIN_CHARGE_CENTS)} minimum a card charge allows. Raise the amount or drop the discount/deposit.`
+        );
+      }
     }
   }
   return errors;

@@ -145,6 +145,7 @@ export default async function DashboardPage() {
       : `${oldestOpen?.normalized.company ?? "—"} · ${oldestOpenWarn ? "needs a nudge" : "waiting"}`;
 
   const awaiting = metrics.attention.filter((a) => a.reason === "awaiting_payment");
+  const toInvoice = metrics.attention.filter((a) => a.reason === "awaiting_invoice");
   const stale = metrics.attention.filter((a) => a.reason === "stale_open");
   const summaryParts: string[] = [];
   if (awaiting.length) {
@@ -152,6 +153,13 @@ export default async function DashboardPage() {
       awaiting.length === 1
         ? `1 awaiting payment (${awaiting[0].company})`
         : `${awaiting.length} awaiting payment`
+    );
+  }
+  if (toInvoice.length) {
+    summaryParts.push(
+      toInvoice.length === 1
+        ? `1 to invoice (${toInvoice[0].company})`
+        : `${toInvoice.length} to invoice`
     );
   }
   if (stale.length) {
