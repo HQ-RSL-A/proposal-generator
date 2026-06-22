@@ -32,11 +32,24 @@ payment link / invoice language); mark-as-paid is internal only (no client email
 **Verified:** `npm run build` green; `npm test` 278/278 (added helper truth-table, validation floor-skip,
 dashboard counting/attention tests); `pdfSmoke` + `emailPreview` clean; rendered a manual-invoice PDF and
 visually confirmed the Investment section shows "$9,000 one-time / $2,000/month" and the How-to-Proceed
-steps are payment-free. **NOT yet run:** a live sign→`MANUAL_INVOICE`→mark-paid DB rehearsal (needs the
-Blob token like the wave-8 rehearsal). **Status:** DEPLOYED — `main` ff `b864595..e73dd20`, Vercel
-`dpl_5ksv…` READY → `proposals.rsla.io` (landing 200 / dashboard 307 / unauthed `/api/.../pdf` 401).
-Back-compat safe (the new path only activates when the admin ticks the toggle). Live manual-invoice
-sign→mark-paid rehearsal still recommended before the first real manual-invoice send.
+steps are payment-free.
+
+**Live rehearsal DONE 2026-06-21 (prod, fake co "Brightline Test Co") — all green.** Seed → auth-less
+send (`e2eSend`) → signed via the live `/api/sign` endpoint on `proposals.rsla.io`. Post-sign:
+`paymentStatus=MANUAL_INVOICE`, **no Stripe session/customer, no Payment row**; `fully_signed_client`
++ `fully_signed_admin` DELIVERED (no payment link); executed PDF generated (real doc shows
+"$9,000 / $2,000/month" + payment-free How-to-Proceed); deployed `/signed` is generic (no "Complete
+payment") and
+`/pay` returns HTTP 200 "nothing to pay" (no Stripe redirect); dashboard counted it ($9,000 + $2,000/mo)
+under `awaiting_invoice`. Then **Mark as paid** (faithful `markPaidManually` body — same lib calls,
+skipping only `requireAuth`/`revalidatePath`, exactly how `e2eSend` mirrors the send): idempotent
+`MANUAL_INVOICE → PAID` (2nd call no-ops), exactly one `PAYMENT_PAID{kind:manual}`,
+`NOTION_SYNCED{kind:paid}`, **no receipt email / no Stripe metadata / no Payment row**, `awaiting_invoice`
+cleared, revenue still counted. Test row + blobs cleaned up; store clean; no real CRM row touched.
+
+**Status:** DEPLOYED + live-verified — `main` ff `b864595..e73dd20`, Vercel `dpl_5ksv…` READY →
+`proposals.rsla.io` (landing 200 / dashboard 307 / unauthed `/api/.../pdf` 401). Back-compat safe (the
+new path only activates when the admin ticks the toggle).
 
 ## 2026-06-21 — Wrap: GEMINI.md synced to CLAUDE.md (git-linked drift) + blobSweep in Commands
 

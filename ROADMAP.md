@@ -84,8 +84,9 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       (`MANUAL_INVOICE → PAID`, internal only — no client email, no Stripe metadata, no `Payment`
       row). New `PaymentStatus.MANUAL_INVOICE` (migration `0007`, applied to prod DB). Client
       post-sign stays generic (no payment link). Verified: build + 278 tests + a visual PDF Read +
-      prod smoke (200/307/401). **Remaining (optional):** a live sign→mark-paid rehearsal before the
-      first real manual-invoice send. Details in [`LOG.md`](LOG.md) 2026-06-21.
+      prod smoke (200/307/401) + a **full live sign→mark-paid rehearsal on prod (all green)** —
+      MANUAL_INVOICE, no Stripe/Payment row, generic client surfaces, idempotent mark-paid, dashboard
+      counting, cleaned up. Details in [`LOG.md`](LOG.md) 2026-06-21.
 
 ## Planned enhancements (added 2026-06-13)
 
