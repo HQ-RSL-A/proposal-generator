@@ -26,7 +26,7 @@ Resend (+svix webhooks) · Notion API (raw fetch) · Vitest.
    button lead the signer there.
 4. Sign API: serializable transaction — one-shot party claim (`signedAt IS NULL` guard),
    signature row, remaining-signer count; persists `selectedTierId` + `selectedAddOnIds`; last
-   signer flips status → SIGNED and (unless sign-only) gets the Stripe Checkout URL built by
+   signer flips status → SIGNED and (unless sign-only or manual-invoice) gets the Stripe Checkout URL built by
    `effectiveCheckout` (base tier/flat + selected add-ons; inline `price_data`; subscription
    mode when recurring present; ACH supported; `idempotencyKey` per proposal+generation). Each
    Stripe line's product **name is the line label verbatim** (the name typed in the form, no
@@ -149,7 +149,14 @@ outcome-screen copy is shared in `src/lib/outcomeCopy.ts` and keyed to payment S
   signatures preserved as a record; every party must sign for the contract to execute). A fully
   SIGNED proposal is never declined — it can only be VOIDED. (RSL-20 refinement.)
 - `paymentStatus`: NOT_REQUIRED | AWAITING | PROCESSING (ACH in transit) | PAID | FAILED |
-  SESSION_EXPIRED
+  SESSION_EXPIRED | MANUAL_INVOICE
+- **MANUAL_INVOICE** (manual-invoice mode, `PaymentConfig.manualInvoice` — migration 0007): the
+  proposal shows full pricing (any shape) and signs normally but **never touches Stripe**; the owner
+  invoices offline and the only path to PAID is the admin **Mark as paid** action (`markPaidManually`
+  — idempotent, logs `PAYMENT_PAID {kind:"manual"}`, Notion "paid" sync, **no** client email / Stripe
+  metadata / Payment row). Counts toward contracted/MRR at signing (revenue keys on `status === SIGNED`,
+  not PAID) and shows under the dashboard "to invoice" strip (`awaiting_invoice`). Helpers:
+  `isManualInvoice()` / `skipsCheckout()` in `types.ts`.
 - Revise = new Proposal row (`parentId`, versionNumber+1); old one voided + tokens expired.
 
 ## Token lifecycle
@@ -250,11 +257,22 @@ resolves the proposal by session id whenever the path token is dead.
 - **Middleware runs before `public/` assets on Vercel** (next dev serves them first), so
   the auth matcher excludes static assets by extension. Never re-add filename-specific
   exclusions; renamed assets will 307 to sign-in on prod only.
+- **`MANUAL_INVOICE` is a "no-Stripe" status, not "payment pending."** It's neither AWAITING nor
+  PAID, so a *blacklist* check like `paymentStatus !== "NOT_REQUIRED" && !== "PAID"` wrongly treats it
+  as payment-due and would leak a checkout/payment link to the client (the trap fixed in
+  `generatePdf.ts` for the `fully_signed_client` email). Client payment surfaces *whitelist*
+  AWAITING/SESSION_EXPIRED/FAILED so they skip it automatically — but any new blacklist must exclude
+  MANUAL_INVOICE too. Use `skipsCheckout(config)` for "no checkout after signing."
 
 - **Blob auth is OIDC** (`BLOB_STORE_ID` + ambient `VERCEL_OIDC_TOKEN`); there is no static
   RW token. Local dev needs the store connection's Development environment enabled in the
   Vercel dashboard, plus `vercel env pull` (12h token). `blob.ts` uses the SDK's private
   `get`/`put`.
+- **Update (2026-06-21):** `.env` now carries a static `BLOB_READ_WRITE_TOKEN`, so laptop scripts +
+  CLI **can** write and delete blobs (verified this session: `e2eSend` writes the admin-sig PNG,
+  `e2eCleanup` / `blobSweep` delete) — `@vercel/blob` prefers it over OIDC. This supersedes the "no
+  static RW token" line above and the "CLI delete doesn't work locally" note below **while that token
+  is present**.
 - **Blob write lifecycle:** a draft writes **nothing** to Blob — the first artifact is
   RSL/A's signature PNG stamped at **send** (`sendProposal`); each client signature PNG lands
   as that party signs; the executed `signed.pdf` after all sign. Paths:
