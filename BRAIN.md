@@ -40,6 +40,18 @@ Resend (+svix webhooks) · Notion API (raw fetch) · Vitest.
    with IP/UA/consent timestamps, content hash, MSA hash, event log) → private Blob →
    executed-copy emails to all parties.
 
+## Proposal template (tokens fill blanks)
+
+`buildProposalSections` (`proposalContent.ts`) is the single source of truth for both the web
+(`ProposalView`) and PDF renders, so the signed PDF matches what the signer saw. The proposal is a
+**fixed template**: the greeting (`Hi {first},`), the contact line (phone + team@rsla.io), the
+sign-off (`Thanks, / Rahul L.`), every heading + intro/outro, the How-to-Proceed steps (which vary
+by checkout mode), the Acceptance + execution text, the fine-print notes, and the MSA are all
+hard-coded there. **Tokens only fill the blanks** — and `Client.ProblemText` / `Client.SolutionText`
+are **body paragraphs only** (the platform wraps the greeting before + sign-off after). The skill's
+content script must never write greetings/sign-offs/contact info into those tokens, or the client
+sees them twice. Surfaced for clients on `/docs` and in the skill's `platformImportSchema.md`.
+
 ## Add-ons + deposit
 
 Two optional fields on `PaymentConfig` (both inside the `paymentConfig`/`frozenContent` JSON,
@@ -150,7 +162,9 @@ outcome-screen copy is shared in `src/lib/outcomeCopy.ts` and keyed to payment S
   SIGNED proposal is never declined — it can only be VOIDED. (RSL-20 refinement.)
 - `paymentStatus`: NOT_REQUIRED | AWAITING | PROCESSING (ACH in transit) | PAID | FAILED |
   SESSION_EXPIRED | MANUAL_INVOICE
-- **MANUAL_INVOICE** (manual-invoice mode, `PaymentConfig.manualInvoice` — migration 0007): the
+- **MANUAL_INVOICE** (manual-invoice mode, `PaymentConfig.manualInvoice` — migration 0007): set by
+  the form toggle ("Don't collect payment — I'll invoice manually") **or** an importable top-level
+  `manualInvoice: true` key (flat or tiered alike; handled in `proposalForm.handleImport`). The
   proposal shows full pricing (any shape) and signs normally but **never touches Stripe**; the owner
   invoices offline and the only path to PAID is the admin **Mark as paid** action (`markPaidManually`
   — idempotent, logs `PAYMENT_PAID {kind:"manual"}`, Notion "paid" sync, **no** client email / Stripe

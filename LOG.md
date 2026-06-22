@@ -1,5 +1,30 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-21 — Docs sync: manual-invoice + discounts + the "tokens fill blanks" model
+
+Brought every doc surface up to date with the two recent features (manual-invoice mode, per-line
+discounts) and documented the placeholder model Rahul flagged. No code changes — docs only.
+
+- **In-app `/docs` page** (`src/app/(admin)/docs/page.tsx`): added a "What the tokens fill (and what
+  they don't)" section up top (template is fixed; greeting/contact/sign-off/headings/MSA are
+  hard-coded; `ProblemText`/`SolutionText` are body paragraphs only); added a **Manual invoice**
+  pricing block (`manualInvoice: true`, distinct from sign-only) with an example; added a **discount**
+  code example to the existing discount section; folded discounts + manualInvoice into the pricing
+  intro's "optional fields" list. Lint + `tsc --noEmit` clean.
+- **Skill `references/platformImportSchema.md`**: mirrored the above — new "What the tokens fill"
+  section, **Discounts** and **Manual invoice** subsections under the stack-on blocks, payment-landing
+  note in the pricing intro, and discount/manual rules in the enforced-at-send list.
+- **Skill `SKILL.md`**: Phase-1 pricing decision now asks shape + how-payment-lands + discounts;
+  Phase-2 extras list gains `discount` and `manualInvoice`; new Critical Rule "tokens fill blanks, not
+  scaffolding"; Required Inputs rows for collect-online-vs-manual and discounts; Phase-3 send step
+  notes the checkout skip for manual-invoice/sign-only.
+- **BRAIN.md**: noted `manualInvoice` is importable via the top-level key (not just the form toggle),
+  and added a "Proposal template (tokens fill blanks)" reference note pointing at `proposalContent.ts`.
+- Verified from source: `manualInvoice` flows on import via `proposalForm.handleImport` (top-level
+  `rawObj.manualInvoice`, flat or tiered); `importDiscount` accepts `amount` as a `$`-string or
+  `amountCents` int + a required `reason`, must be < line price. "Send email or no email" = the
+  manual-invoice (no-checkout, no payment email) path vs the default Stripe flow.
+
 ## 2026-06-21 — Deleted two test proposals (+ all metadata/blobs) at Rahul's request
 
 Cleaned two proposals off prod so they stop carrying dashboard metrics:

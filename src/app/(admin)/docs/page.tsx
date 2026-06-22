@@ -187,6 +187,25 @@ const PAYMENT_SIGNONLY = `{
   "tiers": null
 }`;
 
+const PAYMENT_MANUAL_INVOICE = `{
+  "currency": "usd",
+  "paymentMethods": ["card"],
+  "preferAch": false,
+  "oneTime": { "amountCents": 600000, "displayString": "$6,000", "label": "Website build" },
+  "recurring": null,
+  "tiers": null,
+  "manualInvoice": true
+}`;
+
+const PAYMENT_DISCOUNT = `{
+  "currency": "usd",
+  "paymentMethods": ["card"],
+  "preferAch": false,
+  "oneTime": { "amountCents": 500000, "displayString": "$5,000", "label": "Website build", "discount": { "amountCents": 100000, "reason": "Founder discount" } },
+  "recurring": null,
+  "tiers": null
+}`;
+
 const INVESTMENT_STRUCTURE = `{
   "Investment.Structure": {
     "type": "tiers",
@@ -275,6 +294,34 @@ export default function DocsPage() {
       </header>
 
       <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">
+          What the tokens fill (and what they don&apos;t)
+        </h2>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          The proposal is a fixed RSL/A template. The tokens you paste only fill the blanks: the
+          headline, the client name and company, your problem and solution paragraphs, the at a
+          glance values, the scope and timeline lists, and the investment lead-in and note.
+          Everything else is the same on every proposal and is written by the platform, not by you:
+        </p>
+        <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
+          <li>
+            The greeting (&quot;Hi [first name],&quot;), the contact line (phone plus team@rsla.io),
+            and the sign-off (&quot;Thanks, Rahul L.&quot;).
+          </li>
+          <li>
+            Every section heading and its intro and outro lines (Scope of Work, Timelines, Your
+            Investment, How to Proceed, and so on).
+          </li>
+          <li>The Acceptance block, the fine-print notes, and the full Master Services Agreement.</li>
+        </ul>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          So Client.ProblemText and Client.SolutionText are the body paragraphs only. Do not put a
+          greeting, a sign-off, or contact details inside them. The platform already wraps your
+          paragraphs with those.
+        </p>
+      </section>
+
+      <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold">How import works</h2>
         <ol className="ml-4 list-decimal space-y-1 text-sm text-muted-foreground">
           <li>Paste a tokens JSON into the import box on New Proposal.</li>
@@ -345,9 +392,10 @@ export default function DocsPage() {
           block (below). It is stored as a PaymentConfig in one of three shapes (flat, tiered,
           sign-only). Money is
           always an integer amountCents plus a matching displayString. At send time the two must
-          agree to the cent. Three optional fields stack on top of any shape: addOns (extras the
-          client toggles), deposit (charge only a percentage up front), and futureItems (priced
-          Phase-2 lines shown but never billed).
+          agree to the cent. Optional fields stack on top of any shape: addOns (extras the client
+          toggles), a discount on any charged line, deposit (charge only a percentage up front),
+          futureItems (priced Phase-2 lines shown but never billed), and manualInvoice (skip the
+          online checkout and invoice the client yourself).
         </p>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Flat, one time</h3>
@@ -367,7 +415,23 @@ export default function DocsPage() {
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Sign only (no payment)</h3>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Nothing is priced and nothing is charged. The signing flow ends on a confirmation page.
+          </p>
           <CodeBlock>{PAYMENT_SIGNONLY}</CodeBlock>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">Manual invoice (priced, but no online checkout)</h3>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Add manualInvoice: true to a flat or tiered deal and the full pricing still shows on the
+            proposal and the client signs as normal, but no Stripe checkout runs. You invoice the
+            client yourself and click Mark as paid once you have collected. No payment email goes to
+            the client, and the deal counts toward your dashboard revenue the moment it is signed.
+            Unlike sign-only, the price is shown and committed to. (On a deal with no price at all,
+            the flag is ignored and it stays sign-only.) In the form it is the checkbox
+            &quot;Don&apos;t collect payment, I&apos;ll invoice manually.&quot;
+          </p>
+          <CodeBlock>{PAYMENT_MANUAL_INVOICE}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Optional add-ons (any shape)</h3>
@@ -390,6 +454,7 @@ export default function DocsPage() {
             oneTime/recurring shape it is {"{ amountCents, reason }"} where amountCents is already the
             net. A discount on a recurring line is an ongoing reduced rate.
           </p>
+          <CodeBlock>{PAYMENT_DISCOUNT}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Deposit (charge a percentage up front)</h3>
