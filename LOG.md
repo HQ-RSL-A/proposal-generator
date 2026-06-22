@@ -24,6 +24,14 @@ discounts) and documented the placeholder model Rahul flagged. No code changes â
   `rawObj.manualInvoice`, flat or tiered); `importDiscount` accepts `amount` as a `$`-string or
   `amountCents` int + a required `reason`, must be < line price. "Send email or no email" = the
   manual-invoice (no-checkout, no payment email) path vs the default Stripe flow.
+- **Shipped:** proposalGenerator commit `5ea4d0f` pushed to `main` -> Vercel production deploy Ready,
+  so `/docs` is live on proposals.rsla.io. Skill files committed locally as `eec3701` (they live in
+  the umbrella `~/lalia`, which is local-only with no remote, so there's no push; the skill is already
+  active via its `~/.claude/skills/` symlink).
+- **Open for Rahul:** "send email or no email" was documented as the manual-invoice mode (no checkout,
+  no payment email). If he instead meant a separate "send the signing link without emailing the
+  client" option, that does NOT exist today (`sendProposal` always emails every signer) and would be
+  a build, not a doc fix.
 
 ## 2026-06-21 â€” Deleted two test proposals (+ all metadata/blobs) at Rahul's request
 
