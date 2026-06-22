@@ -1,5 +1,20 @@
 # LOG.md — proposalGenerator
 
+## 2026-06-21 — Deleted two test proposals (+ all metadata/blobs) at Rahul's request
+
+Cleaned two proposals off prod so they stop carrying dashboard metrics:
+
+- **Fieldshare Marketing Retainer** (`cmqkncxl5…`, SIGNED/PAID). Was a test — client "Chris Kam" =
+  Rahul's own `rahul.lalia23@gmail.com`, marked PAID via the new **manual-invoice** flow (no Stripe
+  session/customer/Payment row, no Notion page), so nothing real to orphan. Removed its executed PDF
+  + 2 signature PNGs, cascade row (parties/signatures/audit/emails/jobs), and 6 webhook events.
+- **Valley Oak v1** (`cmqg642cx…`, DECLINED). Removed cascade row + 1 admin-sig blob + 4 webhook events.
+
+**Kept Valley Oak v2** (`cmqhcsadf…`, VIEWED) — its `parentId` (→ v1) was explicitly nulled *before*
+deleting v1 so the delete could never touch it (the self-relation has no explicit `onDelete`). Verified:
+v2 survives, both targets gone, 0 blobs left for either id. DB now holds exactly 1 proposal (VO v2), so
+contracted/MRR/win-rate recompute clean. No Stripe or Notion cleanup was needed (neither carried any).
+
 ## 2026-06-21 — Manual-invoice (no-checkout) pricing mode — DEPLOYED to prod
 
 New pricing mode: a proposal can show its full pricing (amount + duration), sign normally, and **skip
