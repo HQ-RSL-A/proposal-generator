@@ -1,21 +1,31 @@
 import { z } from "zod";
 import { TOKEN_KEYS, type PaymentConfig, type TokensJson } from "@/lib/types";
 import { displayMatchesCents, formatCents } from "@/lib/currency";
-import { STRIPE_MIN_CHARGE_CENTS } from "@/lib/constants";
+import { MAX_LINE_LABEL_CHARS, MAX_PROPOSAL_TITLE_CHARS, STRIPE_MIN_CHARGE_CENTS } from "@/lib/constants";
 import { MAX_CASE_STUDIES } from "@/lib/trackRecord";
 import { humanizeZodError } from "@/lib/zodErrors";
 
 // ---------- Tokens JSON ----------
 
 const nonEmpty = z.string().trim().min(1);
+/** A charged-line label becomes a Stripe product name; cap it under Stripe's limit (RSL-36). */
+const lineLabel = z.string().trim().min(1).max(MAX_LINE_LABEL_CHARS);
 /** Tokens allowed to be blank or omitted (e.g. a client known only by first name). */
 const OPTIONAL_TOKEN_KEYS = new Set<string>(["Client.LastName"]);
 const optionalText = z.string().trim().optional();
 
+const titleSchema = nonEmpty.max(MAX_PROPOSAL_TITLE_CHARS);
 export const tokensJsonSchema = z
   .object(
     Object.fromEntries(
-      TOKEN_KEYS.map((k) => [k, OPTIONAL_TOKEN_KEYS.has(k) ? optionalText : nonEmpty])
+      TOKEN_KEYS.map((k) => [
+        k,
+        OPTIONAL_TOKEN_KEYS.has(k)
+          ? optionalText
+          : k === "Client.ProposalTitle"
+            ? titleSchema
+            : nonEmpty,
+      ])
     ) as Record<string, z.ZodTypeAny>
   )
   // Older skill outputs carry extra keys (e.g. Client.CaseStudy); accept and drop them.
@@ -93,7 +103,7 @@ const discountSchema = z
 const oneTimeItemSchema = z.object({
   amountCents: z.number().int().positive(),
   displayString: nonEmpty,
-  label: nonEmpty,
+  label: lineLabel,
   discount: discountSchema,
 });
 
@@ -112,7 +122,7 @@ const tierConfigSchema = z.object({
 
 const addOnSchema = z.object({
   id: nonEmpty,
-  label: nonEmpty,
+  label: lineLabel,
   displayString: nonEmpty,
   amountCents: z.number().int().positive(),
   intervalMonths: z.union([z.literal(1), z.literal(3), z.literal(12)]).nullable(),

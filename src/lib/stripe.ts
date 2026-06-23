@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import type { EffectiveCheckout, PaymentConfig } from "@/lib/types";
-import { STRIPE_MIN_CHARGE_CENTS } from "@/lib/constants";
+import { MAX_LINE_LABEL_CHARS, STRIPE_MIN_CHARGE_CENTS } from "@/lib/constants";
 
 let stripeClient: Stripe | null = null;
 
@@ -35,6 +35,11 @@ export function buildLineItems(
     if (li.amountCents < STRIPE_MIN_CHARGE_CENTS) {
       throw new Error(
         `Refusing to build a Stripe line below the $0.50 minimum: "${li.label}" is ${li.amountCents}c (RSL-30)`
+      );
+    }
+    if (li.label.length > MAX_LINE_LABEL_CHARS) {
+      throw new Error(
+        `Refusing to build a Stripe line whose label exceeds ${MAX_LINE_LABEL_CHARS} chars: "${li.label.slice(0, 40)}..." (RSL-36)`
       );
     }
     return {

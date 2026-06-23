@@ -434,6 +434,35 @@ describe("trackRecordConfigSchema", () => {
   });
 });
 
+describe("input length caps (RSL-36)", () => {
+  it("rejects a line label longer than the Stripe-safe cap", () => {
+    const longLabel = "x".repeat(201);
+    const bad = { ...flatConfig, oneTime: { ...flatConfig.oneTime!, label: longLabel } };
+    expect(paymentConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("accepts a line label at the cap", () => {
+    const maxLabel = "x".repeat(200);
+    const ok = { ...flatConfig, oneTime: { ...flatConfig.oneTime!, label: maxLabel } };
+    expect(paymentConfigSchema.safeParse(ok).success).toBe(true);
+  });
+
+  it("rejects an add-on label longer than the cap", () => {
+    const bad = {
+      ...flatConfig,
+      addOns: [{ id: "a1", label: "y".repeat(201), displayString: "$10", amountCents: 1000, intervalMonths: null }],
+    };
+    expect(paymentConfigSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("rejects a proposal title longer than the cap", () => {
+    const longTitle = "x".repeat(201);
+    const { tokens, errors } = normalizeImportedTokens({ ...scorpionFixture, "Client.ProposalTitle": longTitle });
+    expect(tokens).toBeNull();
+    expect(errors.length).toBeGreaterThan(0);
+  });
+});
+
 describe("partiesSchema", () => {
   it("requires exactly one payer", () => {
     expect(

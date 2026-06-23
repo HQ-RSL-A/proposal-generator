@@ -42,6 +42,16 @@ describe("buildLineItems", () => {
     expect(() => buildLineItems(effectiveCheckout(config, null, []), "usd")).toThrow(/0\.50|minimum/);
   });
 
+  it("throws when a line label exceeds the Stripe product-name cap (backstop, RSL-36)", () => {
+    const config: PaymentConfig = {
+      ...base,
+      oneTime: { amountCents: 900000, displayString: "$9,000", label: "x".repeat(201) },
+      recurring: null,
+      tiers: null,
+    };
+    expect(() => buildLineItems(effectiveCheckout(config, null, []), "usd")).toThrow(/RSL-36|label/);
+  });
+
   it("maps recurring cadence (quarterly -> month x3)", () => {
     const config: PaymentConfig = {
       ...base,
