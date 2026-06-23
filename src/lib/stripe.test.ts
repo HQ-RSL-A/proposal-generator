@@ -45,11 +45,22 @@ describe("buildLineItems", () => {
   it("throws when a line label exceeds the Stripe product-name cap (backstop, RSL-36)", () => {
     const config: PaymentConfig = {
       ...base,
-      oneTime: { amountCents: 900000, displayString: "$9,000", label: "x".repeat(201) },
+      oneTime: { amountCents: 900000, displayString: "$9,000", label: "x".repeat(260) },
       recurring: null,
       tiers: null,
     };
     expect(() => buildLineItems(effectiveCheckout(config, null, []), "usd")).toThrow(/RSL-36|label/);
+  });
+
+  it("does not throw for a 200-char source label with a deposit wrapper (stays under 250)", () => {
+    const config: PaymentConfig = {
+      ...base,
+      oneTime: { amountCents: 900000, displayString: "$9,000", label: "x".repeat(200) },
+      recurring: null,
+      tiers: null,
+      deposit: { depositPercent: 50 },
+    };
+    expect(() => buildLineItems(effectiveCheckout(config, null, []), "usd")).not.toThrow();
   });
 
   it("maps recurring cadence (quarterly -> month x3)", () => {

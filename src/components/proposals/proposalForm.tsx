@@ -874,8 +874,8 @@ export function ProposalForm({
     const inferredFutureItems = inferFutureItemsFromImport(rawObj);
     const inferredDeposit = inferDepositFromImport(rawObj);
     const inferredTrackRecord = inferTrackRecordFromImport(rawObj);
-    setState((prev) => ({
-      ...prev,
+    const nextState: FormState = {
+      ...state,
       title: tokens["Client.ProposalTitle"],
       tokens: tokens as unknown as Record<string, string>,
       ...(inferredTiers
@@ -885,11 +885,11 @@ export function ProposalForm({
         ? {
             pricingMode: "flat" as PricingMode,
             oneTimeEnabled: Boolean(inferredFlat.oneTime),
-            oneTime: inferredFlat.oneTime ? moneyToDraft(inferredFlat.oneTime) : prev.oneTime,
+            oneTime: inferredFlat.oneTime ? moneyToDraft(inferredFlat.oneTime) : state.oneTime,
             recurringEnabled: Boolean(inferredFlat.recurring),
             recurring: inferredFlat.recurring
               ? recurringToDraft(inferredFlat.recurring)
-              : prev.recurring,
+              : state.recurring,
             ...(inferredFlat.methods ? { methods: inferredFlat.methods } : {}),
             ...(inferredFlat.preferAch !== null ? { preferAch: inferredFlat.preferAch } : {}),
           }
@@ -905,7 +905,8 @@ export function ProposalForm({
             caseStudies: inferredTrackRecord.caseStudies,
           }
         : {}),
-    }));
+    };
+    setState(nextState);
     const extras = [
       inferredTiers ? `${inferredTiers.length} pricing tiers` : null,
       inferredFlat ? "flat pricing" : null,
@@ -914,16 +915,7 @@ export function ProposalForm({
       inferredDeposit ? `${inferredDeposit}% deposit` : null,
       inferredTrackRecord ? `${inferredTrackRecord.caseStudies.length} case studies` : null,
     ].filter(Boolean);
-    const importedConfig: PaymentConfig = {
-      currency: "usd",
-      paymentMethods: ["card"],
-      preferAch: false,
-      oneTime: inferredFlat?.oneTime ?? null,
-      recurring: inferredFlat?.recurring ?? null,
-      tiers: inferredTiers ?? null,
-      addOns: inferredAddOns ?? null,
-    };
-    const discountSummary = summarizeImportedDiscounts(importedConfig);
+    const discountSummary = summarizeImportedDiscounts(stateToConfig(nextState));
     const discountNote = discountSummary.length
       ? ` Discounts: ${discountSummary.join("; ")}. Confirm the net is right.`
       : "";
@@ -937,12 +929,14 @@ export function ProposalForm({
 
   async function handleSave() {
     const discountDrafts = [
-      state.oneTimeEnabled ? state.oneTime : null,
-      state.recurringEnabled ? state.recurring : null,
-      ...state.tiers.flatMap((t) => [
-        t.oneTimeEnabled ? t.oneTime : null,
-        t.recurringEnabled ? t.recurring : null,
-      ]),
+      state.pricingMode === "flat" && state.oneTimeEnabled ? state.oneTime : null,
+      state.pricingMode === "flat" && state.recurringEnabled ? state.recurring : null,
+      ...(state.pricingMode === "tiers"
+        ? state.tiers.flatMap((t) => [
+            t.oneTimeEnabled ? t.oneTime : null,
+            t.recurringEnabled ? t.recurring : null,
+          ])
+        : []),
       ...state.addOns,
     ].filter((d): d is NonNullable<typeof d> => d !== null);
 

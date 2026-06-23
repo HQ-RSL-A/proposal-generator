@@ -1,5 +1,6 @@
 import { describe, expect, it, test } from "vitest";
 import { inferFlatPricingFromImport, summarizeImportedDiscounts } from "@/lib/importPricing";
+import type { PaymentConfig } from "@/lib/types";
 
 describe("inferFlatPricingFromImport", () => {
   test("maps the internal flat config shape (one-time + monthly) into pricing items", () => {
@@ -132,8 +133,6 @@ describe("inferFlatPricingFromImport discounts (readDiscount, RSL-33)", () => {
   });
 });
 
-import type { PaymentConfig } from "@/lib/types";
-
 describe("summarizeImportedDiscounts (RSL-37)", () => {
   const base: Pick<PaymentConfig, "currency" | "paymentMethods" | "preferAch" | "tiers" | "recurring"> = {
     currency: "usd",
@@ -154,5 +153,60 @@ describe("summarizeImportedDiscounts (RSL-37)", () => {
   it("returns an empty list when nothing is discounted", () => {
     const config = { ...base, oneTime: { amountCents: 75000, displayString: "$750", label: "Setup" } } as PaymentConfig;
     expect(summarizeImportedDiscounts(config)).toEqual([]);
+  });
+
+  it("includes a tier oneTime discount in the summary", () => {
+    const tierConfig: PaymentConfig = {
+      mode: "tiers",
+      tiers: [{
+        id: "t1",
+        label: "Starter",
+        recommended: false,
+        includes: [],
+        oneTime: {
+          label: "Setup",
+          amountCents: 100000,
+          discount: { amountCents: 10000, reason: "Promo" },
+        },
+        recurring: null,
+        addOns: [],
+      }],
+      oneTime: null,
+      recurring: null,
+      addOns: [],
+      deposit: null,
+      manualInvoice: null,
+      trackRecord: null,
+      futureItems: [],
+    } as unknown as PaymentConfig;
+    const summary = summarizeImportedDiscounts(tierConfig);
+    expect(summary.length).toBeGreaterThan(0);
+    expect(summary[0]).toMatch(/Setup/);
+    expect(summary[0]).toMatch(/Promo/);
+  });
+
+  it("includes an add-on discount in the summary", () => {
+    const addOnConfig: PaymentConfig = {
+      mode: "flat",
+      tiers: null,
+      oneTime: null,
+      recurring: null,
+      addOns: [{
+        id: "ao1",
+        label: "Extra Support",
+        displayString: "$500/mo",
+        amountCents: 50000,
+        intervalMonths: 1,
+        discount: { amountCents: 5000, reason: "Launch discount" },
+      }],
+      deposit: null,
+      manualInvoice: null,
+      trackRecord: null,
+      futureItems: [],
+    } as unknown as PaymentConfig;
+    const summary = summarizeImportedDiscounts(addOnConfig);
+    expect(summary.length).toBeGreaterThan(0);
+    expect(summary[0]).toMatch(/Extra Support/);
+    expect(summary[0]).toMatch(/Launch discount/);
   });
 });

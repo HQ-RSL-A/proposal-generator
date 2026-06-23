@@ -12,11 +12,17 @@ export const SUPPORT_EMAIL = "team@rsla.io";
 export const STRIPE_MIN_CHARGE_CENTS = 50;
 
 /**
- * A line label flows verbatim into the Stripe Checkout product name (product_data.name, ~250-char
- * cap) and the deposit line wraps it as `{pct}% deposit on {label}` (+~15 chars); Client.ProposalTitle
- * flows into the session metadata (500-char cap). Cap both well under those limits at authoring time
- * so an over-long admin input fails on SAVE with a humanized error, never as a Stripe exception on
- * the client's pay attempt after they have signed (RSL-36, sibling of the RSL-30 floor above).
+ * A line label flows verbatim into the Stripe Checkout product name (product_data.name) and the
+ * deposit line wraps it as `{pct}% deposit on {label}` (+~15 chars); Client.ProposalTitle flows
+ * into the session metadata (500-char cap). MAX_LINE_LABEL_CHARS caps the SOURCE label the admin
+ * types, leaving headroom for the deposit wrapper before STRIPE_MAX_PRODUCT_NAME_CHARS. Both fail
+ * loud on SAVE so an over-long input never reaches a Stripe exception on the client's post-signature
+ * pay attempt (RSL-36, sibling of the RSL-30 floor above).
  */
 export const MAX_LINE_LABEL_CHARS = 200;
 export const MAX_PROPOSAL_TITLE_CHARS = 200;
+
+/** Stripe's product_data.name hard cap; the backstop guards the EFFECTIVE label
+ * (incl. the deposit wrapper) against this, while MAX_LINE_LABEL_CHARS (200)
+ * caps the admin-typed SOURCE label with headroom for the wrapper. */
+export const STRIPE_MAX_PRODUCT_NAME_CHARS = 250;

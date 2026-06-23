@@ -351,7 +351,7 @@ describe("frozenTokens - coerce missing keys on read (RSL-39)", () => {
   });
 
   it("trims and preserves present values", () => {
-    const proposal = makeProposal({ frozenContent: null, tokens: asJson({ "Client.FirstName": "  Dominique  " }) });
+    const proposal = makeProposal({ frozenContent: { tokens: { "Client.FirstName": "  Dominique  " } } as never, tokens: asJson({}) });
     expect(frozenTokens(proposal)["Client.FirstName"]).toBe("Dominique");
   });
 });
