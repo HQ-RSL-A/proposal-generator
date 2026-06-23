@@ -80,6 +80,13 @@ describe("MoneyFields discount inputs (RSL-33)", () => {
     render(<Harness initial={{ label: "Build", displayString: "$1,000", amountCents: 90000 }} />);
     expect(screen.getByText(/will be charged/)).toBeInTheDocument();
   });
+
+  it("warns inline when a discount is enabled with a blank reason (RSL-38)", async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={{ label: "Build", displayString: "$1,000", amountCents: 100000 }} />);
+    await user.click(screen.getByRole("switch")); // enable discount; reason starts blank
+    expect(screen.getByText(/reason for the discount/i)).toBeInTheDocument();
+  });
 });
 
 /** Surfaces the STORED displayString — the value that flows into the e-sign consent text + PDF. */

@@ -89,9 +89,11 @@ export const trackRecordConfigSchema = z.object({
 
 // ---------- Payment config ----------
 
-// Optional per-line discount. amountCents on the line is already the NET, so a positive integer
-// discount + a positive net means the original (net + discount) is always > 0 — no extra net guard
-// is needed beyond the int().positive() on each line's amountCents.
+// Optional per-line discount. The line's amountCents is the NET actually charged; this records the
+// saving as additive metadata (original = net + discount). NET-POSITIVE INVARIANT: a charged line's
+// net must stay > 0 -- enforced per-field by amountCents.int().positive() AND re-asserted in
+// paymentConfigSchema.superRefine below so it does not rely on any single downstream positive()
+// (a future charged-line type that forgot positive() is still caught) (RSL-38).
 const discountSchema = z
   .object({
     amountCents: z.number().int().positive(),
@@ -203,6 +205,17 @@ export const paymentConfigSchema = z
           message:
             "A deposit needs a one-time build fee. Add a one-time amount, or add it to at least one tier.",
         });
+      }
+    }
+    const chargedLines = [
+      config.oneTime,
+      config.recurring,
+      ...(config.tiers ?? []).flatMap((t) => [t.oneTime, t.recurring]),
+      ...(config.addOns ?? []),
+    ];
+    for (const line of chargedLines) {
+      if (line && line.discount && line.amountCents <= 0) {
+        ctx.addIssue({ code: "custom", message: `"${line.label}" has a discount that leaves no charge. Lower the discount.` });
       }
     }
   });

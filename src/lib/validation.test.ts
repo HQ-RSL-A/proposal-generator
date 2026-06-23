@@ -286,6 +286,11 @@ describe("paymentConfigSchema discounts", () => {
       []
     );
   });
+
+  it("rejects a discounted line whose net is zero (net-positive invariant, RSL-38)", () => {
+    const zeroNet = { ...flatConfig, oneTime: { ...flatConfig.oneTime!, amountCents: 0, discount: { amountCents: 99700, reason: "All of it" } } };
+    expect(paymentConfigSchema.safeParse(zeroNet).success).toBe(false);
+  });
 });
 
 describe("validatePaymentConfigForSend Stripe minimum floor (RSL-30)", () => {

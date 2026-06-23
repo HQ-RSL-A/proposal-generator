@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { createProposal, updateProposal } from "@/actions/proposals";
 import { normalizeImportedTokens } from "@/lib/validation";
+import { moneyDraftIssues, hasMoneyDraftIssue } from "@/lib/moneyDraft";
 import { formatPricedLine, parseCentsFromDisplayString } from "@/lib/currency";
 import { inferFlatPricingFromImport } from "@/lib/importPricing";
 import {
@@ -645,9 +646,7 @@ export function MoneyFields({
   const listCents = value.amountCents + discountCents;
   const cadence = withInterval ? (value.intervalMonths ?? 1) : null;
 
-  const parsed = parseCentsFromDisplayString(value.displayString);
-  const mismatch = !discountOn && parsed !== null && Math.abs(parsed - value.amountCents) > 1;
-  const netTooLow = discountOn && discountCents > 0 && discountCents >= listCents;
+  const { mismatch, netTooLow, reasonMissing } = moneyDraftIssues(value, Boolean(withDiscount));
 
   // Editing the list price or the discount recomputes the net + the client-facing display string.
   const setList = (dollars: string) => {
@@ -799,6 +798,9 @@ export function MoneyFields({
       {netTooLow ? (
         <p className="text-xs text-destructive">The discount can&apos;t be the whole price.</p>
       ) : null}
+      {reasonMissing ? (
+        <p className="text-xs text-destructive">Add a reason for the discount. The client sees it.</p>
+      ) : null}
     </div>
   );
 }
@@ -921,6 +923,21 @@ export function ProposalForm({
   }
 
   async function handleSave() {
+    const discountDrafts = [
+      state.oneTimeEnabled ? state.oneTime : null,
+      state.recurringEnabled ? state.recurring : null,
+      ...state.tiers.flatMap((t) => [
+        t.oneTimeEnabled ? t.oneTime : null,
+        t.recurringEnabled ? t.recurring : null,
+      ]),
+      ...state.addOns,
+    ].filter((d): d is NonNullable<typeof d> => d !== null);
+
+    if (discountDrafts.some((d) => hasMoneyDraftIssue(d, true))) {
+      brandToast("error", "Fix the highlighted pricing issues before saving.");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
