@@ -1,7 +1,7 @@
 /** Full client name, omitting a blank last name (a client may be known by first name only). */
 export function clientFullName(firstName: string, lastName: string): string {
   return [firstName, lastName]
-    .map((part) => part.trim())
+    .map((part) => String(part ?? "").trim())
     .filter((part) => part.length > 0)
     .join(" ");
 }

@@ -14,6 +14,9 @@ describe("clientFullName", () => {
   test("trims surrounding whitespace on both parts", () => {
     expect(clientFullName("  Christian ", " Reyes ")).toBe("Christian Reyes");
   });
+  test("tolerates an undefined last name without throwing", () => {
+    expect(clientFullName("Christian", undefined as unknown as string)).toBe("Christian");
+  });
 });
 
 describe("collapseNameFieldGap", () => {

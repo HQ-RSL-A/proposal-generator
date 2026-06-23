@@ -42,6 +42,7 @@ import {
   declineProposal,
   ensureCheckoutSession,
   frozenPaymentConfig,
+  frozenTokens,
   SigningError,
   submitSignature,
   type SignSubmission,
@@ -337,5 +338,20 @@ describe("declineProposal — exactly-once side effects (RSL-32)", () => {
     await expect(
       declineProposal({ rawToken: "tok", reason: "x", ipAddress: null, userAgent: null })
     ).resolves.toMatchObject({ firstDecline: true });
+  });
+});
+
+describe("frozenTokens - coerce missing keys on read (RSL-39)", () => {
+  it("returns an empty string for an absent token key instead of undefined", () => {
+    const partial = { "Client.FirstName": "Christian", "Client.Company": "Valley Oak Landscape Co" };
+    const proposal = makeProposal({ frozenContent: { tokens: partial } as never, tokens: asJson(partial) });
+    const tokens = frozenTokens(proposal);
+    expect(tokens["Client.LastName"]).toBe("");
+    expect(tokens["Client.FirstName"]).toBe("Christian");
+  });
+
+  it("trims and preserves present values", () => {
+    const proposal = makeProposal({ frozenContent: null, tokens: asJson({ "Client.FirstName": "  Dominique  " }) });
+    expect(frozenTokens(proposal)["Client.FirstName"]).toBe("Dominique");
   });
 });

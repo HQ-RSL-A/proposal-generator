@@ -10,6 +10,7 @@ import {
   isSignOnly,
   skipsCheckout,
   type PaymentConfig,
+  TOKEN_KEYS,
   type TokensJson,
   type TrackRecordConfig,
 } from "@/lib/types";
@@ -437,8 +438,15 @@ export function frozenPaymentConfig(proposal: Proposal): PaymentConfig {
 }
 
 export function frozenTokens(proposal: Proposal): TokensJson {
-  const frozen = proposal.frozenContent as { tokens?: TokensJson } | null;
-  return (frozen?.tokens ?? proposal.tokens) as TokensJson;
+  const frozen = proposal.frozenContent as { tokens?: Record<string, unknown> } | null;
+  const raw = (frozen?.tokens ?? proposal.tokens ?? {}) as Record<string, unknown>;
+  // Validate-on-read (RSL-39, same spirit as frozenPaymentConfig/RSL-21): a legacy snapshot
+  // predating a token, or a hand-edited row, can be missing a key. Coerce every key to a trimmed
+  // string (mirrors tokensJsonSchema's transform) so a downstream `tokens[key].trim()` can never hit
+  // undefined and 500 the signing page / PDF job.
+  const clean = {} as TokensJson;
+  for (const key of TOKEN_KEYS) clean[key] = String(raw[key] ?? "").trim();
+  return clean;
 }
 
 export function frozenTrackRecord(proposal: Proposal): TrackRecordConfig {

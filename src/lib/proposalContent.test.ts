@@ -159,6 +159,19 @@ describe("buildProposalSections", () => {
     expect(partyRun?.text).not.toContain("Dominique ,");
   });
 
+  it("does not throw when the Client.LastName key is absent entirely (RSL-39)", () => {
+    const withoutLast = { ...tokens } as Record<string, unknown>;
+    delete withoutLast["Client.LastName"];
+    expect(() =>
+      buildProposalSections({
+        tokens: withoutLast as TokensJson,
+        paymentConfig: paidConfig,
+        trackRecord,
+        msaBodyMarkdown: msa,
+      })
+    ).not.toThrow();
+  });
+
   it("adapts How to Proceed copy to the payment mode", () => {
     const paid = buildProposalSections({ tokens, paymentConfig: paidConfig, trackRecord, msaBodyMarkdown: msa });
     const signOnly = buildProposalSections({

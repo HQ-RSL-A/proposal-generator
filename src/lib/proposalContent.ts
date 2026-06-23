@@ -177,7 +177,7 @@ export function buildProposalSections(input: {
 
   // When the optional last name is blank, suppress the spacing gap its empty merge leaves in the
   // MSA party line (e.g. "Christian , Co" -> "Christian, Co"). No change to the agreement wording.
-  const lastNameBlank = tokens["Client.LastName"].trim().length === 0;
+  const lastNameBlank = String(tokens["Client.LastName"] ?? "").trim().length === 0;
   const rawMsaBlocks = replaceTokensInBlocks(
     parseMsa(msaBodyMarkdown),
     tokens as unknown as Record<string, string>
@@ -185,7 +185,7 @@ export function buildProposalSections(input: {
   // A blank optional last name leaves a "First , Company" gap on the MSA party line. Collapse it
   // ONLY on the run carrying that exact artifact — never document-wide, which would silently
   // rewrite attorney-owned punctuation spacing / double spaces elsewhere in the agreement (RSL-31).
-  const firstName = tokens["Client.FirstName"].trim();
+  const firstName = String(tokens["Client.FirstName"] ?? "").trim();
   const isPartyGap = (text: string) => firstName.length > 0 && text.includes(`${firstName} ,`);
   const msaBlocks = lastNameBlank
     ? rawMsaBlocks.map((block) =>
