@@ -454,6 +454,14 @@ export default function DocsPage() {
             oneTime/recurring shape it is {"{ amountCents, reason }"} where amountCents is already the
             net. A discount on a recurring line is an ongoing reduced rate.
           </p>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            Two discount shapes, one per block. Tiered and add-on discounts use{" "}
+            {"{ amount, reason }"} where the line price is the list and the app subtracts the
+            discount. Flat oneTime and recurring discounts use {"{ amountCents, reason }"} where
+            amountCents is already the net and the discount is recorded for display only. The import
+            toast lists each resolved &quot;was X, now Y&quot; so you can confirm the net before
+            sending.
+          </p>
           <CodeBlock>{PAYMENT_DISCOUNT}</CodeBlock>
         </div>
         <div className="space-y-2">

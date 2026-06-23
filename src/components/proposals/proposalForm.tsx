@@ -15,7 +15,7 @@ import { createProposal, updateProposal } from "@/actions/proposals";
 import { normalizeImportedTokens } from "@/lib/validation";
 import { moneyDraftIssues, hasMoneyDraftIssue } from "@/lib/moneyDraft";
 import { formatPricedLine, parseCentsFromDisplayString } from "@/lib/currency";
-import { inferFlatPricingFromImport } from "@/lib/importPricing";
+import { inferFlatPricingFromImport, summarizeImportedDiscounts } from "@/lib/importPricing";
 import {
   TOKEN_KEYS,
   type AddOn,
@@ -914,11 +914,24 @@ export function ProposalForm({
       inferredDeposit ? `${inferredDeposit}% deposit` : null,
       inferredTrackRecord ? `${inferredTrackRecord.caseStudies.length} case studies` : null,
     ].filter(Boolean);
+    const importedConfig: PaymentConfig = {
+      currency: "usd",
+      paymentMethods: ["card"],
+      preferAch: false,
+      oneTime: inferredFlat?.oneTime ?? null,
+      recurring: inferredFlat?.recurring ?? null,
+      tiers: inferredTiers ?? null,
+      addOns: inferredAddOns ?? null,
+    };
+    const discountSummary = summarizeImportedDiscounts(importedConfig);
+    const discountNote = discountSummary.length
+      ? ` Discounts: ${discountSummary.join("; ")}. Confirm the net is right.`
+      : "";
     brandToast(
       "success",
-      extras.length
+      (extras.length
         ? `Imported with ${extras.join(", ")}. Review the amounts.`
-        : "Imported. Set up pricing below."
+        : "Imported. Set up pricing below.") + discountNote
     );
   }
 

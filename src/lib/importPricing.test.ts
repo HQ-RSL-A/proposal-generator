@@ -1,5 +1,5 @@
-import { describe, expect, test } from "vitest";
-import { inferFlatPricingFromImport } from "@/lib/importPricing";
+import { describe, expect, it, test } from "vitest";
+import { inferFlatPricingFromImport, summarizeImportedDiscounts } from "@/lib/importPricing";
 
 describe("inferFlatPricingFromImport", () => {
   test("maps the internal flat config shape (one-time + monthly) into pricing items", () => {
@@ -129,5 +129,30 @@ describe("inferFlatPricingFromImport discounts (readDiscount, RSL-33)", () => {
 
   test("ignores a non-object discount", () => {
     expect(withDiscount("nope")!.oneTime!.discount).toBeUndefined();
+  });
+});
+
+import type { PaymentConfig } from "@/lib/types";
+
+describe("summarizeImportedDiscounts (RSL-37)", () => {
+  const base: Pick<PaymentConfig, "currency" | "paymentMethods" | "preferAch" | "tiers" | "recurring"> = {
+    currency: "usd",
+    paymentMethods: ["card"],
+    preferAch: false,
+    tiers: null,
+    recurring: null,
+  };
+
+  it("returns a was/now/reason line per discounted charged line", () => {
+    const config = {
+      ...base,
+      oneTime: { amountCents: 75000, displayString: "$750", label: "Setup", discount: { amountCents: 25000, reason: "Loyalty" } },
+    } as PaymentConfig;
+    expect(summarizeImportedDiscounts(config)).toEqual(["Setup: was $1,000, now $750 (Loyalty)"]);
+  });
+
+  it("returns an empty list when nothing is discounted", () => {
+    const config = { ...base, oneTime: { amountCents: 75000, displayString: "$750", label: "Setup" } } as PaymentConfig;
+    expect(summarizeImportedDiscounts(config)).toEqual([]);
   });
 });

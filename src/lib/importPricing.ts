@@ -1,5 +1,5 @@
-import { parseCentsFromDisplayString } from "@/lib/currency";
-import type { OneTimeItem, RecurringItem } from "@/lib/types";
+import { formatCents, originalCents, parseCentsFromDisplayString } from "@/lib/currency";
+import type { AddOn, OneTimeItem, PaymentConfig, RecurringItem } from "@/lib/types";
 
 /** Normalized flat pricing pulled out of a pasted tokens JSON, ready to merge into the form. */
 export interface FlatPricingImport {
@@ -87,4 +87,23 @@ export function inferFlatPricingFromImport(
   const preferAch = typeof raw.preferAch === "boolean" ? raw.preferAch : null;
 
   return { oneTime, recurring, methods, preferAch };
+}
+
+/**
+ * Human review lines for every charged line that imported with a positive discount, so a
+ * mis-shaped discount (the two-dialect footgun, RSL-37) is unmissable in the post-import toast.
+ * Reuses the same originalCents/formatCents the renderers use, so "was X, now Y" matches what
+ * the client will see.
+ */
+export function summarizeImportedDiscounts(config: PaymentConfig): string[] {
+  const lines: (OneTimeItem | RecurringItem | AddOn)[] = [
+    config.oneTime,
+    config.recurring,
+    ...(config.tiers ?? []).flatMap((t) => [t.oneTime, t.recurring]),
+    ...(config.addOns ?? []),
+  ].filter((l): l is OneTimeItem | RecurringItem | AddOn => !!l && !!l.discount && l.discount.amountCents > 0);
+
+  return lines.map(
+    (l) => `${l.label}: was ${formatCents(originalCents(l))}, now ${formatCents(l.amountCents)} (${l.discount!.reason})`
+  );
 }
