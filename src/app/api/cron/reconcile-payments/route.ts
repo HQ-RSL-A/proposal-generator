@@ -60,7 +60,9 @@ export async function GET(request: NextRequest) {
       "/api/cron/reconcile-payments",
       started,
       true,
-      `checked=${stuck.length} healed=${healed}`
+      `checked=${stuck.length} healed=${healed}`,
+      // Finding stuck payments is worth a row even when nothing healed.
+      { noop: stuck.length === 0 }
     );
     return NextResponse.json({ checked: stuck.length, healed });
   } catch (error) {

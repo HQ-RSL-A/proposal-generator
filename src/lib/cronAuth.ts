@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { shouldWriteCronLog } from "@/lib/cronLogPolicy";
 
 export function isAuthorizedCron(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
@@ -10,9 +11,22 @@ export async function logCronRun(
   path: string,
   startedAt: number,
   ok: boolean,
-  note?: string
+  note?: string,
+  opts?: { noop?: boolean }
 ): Promise<void> {
   try {
+    // Quiet runs collapse to one heartbeat row per day (cronLogPolicy) — the
+    // read below is served from cache and uses CronLog_path_ranAt_idx; the
+    // per-run INSERTs were what chewed the shared Nano's Disk IO budget.
+    if (ok && opts?.noop) {
+      const last = await prisma.cronLog.findFirst({
+        where: { path },
+        orderBy: { ranAt: "desc" },
+        select: { ranAt: true, ok: true },
+      });
+      if (!shouldWriteCronLog({ ok, noop: true, last, now: new Date() })) return;
+      note = note ? `${note} (heartbeat)` : "heartbeat";
+    }
     await prisma.cronLog.create({
       data: { path, durationMs: Date.now() - startedAt, ok, note },
     });

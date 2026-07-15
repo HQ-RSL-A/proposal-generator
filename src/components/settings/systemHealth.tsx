@@ -34,7 +34,10 @@ export async function SystemHealthPanel() {
       take: 20,
       include: { proposal: { select: { title: true } } },
     }),
-    prisma.cronLog.findMany({ orderBy: { ranAt: "desc" }, take: 12 }),
+    // Row volume per path is uneven now that quiet runs collapse to a daily
+    // heartbeat (cronLogPolicy) — reach deep enough that a burst of process-jobs
+    // work rows can't crowd the other paths out of the per-path dedupe below.
+    prisma.cronLog.findMany({ orderBy: { ranAt: "desc" }, take: 30 }),
   ]);
 
   const lastCronByPath = new Map<string, (typeof cronLogs)[number]>();

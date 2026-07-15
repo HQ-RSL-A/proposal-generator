@@ -11,7 +11,9 @@ export async function GET(request: NextRequest) {
   const started = Date.now();
   try {
     const result = await processDueJobs(10);
-    await logCronRun("/api/cron/process-jobs", started, true, `ran=${result.ran} failed=${result.failed}`);
+    await logCronRun("/api/cron/process-jobs", started, true, `ran=${result.ran} failed=${result.failed}`, {
+      noop: result.ran === 0 && result.failed === 0,
+    });
     return NextResponse.json(result);
   } catch (error) {
     await logCronRun("/api/cron/process-jobs", started, false, String(error).slice(0, 300));

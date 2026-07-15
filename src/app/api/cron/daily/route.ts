@@ -92,13 +92,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // 3) Prune cron telemetry. CronLog is operational noise, not an audit
+    // record (AuditEvent/EmailLog/WebhookEvent are the evidence tables and are
+    // never pruned) — 30 days is plenty for the health panel.
+    const { count: prunedCronLogs } = await prisma.cronLog.deleteMany({
+      where: { ranAt: { lt: new Date(now.getTime() - 30 * 86_400_000) } },
+    });
+
     await logCronRun(
       "/api/cron/daily",
       started,
       true,
-      `expired=${expired} reminders=${reminders}`
+      `expired=${expired} reminders=${reminders} prunedCronLogs=${prunedCronLogs}`
     );
-    return NextResponse.json({ expired, reminders });
+    return NextResponse.json({ expired, reminders, prunedCronLogs });
   } catch (error) {
     await logCronRun("/api/cron/daily", started, false, String(error).slice(0, 300));
     return NextResponse.json({ error: "Failed" }, { status: 500 });
