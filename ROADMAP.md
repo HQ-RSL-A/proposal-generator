@@ -1,11 +1,11 @@
-# ROADMAP.md — proposalGenerator
+# ROADMAP.md - proposal-generator
 
-Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
-[`CLAUDE.md`](CLAUDE.md); architecture in [`BRAIN.md`](BRAIN.md).
+Open and planned work. Shipped history lives in [`log.md`](log.md); rules in
+[`CLAUDE.md`](CLAUDE.md); architecture in [`brain.md`](brain.md).
 
 ## Go-live blockers (only thing gating real revenue)
 
-- [x] **Stripe live-key swap.** DONE 2026-06-15 — live key active on Vercel Production and
+- [x] **Stripe live-key swap.** DONE 2026-06-15 - live key active on Vercel Production and
       verified by a live $1 smoke test (real card -> signature-verified `checkout.session.completed`
       webhook -> PAID -> client+admin receipts + executed PDF; Notion no-op on the fake company;
       $1 left un-refunded per Rahul). **Residual CLEARED 2026-06-15:** live endpoint confirmed
@@ -15,13 +15,13 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       Original spec: Create live restricted key `proposalGenerator-live`
       (scopes: Checkout Sessions W, Customers R+W, Products R+W, Prices R+W,
       Subscriptions R+W, PaymentIntents R, Invoices R) + live webhook endpoint to
-      `proposals.rsla.io/api/webhooks/stripe` (**6 events** — the existing 5 plus
+      `proposals.rsla.io/api/webhooks/stripe` (**6 events** - the existing 5 plus
       `invoice.paid` for renewal receipts) + ACH on (optional). Then
       swap `STRIPE_SECRET_KEY` + `STRIPE_WEBHOOK_SECRET` on Vercel and redeploy.
       Rahul creates the key/webhook in the dashboard (secrets are shown once,
       unreadable via API); Claude does the env swap + verify. Deferred by Rahul.
 
-- [x] **Stripe live-key swap guide (runbook).** DONE — written ahead, then reconciled
+- [x] **Stripe live-key swap guide (runbook).** DONE - written ahead, then reconciled
       2026-06-19 to a completed-swap record. [`docs/stripeKeySwapGuide.md`](docs/stripeKeySwapGuide.md)
       walks creating the live restricted key + webhook and the Vercel env swap + verify, and now
       opens with a **Status: COMPLETED** banner (swap done + verified 2026-06-15) so it reads as
@@ -36,8 +36,8 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       customer metadata). The live webhook subscribes `invoice.paid` at the Stripe swap.
       Plan: [`docs/plans/transactionReceipts.md`](docs/plans/transactionReceipts.md).
 
-- [x] **Post-audit money-path rehearsal — DONE 2026-06-19 (full sign→checkout→PDF walk).** Sid's 2026-06-17/18 security
-      audit (RSL-6..26, all shipped + live) rewrote parts of the live money path — exactly-once
+- [x] **Post-audit money-path rehearsal - DONE 2026-06-19 (full sign→checkout→PDF walk).** Sid's 2026-06-17/18 security
+      audit (RSL-6..26, all shipped + live) rewrote parts of the live money path - exactly-once
       webhook + durable receipt (RSL-6/8), checkout idempotency (RSL-7), payer-token continuity
       (RSL-14), queue/cron resilience (RSL-13/16). All unit-tested + deployed, but NOT yet exercised
       end-to-end. Run a Stripe **test-mode** sign->checkout->pay on a `[TEST]` fake-company proposal,
@@ -59,7 +59,7 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       content-integrity SHA-256 == send-time hash; `[TEST]` row + blobs cleaned up. **RSL-30** floor passed
       at checkout. Helpers added: `scripts/e2eSend.ts` (faithful auth-less send), `e2eVerify.ts`,
       `e2eCleanup.ts`. NOT exercised (happy-path monthly run): RSL-28 fail/link-email dedup, RSL-29
-      quarterly/annual Notion — both unit-tested; RSL-29 also covered by pass (1). See LOG 2026-06-19 (wave 8).
+      quarterly/annual Notion - both unit-tested; RSL-29 also covered by pass (1). See LOG 2026-06-19 (wave 8).
 
 ## Payments: add-ons + deposit (added 2026-06-13)
 
@@ -81,12 +81,12 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       `proposals.rsla.io`). A `PaymentConfig.manualInvoice` toggle shows full pricing (amount +
       duration, any shape) and signs normally, but skips Stripe entirely; the deal counts toward
       contracted/MRR at signing and is reconciled with a `Mark as paid` admin action
-      (`MANUAL_INVOICE → PAID`, internal only — no client email, no Stripe metadata, no `Payment`
+      (`MANUAL_INVOICE → PAID`, internal only - no client email, no Stripe metadata, no `Payment`
       row). New `PaymentStatus.MANUAL_INVOICE` (migration `0007`, applied to prod DB). Client
       post-sign stays generic (no payment link). Verified: build + 278 tests + a visual PDF Read +
-      prod smoke (200/307/401) + a **full live sign→mark-paid rehearsal on prod (all green)** —
+      prod smoke (200/307/401) + a **full live sign→mark-paid rehearsal on prod (all green)** -
       MANUAL_INVOICE, no Stripe/Payment row, generic client surfaces, idempotent mark-paid, dashboard
-      counting, cleaned up. Details in [`LOG.md`](LOG.md) 2026-06-21.
+      counting, cleaned up. Details in [`log.md`](log.md) 2026-06-21.
 
 ## Planned enhancements (added 2026-06-13)
 
@@ -111,7 +111,7 @@ Open and planned work. Shipped history lives in [`LOG.md`](LOG.md); rules in
       one-time, MRR, signed this month vs last, avg time-to-sign, oldest open), all computed
       from current data. Public pages verified in Chrome DevTools at 1280px + 390px.
 
-- [x] **Token-schema docs page (in-app, agent-friendly).** DONE 2026-06-13 — built as
+- [x] **Token-schema docs page (in-app, agent-friendly).** DONE 2026-06-13 - built as
       team-gated `/docs`, generic examples, field table auto-derived from `TOKEN_KEYS`
       (compile-time drift guard). Shipped to prod. A `/docs` (or better-named)
       route documenting the proposal token schema + payment-config shape + a copy-paste
@@ -138,10 +138,10 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       - **Then place.** Once info + signature are captured, the button changes to
         **"Review and Sign"**; tapping it enters placement mode where the signer
         only taps each field to stamp the already-adopted signature (nothing to
-        re-enter — "we have your info and your signature, just tap the fields").
+        re-enter - "we have your info and your signature, just tap the fields").
       - **Guide to the next field.** After stamping the first field, do NOT
         auto-scroll all the way to the bottom. Show a small floating "jump to next
-        field" affordance (an on-screen pointer/chip — mobile has no hover) that
+        field" affordance (an on-screen pointer/chip - mobile has no hover) that
         scrolls to and highlights the next empty signature field.
       - **Catch misses.** If a required field is left unsigned, the same
         pointer/icon appears and routes the signer straight to the empty field
@@ -185,8 +185,8 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       `validation.ts` re-checks), and the result flows through the existing
       `normalizeImportedTokens` path to pre-fill the form. Always generate -> pre-fill ->
       human edits -> send (never auto-send).
-      - Open decisions: (1) input source — paste vs upload vs direct Circleback pull (pull needs
-        Circleback creds in app env); (2) scope — narrative only, or also propose pricing
+      - Open decisions: (1) input source - paste vs upload vs direct Circleback pull (pull needs
+        Circleback creds in app env); (2) scope - narrative only, or also propose pricing
         (tiers / flat / add-ons / deposit); (3) model + Anthropic key on Vercel (Opus for
         quality vs Sonnet for cost).
       - Cleanest first cut: paste transcript -> narrative only -> pre-fill, pricing still set by
@@ -200,37 +200,37 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       procedure:** list keys under `proposals/`, extract each `{id}` segment, and `del`
       **only** those whose `{id}` has no matching `Proposal.id` row (`Proposal.id` is a cuid);
       never touch `settings/` (the admin-signature template), and never bulk-delete the whole
-      `proposals/` prefix — live proposals' signature blobs are MSA §11 evidence (a 2026-06-19
+      `proposals/` prefix - live proposals' signature blobs are MSA §11 evidence (a 2026-06-19
       spot-check found leftover blobs mapping to live rows, so eyeballing "orphan" is unsafe).
       Access-gated: run from the Vercel dashboard Blob browser or a dashboard-minted one-off
-      RW token (local OIDC is dev-scoped, 403s) — see the BRAIN Blob gotcha. The cleanup itself
+      RW token (local OIDC is dev-scoped, 403s) - see the BRAIN Blob gotcha. The cleanup itself
       is minor; this only makes it safe to do. **Swept 2026-06-20** (first DB-verified run):
-      the store held 4 `proposals/` blobs — 2 belong to live proposals (kept), 2 were true
-      orphans (deleted, 86.7KB); store now clean (0 orphans). Recurs as proposals are deleted —
+      the store held 4 `proposals/` blobs - 2 belong to live proposals (kept), 2 were true
+      orphans (deleted, 86.7KB); store now clean (0 orphans). Recurs as proposals are deleted -
       re-run the procedure when needed (`scripts/blobSweep.ts`: dry-run by default, `APPLY=1` to delete).
 
 ## Detailed plans (added 2026-06-13)
 
 Research-backed, code-grounded plans with file refs, risks, and open decisions:
 
-- [`docs/plans/signingFlowRedesign.md`](docs/plans/signingFlowRedesign.md) — mobile
+- [`docs/plans/signingFlowRedesign.md`](docs/plans/signingFlowRedesign.md) - mobile
   signing ceremony rework + toast/notification redesign + audit-trail icons.
-- [`docs/plans/visualRedesign.md`](docs/plans/visualRedesign.md) — landing, sign-in,
+- [`docs/plans/visualRedesign.md`](docs/plans/visualRedesign.md) - landing, sign-in,
   dashboard redesign + dashboard KPIs + logo-only branding audit.
-- [`docs/plans/transactionReceipts.md`](docs/plans/transactionReceipts.md) — a
+- [`docs/plans/transactionReceipts.md`](docs/plans/transactionReceipts.md) - a
   receipt/invoice on every transaction (found a real gap: subscription **renewals**
   send nothing today; needs an `invoice.paid` handler).
-- [`docs/plans/tokenSchemaDocsPage.md`](docs/plans/tokenSchemaDocsPage.md) — the in-app
+- [`docs/plans/tokenSchemaDocsPage.md`](docs/plans/tokenSchemaDocsPage.md) - the in-app
   `/docs` schema reference (generic, industry-standard names).
-- [`docs/stripeKeySwapGuide.md`](docs/stripeKeySwapGuide.md) — step-by-step live-key
+- [`docs/stripeKeySwapGuide.md`](docs/stripeKeySwapGuide.md) - step-by-step live-key
   swap runbook.
-- [`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md) — mobile pass
+- [`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md) - mobile pass
   for the internal admin surfaces (proposal form, detail tabs, settings); audit + prioritized
   P0/P1/P2 fixes, all presentational.
 
 ---
 
-## Reference: proposal creation — do you have to paste JSON?
+## Reference: proposal creation - do you have to paste JSON?
 
 **No.** The JSON paste is an optional shortcut, not the only path. On `/proposals/new`
 the "Import from generate-proposal skill" card lets you paste a tokens JSON to pre-fill
@@ -240,7 +240,7 @@ transcript into that JSON, which saves retyping.
 
 **The schema an agent must produce** (source of truth: `src/lib/types.ts`):
 
-`TokensJson` — 17 string keys (all required):
+`TokensJson` - 17 string keys (all required):
 
 ```json
 {
@@ -270,7 +270,7 @@ normalization tolerates a missing `Client.ValidUntil` (defaults +30 days) and ig
 legacy `Client.CaseStudy` field.
 
 **Ready-to-use test token:** [`docs/testProposalTokens.json`](docs/testProposalTokens.json)
-— paste into the "Import from generate-proposal skill" box on `/proposals/new` for an
+- paste into the "Import from generate-proposal skill" box on `/proposals/new` for an
 instant tiered test proposal (Brightline Test Co, 3 tiers + 2 add-ons). It deliberately omits the two
 date fields so every import gets fresh dates and is always signable. Add an optional
 `Investment.Structure` block (`type: "tiers"`, `tiers[].name/price/includes/recommended`,

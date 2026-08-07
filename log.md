@@ -1,41 +1,41 @@
-# LOG.md — proposalGenerator
+# log.md - proposal-generator
 
-## 2026-07-15 — Cron log heartbeat policy + 30-day retention (Supabase Disk IO Budget warning)
+## 2026-07-15 - Cron log heartbeat policy + 30-day retention (Supabase Disk IO Budget warning)
 
 Supabase warned that the shared free-tier Nano project (`bjqouysamajtmghyztoa`, also hosts
 expenseVault) is depleting its Disk IO Budget. Diagnosis (pg_stat_statements/pg_stat_io): the
 biggest app-side writer was **this app's `process-jobs` cron logging a `CronLog` row every
-5 minutes, 24/7** — 9.7k rows, ~98 MB of WAL, since each tiny INSERT lands right after a
+5 minutes, 24/7** - 9.7k rows, ~98 MB of WAL, since each tiny INSERT lands right after a
 5-min checkpoint and forces full-page writes. Reads were a non-issue (15 MB DB, 100% cache hit).
 
-Fix: `src/lib/cronLogPolicy.ts` (`shouldWriteCronLog`, pure + vitest'd) — failures and runs
+Fix: `src/lib/cronLogPolicy.ts` (`shouldWriteCronLog`, pure + vitest'd) - failures and runs
 that did work always log; quiet runs collapse to **one heartbeat row per day**; the first
 success after a failure always logs so the health panel shows recovery. `logCronRun` gained
 `opts.noop`; process-jobs passes `ran===0 && failed===0`, reconcile-payments passes
 `stuck.length===0`, daily always logs. The daily cron now also **prunes CronLog rows older
-than 30 days** (audit tables — AuditEvent/EmailLog/WebhookEvent — deliberately untouched).
+than 30 days** (audit tables - AuditEvent/EmailLog/WebhookEvent - deliberately untouched).
 `systemHealth.tsx` reaches `take: 30` deep so uneven per-path volume can't crowd a cron out
 of the panel. Expected: ~288 CronLog writes/day → ~10. Polling itself stays at */5 (claim/reap
-UPDATEs that match 0 rows write no WAL — the ticks are nearly free once the INSERT is gone).
+UPDATEs that match 0 rows write no WAL - the ticks are nearly free once the INSERT is gone).
 
 **Deployed + verified same day:** commit `34f3487` → `dpl_3wH6gLvYhs3mL3r6s8K4fwayfr9r` READY
 on proposals.rsla.io (22:33 UTC). Post-deploy, three cron ticks (22:35/22:40/22:45) returned
 200 in Vercel logs while the CronLog row count stayed frozen at 9,754 and zero failure rows
-appeared — quiet runs suppressed exactly as designed. First 30-day purge lands at the next
+appeared - quiet runs suppressed exactly as designed. First 30-day purge lands at the next
 13:00 UTC daily run.
 
 Remaining levers live outside this repo: free-plan Nano baseline churn (~25 WAL write ops/sec
-at idle) is Supabase platform behavior — Rahul chose to stay on the free plan for now, so the
+at idle) is Supabase platform behavior - Rahul chose to stay on the free plan for now, so the
 watch item is the dashboard's Disk IO Budget chart over the next days. Full investigation
 logged in expenseVault's LOG.md (2026-07-15).
 
-## 2026-07-11 — scripts/exportDraftPdf.ts: unsigned "bare doc" export for any proposal
+## 2026-07-11 - scripts/exportDraftPdf.ts: unsigned "bare doc" export for any proposal
 
 New utility (pdfSmoke pattern): renders a proposal's CURRENT document (frozen content if present, else live tokens) through the real `ProposalPdf` with `signers: []` and an empty certificate, so signature cards come out blank ("Date: ____"). The unconditional trailing E-Signature Certificate page must be stripped downstream (pypdf: drop last page; assert it contains "E-Signature Certificate" first). Built for Select Landscape (email attachment before send).
 
 Run: `npx tsx scripts/exportDraftPdf.ts <proposalId> <outPath>`. Gotcha: the local `.env` `DATABASE_URL` uses the Supabase DIRECT host, which is IPv6 only and unreachable from IPv4 networks (P1001). Override with the session pooler: `postgresql://postgres.bjqouysamajtmghyztoa:<pw>@aws-1-us-west-1.pooler.supabase.com:5432/postgres` (aws-1, not aws-0; see BRAIN.md).
 
-## 2026-06-24 — Competitive teardown: Cited Co proposal platform (research, no app changes)
+## 2026-06-24 - Competitive teardown: Cited Co proposal platform (research, no app changes)
 
 Captured a live Cited Co client proposal (`clients.citedco.ai/proposal/1f19369a4b22873142e187bd`)
 and saved a full teardown + the raw served code under `docs/competitiveResearch/citedCo/`.
@@ -49,28 +49,28 @@ our hashed-token/rotation design by contrast). Worth borrowing: the live-metrics
 block and single-tier pricing layout. No code in this repo changed. Saved artifacts: pretty
 `proposalData.json`, the 1.99 MB app bundle, CSS, Lovable analytics scripts, og + hero images.
 
-## 2026-06-22 — Backlog RSL-36..39 fixed + deployed (Sid's Jun-19 new-feature audit leftovers)
+## 2026-06-22 - Backlog RSL-36..39 fixed + deployed (Sid's Jun-19 new-feature audit leftovers)
 
 Sid filed four more issues 2026-06-22 from his Jun-19 new-feature audit (discounts / manual-invoice /
-LastName-optional) — "confirmed but never filed" in that pass, all Backlog, net-new beyond the closed
+LastName-optional) - "confirmed but never filed" in that pass, all Backlog, net-new beyond the closed
 RSL-6..35 waves. Found by re-listing the team (the standing "re-check before declaring all clear" pattern).
 Planned, then executed subagent-driven (fresh implementer + spec/quality review per issue, whole-branch
 review, one fix-wave). Plan: [`docs/plans/backlogRsl36-39.md`](docs/plans/backlogRsl36-39.md). Branch
 `audit/backlog-rsl-36-39`, ff-merged to `main`, deployed.
 
-- **RSL-36 (Medium)** — capped charged-line labels + `Client.ProposalTitle` with Zod `.max()`
+- **RSL-36 (Medium)** - capped charged-line labels + `Client.ProposalTitle` with Zod `.max()`
   (`MAX_LINE_LABEL_CHARS`/`MAX_PROPOSAL_TITLE_CHARS` = 200), enforced at save AND send (the schemas
   `proposals.ts` parses), with a humanized error instead of a mid-checkout Stripe throw; backstop in
   `buildLineItems` (RSL-30 pattern). Commit `2e31c07`.
-- **RSL-38 (Low)** — `handleSave` now blocks client-side on any priced-line advisory (display/charged
+- **RSL-38 (Low)** - `handleSave` now blocks client-side on any priced-line advisory (display/charged
   mismatch, discount >= price, blank reason) via a new pure `moneyDraft.ts` (single source shared with
   `MoneyFields`); inline blank-reason warning added; net-positive invariant made explicit in
   `paymentConfigSchema.superRefine` + pinned by a test. Commit `35462cd`.
-- **RSL-39 (Low, latent)** — `frozenTokens` validates-on-read (coerces every token key to a trimmed
+- **RSL-39 (Low, latent)** - `frozenTokens` validates-on-read (coerces every token key to a trimmed
   string, RSL-21 spirit) so a legacy/hand-edited snapshot missing `Client.LastName` can't 500 the signing
   render / PDF job; defensive coercion also at `clientFullName` + the two `proposalContent.ts` trim sites.
   pdfSmoke confirmed. Commit `d0b14e8`.
-- **RSL-37 (Low)** — kept the two import discount dialects distinct by design (human authoring keys =
+- **RSL-37 (Low)** - kept the two import discount dialects distinct by design (human authoring keys =
   list-minus vs the internal config dump = already-net; unifying would break the round-trip). Instead the
   post-import toast lists each resolved "was X, now Y (reason)" via `summarizeImportedDiscounts`, and
   `/docs` documents both shapes. Commit `1801ce1`.
@@ -80,26 +80,26 @@ reviews + vitest missed (vitest does not type-check): RSL-37's toast assembly pu
 `inferredTiers`/`inferredAddOns` into a `PaymentConfig`. The fix-wave (`cc4cb7a`) routed the summary through
 the canonical `stateToConfig` (which also made tier/add-on discounts actually summarize), plus **N1**: the
 RSL-36 backstop now guards Stripe's real 250-char product-name limit on the effective (deposit-wrapped) label
-via `STRIPE_MAX_PRODUCT_NAME_CHARS`, while the schema keeps the 200-char source cap — closing a narrow band
+via `STRIPE_MAX_PRODUCT_NAME_CHARS`, while the schema keeps the 200-char source cap - closing a narrow band
 (~186-200 char label + deposit) that saved fine but could still throw at the client's checkout. Whole-branch
 review (opus) + fix re-review both Approved, 0 Critical / 0 Important. **Lesson:** every task's verification
-must include `npm run build` (tsc), not just `vitest` — vitest strips types without checking.
+must include `npm run build` (tsc), not just `vitest` - vitest strips types without checking.
 
 **Verified (integrated, controller-run):** `npm run build` PASS, `npm test` 299/299, `eslint src` 0 errors,
-`pdfSmoke` 3/3. No schema migration. Nothing changed what a client is charged or shown — caps reject at
+`pdfSmoke` 3/3. No schema migration. Nothing changed what a client is charged or shown - caps reject at
 authoring, the discount gate is client-side UX, the invariant is explicit-but-redundant, and the import-toast
 and `frozenTokens` reads are read-only.
 
-**Status:** SHIPPED — `main` ff `5ea4d0f..cc4cb7a` (6 commits: plan doc + RSL-36/38/39/37 + fix-wave), pushed
+**Status:** SHIPPED - `main` ff `5ea4d0f..cc4cb7a` (6 commits: plan doc + RSL-36/38/39/37 + fix-wave), pushed
 to origin; Vercel git deploy auto-triggered; prod smoke green (landing 200 / dashboard 307 / unauthed
 `/api/.../pdf` 401). Linear **RSL-36..39 moved to Done** with resolution comments. Branch kept as the record.
-Deferred cosmetic minors (signOnly gate not explicitly scoped — no regression/no charge impact; a tier/add-on
-test using `[0]` vs `.some()`; constant ordering) — none ship-blocking.
+Deferred cosmetic minors (signOnly gate not explicitly scoped - no regression/no charge impact; a tier/add-on
+test using `[0]` vs `.some()`; constant ordering) - none ship-blocking.
 
-## 2026-06-21 — Docs sync: manual-invoice + discounts + the "tokens fill blanks" model
+## 2026-06-21 - Docs sync: manual-invoice + discounts + the "tokens fill blanks" model
 
 Brought every doc surface up to date with the two recent features (manual-invoice mode, per-line
-discounts) and documented the placeholder model Rahul flagged. No code changes — docs only.
+discounts) and documented the placeholder model Rahul flagged. No code changes - docs only.
 
 - **In-app `/docs` page** (`src/app/(admin)/docs/page.tsx`): added a "What the tokens fill (and what
   they don't)" section up top (template is fixed; greeting/contact/sign-off/headings/MSA are
@@ -107,7 +107,7 @@ discounts) and documented the placeholder model Rahul flagged. No code changes �
   pricing block (`manualInvoice: true`, distinct from sign-only) with an example; added a **discount**
   code example to the existing discount section; folded discounts + manualInvoice into the pricing
   intro's "optional fields" list. Lint + `tsc --noEmit` clean.
-- **Skill `references/platformImportSchema.md`**: mirrored the above — new "What the tokens fill"
+- **Skill `references/platformImportSchema.md`**: mirrored the above - new "What the tokens fill"
   section, **Discounts** and **Manual invoice** subsections under the stack-on blocks, payment-landing
   note in the pricing intro, and discount/manual rules in the enforced-at-send list.
 - **Skill `SKILL.md`**: Phase-1 pricing decision now asks shape + how-payment-lands + discounts;
@@ -129,25 +129,25 @@ discounts) and documented the placeholder model Rahul flagged. No code changes �
   client" option, that does NOT exist today (`sendProposal` always emails every signer) and would be
   a build, not a doc fix.
 
-## 2026-06-21 — Deleted two test proposals (+ all metadata/blobs) at Rahul's request
+## 2026-06-21 - Deleted two test proposals (+ all metadata/blobs) at Rahul's request
 
 Cleaned two proposals off prod so they stop carrying dashboard metrics:
 
-- **Fieldshare Marketing Retainer** (`cmqkncxl5…`, SIGNED/PAID). Was a test — client "Chris Kam" =
+- **Fieldshare Marketing Retainer** (`cmqkncxl5…`, SIGNED/PAID). Was a test - client "Chris Kam" =
   Rahul's own `rahul.lalia23@gmail.com`, marked PAID via the new **manual-invoice** flow (no Stripe
   session/customer/Payment row, no Notion page), so nothing real to orphan. Removed its executed PDF
   + 2 signature PNGs, cascade row (parties/signatures/audit/emails/jobs), and 6 webhook events.
 - **Valley Oak v1** (`cmqg642cx…`, DECLINED). Removed cascade row + 1 admin-sig blob + 4 webhook events.
 
-**Kept Valley Oak v2** (`cmqhcsadf…`, VIEWED) — its `parentId` (→ v1) was explicitly nulled *before*
+**Kept Valley Oak v2** (`cmqhcsadf…`, VIEWED) - its `parentId` (→ v1) was explicitly nulled *before*
 deleting v1 so the delete could never touch it (the self-relation has no explicit `onDelete`). Verified:
 v2 survives, both targets gone, 0 blobs left for either id. DB now holds exactly 1 proposal (VO v2), so
 contracted/MRR/win-rate recompute clean. No Stripe or Notion cleanup was needed (neither carried any).
 
-## 2026-06-21 — Manual-invoice (no-checkout) pricing mode — DEPLOYED to prod
+## 2026-06-21 - Manual-invoice (no-checkout) pricing mode - DEPLOYED to prod
 
 New pricing mode: a proposal can show its full pricing (amount + duration), sign normally, and **skip
-Stripe checkout** — the owner invoices manually and later clicks **Mark as paid**. Decoupled "show a
+Stripe checkout** - the owner invoices manually and later clicks **Mark as paid**. Decoupled "show a
 price" from "charge a price" via one toggle, instead of bolting amounts onto the empty sign-only branch.
 
 **Decisions (with Rahul):** full pricing model (toggle works on flat/tiered/recurring/add-ons); counts
@@ -157,7 +157,7 @@ payment link / invoice language); mark-as-paid is internal only (no client email
 **Shape:**
 - `PaymentConfig.manualInvoice?: boolean` (back-compat optional) + helpers `isManualInvoice()` /
   `skipsCheckout()` in `types.ts`. New `PaymentStatus.MANUAL_INVOICE` (migration `0007`, already applied
-  to the prod DB — additive `ALTER TYPE ... ADD VALUE`, harmless to live rows).
+  to the prod DB - additive `ALTER TYPE ... ADD VALUE`, harmless to live rows).
 - Signing: last signer with a manual config sets `MANUAL_INVOICE` and never mints a Stripe session
   (`signingService.ts`). Pricing rendering + dashboard revenue math unchanged (revenue already counts on
   `status === SIGNED`).
@@ -165,42 +165,42 @@ payment link / invoice language); mark-as-paid is internal only (no client email
   so the `fully_signed_client` email stays link-free; sign-page `willCheckout` via `skipsCheckout`;
   `proposalContent` "How to Proceed" gets a generic, payment-free variant; `/pay` shows a benign
   "nothing to pay here" for `MANUAL_INVOICE`.
-- Form: a "Don't collect payment — I'll invoice manually" checkbox in the Checkout card (flat/tiers),
+- Form: a "Don't collect payment - I'll invoice manually" checkbox in the Checkout card (flat/tiers),
   hides payment methods + deposit when on; import accepts top-level `manualInvoice: true`.
 - Dashboard: `awaiting_invoice` attention reason ("N to invoice") + "Awaiting invoice" status chip.
   Admin send-summary + signed-admin email get manual-invoice copy.
 - **Mark as paid** (`markPaidManually` action + button on the signed detail page): ADMIN-only,
   status-guarded + idempotent `MANUAL_INVOICE → PAID`, logs `PAYMENT_PAID {kind:"manual"}`, syncs Notion
-  "paid" — **no** Stripe metadata, **no** receipt emails, **no** `Payment` row (that table is Stripe-only).
+  "paid" - **no** Stripe metadata, **no** receipt emails, **no** `Payment` row (that table is Stripe-only).
 
 **Verified:** `npm run build` green; `npm test` 278/278 (added helper truth-table, validation floor-skip,
 dashboard counting/attention tests); `pdfSmoke` + `emailPreview` clean; rendered a manual-invoice PDF and
 visually confirmed the Investment section shows "$9,000 one-time / $2,000/month" and the How-to-Proceed
 steps are payment-free.
 
-**Live rehearsal DONE 2026-06-21 (prod, fake co "Brightline Test Co") — all green.** Seed → auth-less
+**Live rehearsal DONE 2026-06-21 (prod, fake co "Brightline Test Co") - all green.** Seed → auth-less
 send (`e2eSend`) → signed via the live `/api/sign` endpoint on `proposals.rsla.io`. Post-sign:
 `paymentStatus=MANUAL_INVOICE`, **no Stripe session/customer, no Payment row**; `fully_signed_client`
 + `fully_signed_admin` DELIVERED (no payment link); executed PDF generated (real doc shows
 "$9,000 / $2,000/month" + payment-free How-to-Proceed); deployed `/signed` is generic (no "Complete
 payment") and
 `/pay` returns HTTP 200 "nothing to pay" (no Stripe redirect); dashboard counted it ($9,000 + $2,000/mo)
-under `awaiting_invoice`. Then **Mark as paid** (faithful `markPaidManually` body — same lib calls,
+under `awaiting_invoice`. Then **Mark as paid** (faithful `markPaidManually` body - same lib calls,
 skipping only `requireAuth`/`revalidatePath`, exactly how `e2eSend` mirrors the send): idempotent
 `MANUAL_INVOICE → PAID` (2nd call no-ops), exactly one `PAYMENT_PAID{kind:manual}`,
 `NOTION_SYNCED{kind:paid}`, **no receipt email / no Stripe metadata / no Payment row**, `awaiting_invoice`
 cleared, revenue still counted. Test row + blobs cleaned up; store clean; no real CRM row touched.
 
-**Status:** DEPLOYED + live-verified — `main` ff `b864595..e73dd20`, Vercel `dpl_5ksv…` READY →
+**Status:** DEPLOYED + live-verified - `main` ff `b864595..e73dd20`, Vercel `dpl_5ksv…` READY →
 `proposals.rsla.io` (landing 200 / dashboard 307 / unauthed `/api/.../pdf` 401). Back-compat safe (the
 new path only activates when the admin ticks the toggle).
 
-## 2026-06-21 — Wrap: GEMINI.md synced to CLAUDE.md (git-linked drift) + blobSweep in Commands
+## 2026-06-21 - Wrap: GEMINI.md synced to CLAUDE.md (git-linked drift) + blobSweep in Commands
 
 Session wrap. The mobile pass (P0+P1) shipped and was **phone-verified 2026-06-21** (folded into the
 entry below). Two doc-accuracy fixes at wrap:
 
-- **GEMINI.md was out of sync with CLAUDE.md on deployment** — it still claimed "the Vercel project is
+- **GEMINI.md was out of sync with CLAUDE.md on deployment** - it still claimed "the Vercel project is
   NOT git-linked; push alone deploys nothing" and lacked the git-linked rule (the same stale footgun
   corrected in the Stripe runbook on 2026-06-19). Mirrored CLAUDE.md: added the "`main` is git-linked →
   pushing `main` auto-deploys" rule and fixed the Commands deploy line.
@@ -210,46 +210,46 @@ entry below). Two doc-accuracy fixes at wrap:
 No other rule/scope changes. In-app AI generation + tool-driven deposit balance/retainer remain **parked**
 per Rahul (captured in ROADMAP + the plan file); manual deposit collection stays.
 
-## 2026-06-20 — Mobile pass SHIPPED (P0 + P1) + blobSweep promoted to scripts/
+## 2026-06-20 - Mobile pass SHIPPED (P0 + P1) + blobSweep promoted to scripts/
 
 Executed the mobile plan ([`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md)),
 P0 + P1, presentational Tailwind only (no logic/data/schema). 4 component files + 1 script:
 
-- **P0** — form pricing grids (`proposalForm.tsx` MoneyFields + tier editor) `grid-cols-2` →
+- **P0** - form pricing grids (`proposalForm.tsx` MoneyFields + tier editor) `grid-cols-2` →
   `grid-cols-1 sm:grid-cols-12` (fields stack full-width on a phone instead of a 2-col staircase);
   detail **4-tab strip** (`proposals/[id]/page.tsx`) → mobile horizontal scroll (`overflow-x-auto`,
   triggers `flex-none`, restored to `flex-1` at `sm`).
-- **P1** — form payment-methods row `gap-6` → `gap-3 md:gap-6`; detail documents row + settings
+- **P1** - form payment-methods row `gap-6` → `gap-3 md:gap-6`; detail documents row + settings
   add-teammate grid + the 3 system-health rows stack on mobile (`flex-col md:flex-row`).
 - **Skipped as genuine non-issues:** deposit row (already `flex-wrap` + `flex-1` helper), party-actions
   and team-user-row buttons (already stack at `sm`; two small buttons fit), signature-pad `h-44` (shared
   with the phone-tested signing flow). No 44px tap-target / bigger-text overhaul (keeps the app's shipped
   compact density).
-- **blobSweep promoted** `.tmp/` → `scripts/blobSweep.ts` — the documented DB-verified cleanup is now one
+- **blobSweep promoted** `.tmp/` → `scripts/blobSweep.ts` - the documented DB-verified cleanup is now one
   command (`npx tsx scripts/blobSweep.ts` dry-run; `APPLY=1` to delete).
 
 **Verified:** `npm run build` green + `eslint src` 0 errors (10 pre-existing test-file warnings only).
-**Desktop (≥md) is provably unchanged** — every edit only adds mobile-first base classes overridden back
-to the originals at `sm`/`md`. **Phone-verified 2026-06-21** — Rahul confirmed the form, a proposal detail, and settings look good on a
+**Desktop (≥md) is provably unchanged** - every edit only adds mobile-first base classes overridden back
+to the originals at `sm`/`md`. **Phone-verified 2026-06-21** - Rahul confirmed the form, a proposal detail, and settings look good on a
 real phone (the headless gap was only that authed admin screens need a Google session, so they couldn't be
 screenshotted locally at build time). P2 (sticky mobile save bar) deferred as optional.
 
-## 2026-06-20 — Mobile pass: internal admin surfaces audited + planned (no code yet)
+## 2026-06-20 - Mobile pass: internal admin surfaces audited + planned (no code yet)
 
 Audited the three still-open mobile surfaces (proposal form, detail/tabs, settings) via three
 parallel reads and wrote a prioritized plan:
 [`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md). Findings: the
-proposal form is the only thing that genuinely looks broken on a phone — the pricing grids
+proposal form is the only thing that genuinely looks broken on a phone - the pricing grids
 (MoneyFields + tier editor) are `grid-cols-2` on mobile, jamming fields into a 2-col staircase
 (fix = `grid-cols-1 sm:grid-cols-12`); the detail view is mostly fine except the 4-tab strip
 compressing (fix = horizontal scroll); settings are minor (add-teammate grid + a few flex rows).
-Two calls: skipped the signature-pad `h-44` flag (false positive — the same canvas the signing
+Two calls: skipped the signature-pad `h-44` flag (false positive - the same canvas the signing
 flow already phone-tested) and deliberately NOT doing a 44px tap-target / bigger-text overhaul
 (would diverge from the app's shipped compact density). Scope tiers: P0 (grid crushes + tab
 strip) / P1 (collapsing rows) / P2 (optional sticky save bar). Presentational Tailwind only,
 ~6 files; awaiting a go + scope to execute. ROADMAP mobile item updated to point at the plan.
 
-## 2026-06-19 — Fieldshare lineage collapse + first DB-verified blob sweep
+## 2026-06-19 - Fieldshare lineage collapse + first DB-verified blob sweep
 
 Two prod data operations (no code shipped). Both put today's doc-accuracy fix into practice
 and validated it.
@@ -257,16 +257,16 @@ and validated it.
 - **Fieldshare Marketing Retainer: 3 versions collapsed to 1.** Rahul asked to delete v2 + v1
   and make v3 the new v1. Inspected first (`.tmp/inspectFieldshare.ts`): v1 (`cmqgb4fbu…`) and
   v2 (`cmqiflptt…`) were both VOIDED ("Superseded by revision"), carrying only Rahul's
-  PRE_APPLIED admin signature — the client signers (Chris Kam / Sid Satoskar, fieldshare.io)
+  PRE_APPLIED admin signature - the client signers (Chris Kam / Sid Satoskar, fieldshare.io)
   never signed, no payments, no executed PDFs. v3 (`cmqkncxl5…`) was a clean never-sent DRAFT.
   Collapsed via a guarded transaction (`.tmp/fieldshareCollapse.ts`, aborts on any non-admin
   signature or payment): detached v3 (versionNumber=1, parentId=null), then deleted v2 + v1
   (cascade cleaned parties / admin sigs / audit / emails). One Fieldshare row remains: DRAFT
   v1, root. This was a deliberate hand-SQL bypass of the app's `deleteDraft` guard (which only
-  deletes DRAFTs) — fine, voided revisions aren't deletable in-app and nothing was executed.
+  deletes DRAFTs) - fine, voided revisions aren't deletable in-app and nothing was executed.
 - **First DB-verified orphaned-blob sweep (`.tmp/blobSweep.ts`).** Listed every `proposals/`
   blob, grouped by `{id}`, kept only ids with a live Proposal row. The result proved the
-  reframed-doc point exactly: the store held just **4** `proposals/` blobs — **2 belong to live
+  reframed-doc point exactly: the store held just **4** `proposals/` blobs - **2 belong to live
   proposals** (`cmqg642cx…`, `cmqhcsadf…`, KEPT) and **2 were true orphans** (the Fieldshare
   v1/v2 admin sigs just orphaned by the delete). The old LOG's "4 orphans from prior rehearsals"
   was wrong (already swept); a blanket "delete the `proposals/` prefix" would have destroyed the
@@ -275,13 +275,13 @@ and validated it.
   Throwaway scripts left in `.tmp/` (gitignored); `blobSweep.ts` is promotable to `scripts/` if
   we want the documented sweep one-command runnable.
 
-## 2026-06-19 — Doc-accuracy pass: blob "delete the prefix" footgun + Stripe runbook reconcile
+## 2026-06-19 - Doc-accuracy pass: blob "delete the prefix" footgun + Stripe runbook reconcile
 
 Two pieces of standing documentation contradicted reality and read as safe-but-destructive
-instructions. Fixed both — docs only, no code/schema, nothing here is served (no prod impact).
+instructions. Fixed both - docs only, no code/schema, nothing here is served (no prod impact).
 
 - **Blob "orphan" footgun.** BRAIN's Blob gotcha told you to "delete the `proposals/` prefix"
-  to clean up — safe only in its original clean-slate context (DB at 0 proposals), but a
+  to clean up - safe only in its original clean-slate context (DB at 0 proposals), but a
   standing landmine now: those keys are real signature PNGs + executed PDFs (MSA §11 evidence)
   on live contracts. A 2026-06-19 spot-check found leftover blobs mapping to **live `Proposal`
   rows**, so "orphan" can't be eyeballed. Reframed across three files: BRAIN gotcha now says
@@ -292,7 +292,7 @@ instructions. Fixed both — docs only, no code/schema, nothing here is served (
 - **Stripe live-key runbook reconcile.** `docs/stripeKeySwapGuide.md` was pre-swap tense though
   the swap shipped + was verified 2026-06-15. Added a Status: COMPLETED banner (now an as-built
   config + rollback reference), and fixed a stale Step-5 line that still claimed "the project is
-  NOT git-linked; this is the only ship path" (`main` IS git-linked — the exact false claim
+  NOT git-linked; this is the only ship path" (`main` IS git-linked - the exact false claim
   behind the earlier prod-revert). Checked the ROADMAP runbook box. The runbook's content (6
   events, scopes, ACH, rollback) was already accurate.
 
@@ -300,22 +300,22 @@ Verified: only 4 doc files changed (`git diff --stat`), every `proposals/` prefi
 carries a DON'T/superseded caveat, no "NOT git-linked" left in `docs/`. Not committed (no commit
 requested; `main` is git-linked, so a push would trigger a no-op rebuild).
 
-## 2026-06-19 — RSL-34 / RSL-35: discount cadence + PDF discount a11y (Sid /review follow-ups)
+## 2026-06-19 - RSL-34 / RSL-35: discount cadence + PDF discount a11y (Sid /review follow-ups)
 
-Sid's `/review` pass on the per-line-discount feature (commit `05342ed`) filed two more issues —
-**RSL-34** (Medium, Bug) + **RSL-35** (Low, a11y) — surfaced when Rahul asked to confirm Sid's backlog
+Sid's `/review` pass on the per-line-discount feature (commit `05342ed`) filed two more issues -
+**RSL-34** (Medium, Bug) + **RSL-35** (Low, a11y) - surfaced when Rahul asked to confirm Sid's backlog
 was clear. Both fixed TDD-style and deployed.
 
-- **RSL-34 — discounted recurring lines dropped the /month cadence.** A per-line discount overwrote a
+- **RSL-34 - discounted recurring lines dropped the /month cadence.** A per-line discount overwrote a
   line's `displayString` with `formatCents(net)` (cadence-less), and that string feeds the e-sign
-  **consent restatement** — so a discounted $600/month tier read "Growth at $600" in the *binding*
+  **consent restatement** - so a discounted $600/month tier read "Growth at $600" in the *binding*
   text. (The charge was always the correct net; only the legal-surface text was wrong.) All four
   producers in `proposalForm.tsx` now use `formatPricedLine(net, interval)`: the two `MoneyFields`
   editors (`setList`/`setDiscount`), the discount toggle-off, and the skill-import path (interval
   threaded through `importDiscount`, now exported). Extracted the consent restatement to a pure
   `buildSelectedSummary()` in `signingOutcome.ts` so the binding text is unit-tested. The flat-import
-  path (`importPricing.ts`) was already clean (it preserves the source displayString) — no RSL-36.
-- **RSL-35 — PDF discount note lacked was/now a11y context.** The web `DiscountNote` already carries
+  path (`importPricing.ts`) was already clean (it preserves the source displayString) - no RSL-36.
+- **RSL-35 - PDF discount note lacked was/now a11y context.** The web `DiscountNote` already carries
   an `aria-label` (RSL-33); react-pdf can't, so the PDF twin (`ProposalPdf.tsx`) now prefixes a literal
   "was " before the struck original. `pdfSmoke` gained a discounted recurring line; visual Read confirms
   "was $3,500/month" struck.
@@ -326,56 +326,56 @@ the money path is untouched and was fully rehearsed earlier today). **Linear:** 
 **Browser-verified on live prod (post-deploy):** seeded a discounted-recurring tiered `[TEST]` proposal,
 opened its signing page on `proposals.rsla.io`, and confirmed the Growth tier renders "$600/month ·
 Was $700/month, now $600/month" and the adopt-modal **consent restatement reads "Growth at $5,000 +
-$600/month"** — the `/month` cadence is present on the binding text (the bug would read "...+ $600").
+$600/month"** - the `/month` cadence is present on the binding text (the bug would read "...+ $600").
 `[TEST]` data + blob cleaned, throwaway seed removed. (The form *producer* path stays login-gated →
 covered by the 5 unit tests; the deployed *consumer*/consent rendering is now eyes-on confirmed.)
 
-## 2026-06-19 — Wave 8: Sid's re-verification follow-ups (RSL-27..33) SHIPPED to prod
+## 2026-06-19 - Wave 8: Sid's re-verification follow-ups (RSL-27..33) SHIPPED to prod
 
 Sid re-verified the completed 21-issue audit at HEAD `05342ed` and filed **7 new issues** (RSL-27..33):
 3 "residuals" (the same bug class the audit already fixed, surviving in a sibling code path the original
 patch didn't sweep) + 4 new-feature bugs (from `05342ed` discounts/decline + `8359612` LastName-optional).
-All fixed TDD-style and **deployed**: branch `audit/wave8-rsl-27-33`, three themed commits — `69fe9d3`
-(exactly-once side effects), `fcae3e9` (money/CRM), `d088737` (legal-text + UI tests) — ff-merged to `main`
+All fixed TDD-style and **deployed**: branch `audit/wave8-rsl-27-33`, three themed commits - `69fe9d3`
+(exactly-once side effects), `fcae3e9` (money/CRM), `d088737` (legal-text + UI tests) - ff-merged to `main`
 (`05342ed..d088737`), Vercel git deploy `9lmckinns` (`dpl_6bjwp5Fp…`) READY → proposals.rsla.io (landing 200,
 dashboard/docs/health 307, bad-token document route 404). **264 tests** (+63), tsc + `next build` + eslint(src)
 clean; no schema migration. Plan: `~/.claude/plans/create-a-plan-to-warm-kay.md`.
 
-- **RSL-27 (High) — client receipt durable.** `applyPaidState` now enqueues the client receipt
+- **RSL-27 (High) - client receipt durable.** `applyPaidState` now enqueues the client receipt
   unconditionally and resolves the payer INSIDE the `SEND_EMAIL` job (`resolvePartyByRole`), so a transient
   payer lookup can't strand it (no payer = clean no-op; a throw retries via the queue). `paymentState.ts` + `jobRunner.ts`.
-- **RSL-28 — webhook first-send idempotency.** `payment_failed_client` / `payment_link` first-sends carry a
+- **RSL-28 - webhook first-send idempotency.** `payment_failed_client` / `payment_link` first-sends carry a
   deterministic `emailkey-<event.id>-<template>` Resend key (a reaper re-run reuses it → no double-deliver);
   `sendTemplateEmail` gained an optional `idempotencyKey`.
-- **RSL-29 — CRM monthly fee.** `jobRunner` derives the monthly fee via the shared `monthlyRecurringCents`
-  util (the RSL-18 source of truth) — quarterly/annual retainers + recurring add-ons normalize instead of $0.
-- **RSL-30 — Stripe $0.50 floor.** `validatePaymentConfigForSend` enumerates every charged amount across all
+- **RSL-29 - CRM monthly fee.** `jobRunner` derives the monthly fee via the shared `monthlyRecurringCents`
+  util (the RSL-18 source of truth) - quarterly/annual retainers + recurring add-ons normalize instead of $0.
+- **RSL-30 - Stripe $0.50 floor.** `validatePaymentConfigForSend` enumerates every charged amount across all
   selectable combos (each tier's first charged line incl. the deposit, recurring, flat lines, add-ons;
   `futureItems` excluded) and blocks sub-50c at authoring; `buildLineItems` throws as a backstop. `STRIPE_MIN_CHARGE_CENTS`.
-- **RSL-31 — MSA legal-text.** The blank-surname gap-collapse is scoped to the single party-line run
+- **RSL-31 - MSA legal-text.** The blank-surname gap-collapse is scoped to the single party-line run
   (`First , Company`), never document-wide; attorney text stays byte-identical (surname-present unchanged).
   `pdfSmoke` now renders a blank-surname variant.
-- **RSL-32 — decline exactly-once.** `declineProposal` claims via a `declinedAt`-null guarded `updateMany` +
+- **RSL-32 - decline exactly-once.** `declineProposal` claims via a `declinedAt`-null guarded `updateMany` +
   returns `firstDecline`; the route emails `declined_admin` only on the first decline; the post-commit log is
   wrapped in `safeLogEvent`. Client `handleDecline` gained a `catch` + branches on `data.code` (extracted pure
   `declineOutcome`).
-- **RSL-33 — UI test coverage.** jsdom + RTL harness (per-file `@vitest-environment jsdom` opt-in; node stays
+- **RSL-33 - UI test coverage.** jsdom + RTL harness (per-file `@vitest-environment jsdom` opt-in; node stays
   default). Component tests for decline routing, `MoneyFields` discount inputs, `DiscountNote`/`FlatPricing`;
   struck-price `aria-label` (a11y); `readDiscount` via `inferFlatPricingFromImport`.
 
-**Rehearsal (Stripe test-mode, local dev against prod DB).** Verified LIVE: **RSL-32** — a double-submitted
+**Rehearsal (Stripe test-mode, local dev against prod DB).** Verified LIVE: **RSL-32** - a double-submitted
 decline produced exactly one `PARTY_DECLINED` + one `declined_admin` email (Resend SENT); the 2nd submit
-returned `code:declined`. **RSL-27 + RSL-29** — fired a real HMAC-signed `checkout.session.completed` at the
+returned `code:declined`. **RSL-27 + RSL-29** - fired a real HMAC-signed `checkout.session.completed` at the
 webhook → PAID + `Payment` row + **both receipts DELIVERED** (the client receipt resolved-in-job to the client
 inbox) + `NOTION_SYNCED` (quarterly $300/qtr → $100/mo). `[TEST]` rows cleaned up (cascade); dashboard/DB clean.
 
-**Rehearsal COMPLETED — full sign → Checkout → executed-PDF UI walk (2026-06-19).** The piece blocked since
+**Rehearsal COMPLETED - full sign → Checkout → executed-PDF UI walk (2026-06-19).** The piece blocked since
 Wave 4 is now done. **Blob unblock:** the store has no static token by design (prod = ambient OIDC, see
 `src/lib/blob.ts`), but dev-env OIDC isn't enabled for it, so a `vercel env pull` token 403s
 ("OIDC … not enabled for the development environment"). Fix: a static `BLOB_READ_WRITE_TOKEN` in `.env` +
-commenting out `VERCEL_OIDC_TOKEN` in `.env.local` — the `@vercel/blob` resolver prefers OIDC whenever both
+commenting out `VERCEL_OIDC_TOKEN` in `.env.local` - the `@vercel/blob` resolver prefers OIDC whenever both
 OIDC vars are present, so it must be absent for the token to win. **Walk:** `e2eSeed` → `e2eSend` (new;
-faithfully mirrors `sendProposal` minus `requireAuth`/`revalidatePath` — freeze, hash via `computeContentHash`,
+faithfully mirrors `sendProposal` minus `requireAuth`/`revalidatePath` - freeze, hash via `computeContentHash`,
 admin pre-sign copied from `AdminSettings`, client token via `generateSigningToken`) → headless Chrome (Chrome
 DevTools MCP) drove `/sign/<token>`: adopt typed signature (Dancing Script), two-place stamp (Proposal
 Acceptance + MSA execution), ESIGN consent, Finish → real Stripe **test** Checkout (card 4242, phone required) →
@@ -386,24 +386,24 @@ attempts=1** (GENERATE_PDF, NOTION_SYNC×2, STRIPE_METADATA, SEND_EMAIL×2); cle
 CHECKOUT_CREATED → … → PAYMENT_PAID…); `notionPageId` null (fake co → no real CRM row touched). **Executed PDF**
 (19pp): both signatures in BOTH spots + E-Signature Certificate; **content-integrity SHA-256 == send-time
 `contentHash`** (`a21497b2…`). **RSL-30** floor passed at checkout. **Not exercised** (happy-path monthly run):
-RSL-28 (fail/link-email dedup) + RSL-29 (quarterly/annual $/mo) — both unit-tested; RSL-29 also covered by the
+RSL-28 (fail/link-email dedup) + RSL-29 (quarterly/annual $/mo) - both unit-tested; RSL-29 also covered by the
 partial pass above. **Cleanup:** `[TEST]` proposal cascade-deleted + its 3 blobs + 11 webhook events; dev +
 stripe listen stopped; `STRIPE_WEBHOOK_SECRET` cleared; `BLOB_READ_WRITE_TOKEN` kept for future local runs
 (commented note in `.env`). Helpers kept: `scripts/e2eSend.ts`, `e2eVerify.ts`, `e2eCleanup.ts`. Loose end:
 4 orphaned signature blobs from PRIOR rehearsals still sit in the store (their proposals were deleted, blobs
-never swept) — candidate for a one-off `del`. **Correction (2026-06-19):** a later spot-check found the
-leftover signature blobs under inspection map to **live `Proposal` rows**, not deleted ones — so "orphan"
+never swept) - candidate for a one-off `del`. **Correction (2026-06-19):** a later spot-check found the
+leftover signature blobs under inspection map to **live `Proposal` rows**, not deleted ones - so "orphan"
 can't be assumed by eyeballing the store. Cross-check each blob's `{id}` against the DB (`Proposal.id`, a
 cuid) before any `del`; never bulk-delete the `proposals/` prefix. Safe procedure now in ROADMAP + the BRAIN
 Blob gotcha.
-**Limitation:** the literal Stripe Checkout UI couldn't be driven locally — the local `BLOB_READ_WRITE_TOKEN`
+**Limitation:** the literal Stripe Checkout UI couldn't be driven locally - the local `BLOB_READ_WRITE_TOKEN`
 can't write to the prod Blob store, so *signing* fails locally (Blob is prod-only by design). Worked around by
 driving the webhook directly (the identical post-Checkout code path; the only un-exercised surface is Stripe's
 hosted card page, which holds no wave-8 logic). The full sign→checkout UI walk on a valid-Blob env stays on the
 ROADMAP rehearsal item. **Linear:** RSL-29 marked Done; the other six are pending (permission gate on writing
-others' tickets — awaiting Rahul's OK).
+others' tickets - awaiting Rahul's OK).
 
-## 2026-06-19 — Decline confirmation + Stripe product naming + per-line discounts (SHIPPED to prod)
+## 2026-06-19 - Decline confirmation + Stripe product naming + per-line discounts (SHIPPED to prod)
 
 Three features Rahul requested, all touching the signing / money path. Built, self-audited, and
 **deployed to prod 2026-06-19**: committed `05342ed`, pushed to `main` (`07e972d..05342ed`), Vercel
@@ -425,7 +425,7 @@ git deploy `nzs7n1x01` READY and serving proposals.rsla.io (landing 200, sign-in
   app charges the **net** and shows the client "was -> now (reason)". **Design keystone:** each
   line's `amountCents` stays the NET (the existing source of truth), and `discount: { amountCents,
   reason }` is **additive metadata** (original = net + discount, derived). So **no amount math
-  changed** — `effectiveCheckout`, Stripe `unit_amount`, the deposit %, and the Notion contract
+  changed** - `effectiveCheckout`, Stripe `unit_amount`, the deposit %, and the Notion contract
   value all already key off `amountCents` (= net). Touched: `types.ts` (Discount + optional field on
   OneTimeItem/AddOn/FutureItem; RecurringItem + tiers inherit), `currency.ts` (`originalCents`,
   `hasDiscount`, `discountDisplay`), `validation.ts` (discountSchema), `proposalForm.tsx`
@@ -440,7 +440,7 @@ git deploy `nzs7n1x01` READY and serving proposals.rsla.io (landing 200, sign-in
 **Decisions:** fixed-$ discount only for v1 (percent is a trivial follow-up); a discount on a
 recurring line is an ongoing reduced rate ("first N cycles" = Stripe-coupon territory, out of scope);
 no Stripe Coupons (charge the net directly, like the deposit feature); **future items get no discount
-FORM UI** (display-only lines — you don't set a discount there in the builder), but the renderers DO
+FORM UI** (display-only lines - you don't set a discount there in the builder), but the renderers DO
 show one if present (forward-compat / hand-authored); the label hint reads "(name on Stripe)" on every
 charged line.
 
@@ -449,13 +449,13 @@ naming, and import all reviewed. Confirmed: nothing reads the old Stripe product
 (webhook/reconcile/receipts key off `metadata.proposalId` / session id); an empty discount reason is
 blocked at save AND send by `paymentConfigSchema` with a clean "Reason is required." message
 (humanizeZodError). Two consistency gaps found and FIXED: (1) `FutureItem.discount` was allowed by the
-type/schema but rendered nowhere — now rendered on web + PDF (closed the set-but-not-shown gap); (2) PDF
-discount note used a double space vs the web's single — matched. Re-verified: tsc, 215 tests, eslint 0
+type/schema but rendered nowhere - now rendered on web + PDF (closed the set-but-not-shown gap); (2) PDF
+discount note used a double space vs the web's single - matched. Re-verified: tsc, 215 tests, eslint 0
 errors, pdfSmoke re-read (tier/add-on/flat/future discounts all show was -> now + reason, parity holds).
 
 **Verified:** `tsc` clean, **215 tests** (+14: currency discount helpers, validation discount schema,
 effectiveCheckout net-invariance + discounted-future-item-never-charged, `buildLineItems`), `eslint
-src` 0 errors, `npm run build` green, and `pdfSmoke` rendered + visually Read — the Growth tier shows
+src` 0 errors, `npm run build` green, and `pdfSmoke` rendered + visually Read - the Growth tier shows
 $6,000 with $7,000 struck + "Launch promo", the Rush add-on shows $800 with $1,000 struck +
 "First-time client", deposit correctly = 50% of the net $6,000. (pdfSmoke fixture now carries a
 discount as permanent regression coverage.)
@@ -464,47 +464,47 @@ discount as permanent regression coverage.)
 (now also covers: Stripe shows the label as product name + charges the net discounted amount; the
 two-stage decline gate). See ROADMAP.
 
-## 2026-06-18 — Audit remediation COMPLETE (Wave 7) + RSL-12/20 product refinements
+## 2026-06-18 - Audit remediation COMPLETE (Wave 7) + RSL-12/20 product refinements
 
-**All 21 audit issues (RSL-6..26) are now fixed AND deployed to prod — the audit is complete.**
-Wave 7 — the last wave — plus two product refinements shipped this session. **Deployed 2026-06-18:**
+**All 21 audit issues (RSL-6..26) are now fixed AND deployed to prod - the audit is complete.**
+Wave 7 - the last wave - plus two product refinements shipped this session. **Deployed 2026-06-18:**
 `main` fast-forwarded `a2cb293..6a13c14` and pushed; Vercel deploy `o6frxybnr` READY, aliased to
 proposals.rsla.io (landing 200 / dashboard 307 auth-gated / unauthed `/api/.../pdf` 401). Verified
 pre-push: **201 tests**, `tsc`, `next build`, `eslint src` (0 errors) all clean. No schema migration.
 
-- **Wave 7 (RSL-23, RSL-19) — commit `2c9264d`.** RSL-23 (`dates.ts`): replaced the hand-rolled
-  April–October DST month band (treated all of March as EST, mis-set early Nov) with an Intl
+- **Wave 7 (RSL-23, RSL-19) - commit `2c9264d`.** RSL-23 (`dates.ts`): replaced the hand-rolled
+  April-October DST month band (treated all of March as EST, mis-set early Nov) with an Intl
   `America/New_York` offset sampled at noon UTC, so end-of-day expiry instants are correct on DST
-  edge days (Mar 9–31, early Nov). RSL-19 (`rateLimit.ts`): throttled TTL eviction so the in-memory
+  edge days (Mar 9-31, early Nov). RSL-19 (`rateLimit.ts`): throttled TTL eviction so the in-memory
   Map can't grow unbounded under distinct/spoofed keys; per-instance scope **documented as
-  deliberate** (the 256-bit signing token is the real auth boundary — abuse-dampening, not authz) +
+  deliberate** (the 256-bit signing token is the real auth boundary - abuse-dampening, not authz) +
   a `rateLimitSize()` introspection. Lean option per the spec. +7 tests.
-- **RSL-12 + RSL-20 product refinements — commit `70d812c`.** Both resolve the product decision
+- **RSL-12 + RSL-20 product refinements - commit `70d812c`.** Both resolve the product decision
   their issue flagged (issues already Done; defect already fixed in Waves 6/2). **RSL-12:**
-  `remindParty` drops the ADMIN gate (keeps `requireAuth`) — a reminder only re-emails the signer's
+  `remindParty` drops the ADMIN gate (keeps `requireAuth`) - a reminder only re-emails the signer's
   existing address, so any active teammate may send one; copy-link (`getFreshSigningLink`) +
   email-repoint (`updatePartyEmail`) stay ADMIN-only. **RSL-20:** `declineProposal` now also moves
   PARTIALLY_SIGNED → DECLINED (every party must sign to execute, so one decline ends the deal);
   committed signatures are preserved, a fully SIGNED proposal stays excluded (VOID only). Reuses the
-  existing DECLINED enum value — no migration.
+  existing DECLINED enum value - no migration.
 
 **Linear:** **all 21 issues (RSL-6..26) are now Done**, each with a resolution comment. RSL-23 +
 RSL-19 moved to Done on this deploy; RSL-12/RSL-20 carry follow-up comments noting the refined
 behavior.
 
 **Repo housekeeping (done this session):** removed the stale 1.2GB `.claude/worktrees/dashboard-upgrade`
-worktree (verified fully merged + clean first), then fixed the bare-`eslint` noise at its root — the
+worktree (verified fully merged + clean first), then fixed the bare-`eslint` noise at its root - the
 config's root-anchored `.next/**` missed nested build output, so added `**/.next/**`, `.claude/**`, and
 the vendored `docs/mockups/**` to `eslint.config.mjs` ignores (commit `55bb0d0`); bare `eslint` is now
 0 errors, matching `eslint src`. Deleted stale merged branches `worktree-dashboard-upgrade`
 (local+remote) and `fix-future-item-currency` (local); **kept `audit/remediation`** (local+`origin`) as
-the audit record — delete once prod is proven stable.
+the audit record - delete once prod is proven stable.
 
 **Next (deferred, per Rahul):** the **Stripe test-mode rehearsal + full e2e rehearsal** are the only
-open item — run before the next real send (Wave 4's money-path is live but not yet exercised e2e). See
+open item - run before the next real send (Wave 4's money-path is live but not yet exercised e2e). See
 ROADMAP.
 
-## 2026-06-17 — Security/correctness audit remediation (Sid's RSL-6..26) — IN PROGRESS
+## 2026-06-17 - Security/correctness audit remediation (Sid's RSL-6..26) - IN PROGRESS
 
 Working through Siddharth Rodrigues' ("Sid") 21-issue security + correctness audit, filed as
 Linear issues **RSL-6 → RSL-26** (team RSL/A); each has a full remediation spec in Linear.
@@ -519,27 +519,27 @@ auto-reset), `src/test/factories.ts`; per-test `auth`/`after`/stripe/resend/noti
 
 **Waves (0 enabler + 7 fix + deferred verification):**
 
-- ✅ **Wave 0 — test seam.** Commit `864cb97`.
-- ✅ **Wave 1 — payment exactly-once (RSL-6, RSL-8).** Commit `3d4f9f3`. RSL-6: webhook + reconcile now
+- ✅ **Wave 0 - test seam.** Commit `864cb97`.
+- ✅ **Wave 1 - payment exactly-once (RSL-6, RSL-8).** Commit `3d4f9f3`. RSL-6: webhook + reconcile now
   **process-then-record** (`wasWebhookProcessed`/`markWebhookProcessed` in `paymentState.ts`) so a
   transient failure heals on Stripe's retry; atomic paid-guard preserved. RSL-8: receipts are durable
   `SEND_EMAIL` jobs + the deposit-note read is non-fatal.
-- ✅ **Wave 2 — signing-path integrity (RSL-9, RSL-10, RSL-21, RSL-7, RSL-20).** Commit `6765282`, all
+- ✅ **Wave 2 - signing-path integrity (RSL-9, RSL-10, RSL-21, RSL-7, RSL-20).** Commit `6765282`, all
   in `signingService.ts`. RSL-9: post-commit `safeLogEvent` + checkout build wrapped (recoverable,
   never rejects a committed sign). RSL-10: per-submit blob key `{partyId}-{uuid}.png`. RSL-21:
   `frozenPaymentConfig` shape-guards tiers/addOns → `SigningError("config_error")`; `resolveTrackRecord`
   falls back to legacy on a malformed value. RSL-7: `ensureCheckoutSession` reuse-or-refuse + key
   `checkout-{id}-g{generation}` (generation = CHECKOUT_CREATED count, never the session id).
-  RSL-20 (**product default — confirm**): decline records the party but only flips SENT/VIEWED →
+  RSL-20 (**product default - confirm**): decline records the party but only flips SENT/VIEWED →
   DECLINED; a committed signature is never reverted.
-- ✅ **Wave 3 — legal-text fidelity (RSL-17, RSL-25).** Commit `7ea8812`.
+- ✅ **Wave 3 - legal-text fidelity (RSL-17, RSL-25).** Commit `7ea8812`.
   `parseMsa.ts`: one whitespace-tolerant `tokenPattern()` (`/\{\{\s*([\w.]+)\s*\}\}/g`, a fresh RegExp per
   call so there's no shared `lastIndex`) now backs BOTH `replaceTokens` and `findUnreplacedTokens`, so a
-  `{{ spaced }}` token is filled or flagged — never shipped raw into the signed MSA (RSL-17a); `parseRuns`
+  `{{ spaced }}` token is filled or flagged - never shipped raw into the signed MSA (RSL-17a); `parseRuns`
   toggles bold per `**` and drops an unclosed odd `**` instead of leaking it / dropping the legit pair
   (RSL-17b). `proposalContent.ts`: `splitBulletString` strips a dash marker only when followed by whitespace
   (a leading minus like `-5%` survives the sign-flip) and treats em-dash the same as en-dash (RSL-25).
-- ✅ **Wave 4 — side-effect reliability (RSL-13, RSL-16, RSL-15, RSL-14, RSL-22).** Commit `20b93d9`.
+- ✅ **Wave 4 - side-effect reliability (RSL-13, RSL-16, RSL-15, RSL-14, RSL-22).** Commit `20b93d9`.
   **RSL-13** (`jobRunner.ts`/`jobs.ts`): `processDueJobs` isolates `await failJob`
   in its own try/catch (one job's bookkeeping failure can't abort the batch) and reaps stuck PROCESSING rows
   via new `reapStuckJobs` (>5min → PENDING) before each claim; `runJobNow` gained the `scheduledAt <= NOW()`
@@ -551,14 +551,14 @@ auto-reset), `src/test/factories.ts`; per-test `auth`/`after`/stripe/resend/noti
   NOTION_SYNC paid append is idempotent via a `NOTION_SYNCED`/kind marker checked before the append. **RSL-14**
   (`partyTokens.ts`/`generatePdf.ts`/`jobRunner.ts`/`signingService.ts`/`pay` page): one shared
   `isPayerTokenInFlight` guard (payer identity + AWAITING/PROCESSING, never signer order) replaces the fragile
-  last-signer-by-`signedAt` heuristic — the executed-copy email and the SEND_EMAIL retry never rotate the
+  last-signer-by-`signedAt` heuristic - the executed-copy email and the SEND_EMAIL retry never rotate the
   payer's live token; the cancel_url now carries `session_id` and `/pay` self-heals by it like `/paid`.
   **RSL-22** (`generatePdf.ts`): executed-copy dedup is now per-party on the client email row, so a failed
   admin send no longer re-mails every client on regeneration. +14 tests (178 total); `tsc`, `next build`,
   and eslint all clean.
-- ✅ **Wave 5 — dashboard correctness (RSL-18, RSL-24).** Commit `0749262`.
+- ✅ **Wave 5 - dashboard correctness (RSL-18, RSL-24).** Commit `0749262`.
   **RSL-18** (`dashboardMetrics.ts` + `dashboard/page.tsx`): MRR period-normalization now lives in one shared
-  util — `monthlyRecurringCents` folds 1/3/12-month retainers + recurring add-ons to a monthly figure
+  util - `monthlyRecurringCents` folds 1/3/12-month retainers + recurring add-ons to a monthly figure
   (`amountCents / intervalMonths`), so a $300/qtr or $12k/yr retainer contributes $100/$1,000 instead of $0;
   the page mapper calls the util instead of re-deriving MRR (the family-principle "single source of truth").
   **RSL-24** (`dashboardMetrics.ts`): `mrrSeries` now buckets half-open (`< end`, dropping the `min(end,now)`
@@ -568,7 +568,7 @@ auto-reset), `src/test/factories.ts`; per-test `auth`/`after`/stripe/resend/noti
   (183 total); `tsc` + `next build` + eslint clean. Existing 19 dashboard tests unchanged. **Folded in** (same
   commit, same file, non-audit): the deal-list column renders the real billing cadence via `formatPricedLine`
   (e.g. "$300/quarter") instead of a hardcoded "/mo".
-- ✅ **Wave 6 — authz re-validation (RSL-11, RSL-12, RSL-26).** Commit `128f21f`, **deployed to prod
+- ✅ **Wave 6 - authz re-validation (RSL-11, RSL-12, RSL-26).** Commit `128f21f`, **deployed to prod
   2026-06-17** (`main` ff `0749262..a2cb293`, `dpl_J5wGN6Jk5uU17wqpSd55joRUq9Z2` READY; prod 401s an
   unauthed `/api/.../pdf`, confirming the RSL-11 guard is live).
   **RSL-11** (`authGuard.ts` + 3 API routes): new `getActiveApiUser` re-checks the live User row + `active`
@@ -577,19 +577,19 @@ auto-reset), `src/test/factories.ts`; per-test `auth`/`after`/stripe/resend/noti
   JWT loses access to executed PDFs + signature PII immediately. **RSL-12** (`proposals.ts`): `remindParty`,
   `getFreshSigningLink`, `updatePartyEmail` now carry the `actor.role !== "ADMIN"` gate (matching
   `users.ts`/`settings.ts`), so a MEMBER can no longer repoint a signer's email / rotate the token / mint a
-  signing invite — i.e. can't change who executes the contract. **RSL-26** (3 admin pages + middleware): each
+  signing invite - i.e. can't change who executes the contract. **RSL-26** (3 admin pages + middleware): each
   RSC page (`dashboard`/`edit`/`send`) calls `requireUser()` before its own prisma fetch (a child segment
   renders before the layout body, so the `(admin)` layout guard alone left the fetch ungated); middleware is
-  **documented as a UX-only cookie-presence fast-path** — real authz is re-validated at every data-access
+  **documented as a UX-only cookie-presence fast-path** - real authz is re-validated at every data-access
   point (per-page/route/action), so a forged cookie is rejected the moment it hits a guarded surface. Edge JWT
   validation was deliberately NOT added (auth.ts pulls Prisma, which isn't Edge-safe; getting it wrong risks
   locking out the team). +10 tests (193 total); `tsc` + `next build` + eslint clean. No schema migration.
-- ✅ **Wave 7 — dates + rate-limit (RSL-23, RSL-19).** Commit `2c9264d` (2026-06-18). `dates.ts`: Intl
-  `America/New_York` offset sampled at noon UTC replaces the DST month band — correct on Mar 9–31 /
+- ✅ **Wave 7 - dates + rate-limit (RSL-23, RSL-19).** Commit `2c9264d` (2026-06-18). `dates.ts`: Intl
+  `America/New_York` offset sampled at noon UTC replaces the DST month band - correct on Mar 9-31 /
   early-Nov edges. `rateLimit.ts`: throttled TTL eviction bounds the Map; per-instance scope
   documented as deliberate (256-bit token is the real boundary) + `rateLimitSize()`. +7 tests.
 
-**Status:** **Waves 0-6 deployed to prod — 19 of 21 audit issues LIVE.** 2026-06-17, two prod pushes this
+**Status:** **Waves 0-6 deployed to prod - 19 of 21 audit issues LIVE.** 2026-06-17, two prod pushes this
 session: `6765282..0749262` (waves 3-5, `dpl_ETk…`) then `0749262..a2cb293` (wave 6, `dpl_J5wGN…`), both
 READY; `proposals.rsla.io` serving (landing 200, dashboard 307 auth-gated, unauthed `/api/.../pdf` 401).
 193 tests + `tsc` + `next build` + eslint clean. Branch `audit/remediation` is now **pushed to GitHub**
@@ -597,25 +597,25 @@ READY; `proposals.rsla.io` serving (landing 200, dashboard 307 auth-gated, unaut
 dates, RSL-19 rate-limit)** remains. No schema migration anywhere in waves 3-6 (the NOTION_SYNC and reminder
 idempotency markers reuse the `AuditEvent` table; the stuck-job reaper reuses `PendingJob.processingAt`;
 waves 5-6 are pure arithmetic / guards). NOTE: the LOG snapshot baked into the `a2cb293` deploy still reads
-"wave 6 not deployed" — corrected here on the branch; rides to `main` with the wave-7 push (LOG is internal,
+"wave 6 not deployed" - corrected here on the branch; rides to `main` with the wave-7 push (LOG is internal,
 not served).
 
-**Open decisions for next session:** (a) **RSL-12 scope** — remind/copy-link/repoint are now all ADMIN-only
+**Open decisions for next session:** (a) **RSL-12 scope** - remind/copy-link/repoint are now all ADMIN-only
 in prod; confirm that's wanted, or relax remind/copy-link to MEMBER and keep only the email-repoint
 admin-gated; (b) **Wave 7 (RSL-23, RSL-19)** is the last wave (RSL-19 needs a product call: shared store vs
 accept per-instance); (c) the **deferred verification** below still stands (Stripe test-mode + e2e rehearsal,
 move fixed RSL issues to Done in Linear).
 **Caveat:** waves 3-5 are unit-tested against the prisma-mock seam and shipped ahead of the deferred
-Stripe test-mode + e2e rehearsal below — notably Wave 4's payer-token/queue changes touch the live money
+Stripe test-mode + e2e rehearsal below - notably Wave 4's payer-token/queue changes touch the live money
 path, now in prod but not yet exercised end-to-end. Run that rehearsal before relying on it for a real send.
 
-**Deferred verification (after ALL waves, per Rahul):** (1) **Stripe test-mode rehearsal** — a real
+**Deferred verification (after ALL waves, per Rahul):** (1) **Stripe test-mode rehearsal** - a real
 test-mode sign→checkout→pay on a fake-company proposal (RSL-6/7/8/9 touch the live money flow, not yet
 exercised end to end); (2) move fixed RSL issues to **Done** in Linear; (3) full e2e rehearsal
 (`e2eSeed` → sign drawn+typed → pay → executed PDF + cert via `pdfSmoke` → 14 emails via `emailPreview`
 → Notion fake company → dashboard).
 
-## 2026-06-15 — Later phases: currency formatting + em-dash removal
+## 2026-06-15 - Later phases: currency formatting + em-dash removal
 
 Two bugs in the "Later phases" (FutureItems) section, reported on a live proposal: a future-item
 amount typed as a bare number ("1250") rendered as "1250" (not "$1,250"), and the disclaimer carried
@@ -625,15 +625,15 @@ an em dash.
   through. New `formatPricedLine(amountCents, intervalMonths)` in `currency.ts` derives the display
   from cents (the validated source of truth) and appends the cadence for recurring lines
   ("$1,250/month"). Web (`proposalView`) and PDF (`ProposalPdf`) both use it, so they stay identical.
-- **Em dash:** the FutureItems disclaimer "Shown for planning — billed separately..." now reads
+- **Em dash:** the FutureItems disclaimer "Shown for planning - billed separately..." now reads
   "Shown for planning. Billed separately..." in both renderers (no em/en dash in client-facing copy).
 - **Note:** add-ons render `displayString` the same way (same latent issue if a bare number is typed);
   left as-is since not reported. Easy follow-up with the same helper.
-- **Verified:** 129 tests (+3, TDD'd), tsc + eslint clean, `pdfSmoke` visually checked — Later phases
+- **Verified:** 129 tests (+3, TDD'd), tsc + eslint clean, `pdfSmoke` visually checked - Later phases
   shows "$1,500/month" / "$3,000" and the period-form disclaimer.
 - **Status:** committed + pushed to `main` (auto-deploys to prod).
 
-## 2026-06-15 — Last name is now optional (first name + company on the contract)
+## 2026-06-15 - Last name is now optional (first name + company on the contract)
 
 Some prospects are known only by a first name, but `Client.LastName` was required, so saving or
 sending blocked with "Last name is required." Made it optional end to end.
@@ -649,14 +649,14 @@ sending blocked with "Last name is required." Made it optional end to end.
 - **Polish:** admin dashboard/detail/send name strings use `clientFullName` (no dangling space); the
   form field reads "Last name (optional)"; `/docs` marks it optional.
 - **Verified:** 126 tests (+11, TDD'd), tsc + eslint clean, `pdfSmoke` regression clean, and a
-  blank-surname PDF visually checked — page 4 party line reads "Christian, Valley Oak Landscape Co
+  blank-surname PDF visually checked - page 4 party line reads "Christian, Valley Oak Landscape Co
   (the Client)." with the cover, MSA body, and footers intact.
 - **Status:** committed + pushed to `main` (auto-deploys to prod).
 
-## 2026-06-15 — Validation errors now read in plain English (was raw Zod JSON)
+## 2026-06-15 - Validation errors now read in plain English (was raw Zod JSON)
 
 Saving or sending a proposal with an empty field dumped a raw Zod 4 issue array at the user
-(`[{ "code": "too_small", "path": ["Client.LastName"] ... }]`) — `errorMessage()` returned
+(`[{ "code": "too_small", "path": ["Client.LastName"] ... }]`) - `errorMessage()` returned
 `ZodError.message`, which Zod 4 stringifies to JSON. Surfaced by an empty `Client.LastName`.
 
 - **New `src/lib/zodErrors.ts` → `humanizeZodError`** (pure, TDD'd, +8 tests). Maps the field path to
@@ -668,17 +668,17 @@ Saving or sending a proposal with an empty field dumped a raw Zod 4 issue array 
   Result: "Last name is required." instead of the JSON blob.
 - **Verified:** 115 tests green (+8), tsc + eslint clean, before/after demo on the exact LastName error.
 - **Status:** committed + pushed to `main` (auto-deploys to prod). Admin user-management form still
-  shows one semi-raw Zod message — left for a separate pass.
+  shows one semi-raw Zod message - left for a separate pass.
 
-## 2026-06-15 — Flat pricing now imports from pasted JSON (was tiers-only)
+## 2026-06-15 - Flat pricing now imports from pasted JSON (was tiers-only)
 
 A flat deal generated in the platform's internal `PaymentConfig` shape (top-level `oneTime` /
 `recurring` / `paymentMethods` / `preferAch`, `tiers: null`) pasted with all copy filled but the
-**pricing blank** — the import box only inferred `Investment.Structure` (tiers), so flat amounts had
+**pricing blank** - the import box only inferred `Investment.Structure` (tiers), so flat amounts had
 to be hand-typed. Surfaced by a Valley Oak proposal ($13,700 build + $1,250/mo) that "wouldn't parse
 the pricing part."
 
-- **New `src/lib/importPricing.ts` → `inferFlatPricingFromImport`** (pure, exported, unit-tested —
+- **New `src/lib/importPricing.ts` → `inferFlatPricingFromImport`** (pure, exported, unit-tested -
   unlike the sibling `infer*FromImport` helpers that live un-tested inside `proposalForm.tsx`).
   Reads `oneTime` / `recurring` / `paymentMethods` / `preferAch`; trusts a positive-integer
   `amountCents`, else derives cents from the `displayString`; coerces `intervalMonths` to 1|3|12;
@@ -686,31 +686,31 @@ the pricing part."
   never clobbers an empty pricing section.
 - **Wired into `handleImport`**: flat path runs only when no tiers were inferred; sets
   `pricingMode: "flat"`, enables the one-time/monthly lines, applies methods + preferAch, and adds a
-  "flat pricing" chip to the success toast. TDD'd — **+9 tests → 107 total**.
+  "flat pricing" chip to the success toast. TDD'd - **+9 tests → 107 total**.
 - **`/docs` updated**: the Pricing section now states flat pricing imports from top-level
   oneTime/recurring, not just Investment.Structure.
 - **Verified:** 107 tests green, `tsc --noEmit` clean, eslint clean on changed files. No money-path
   behavior changed (effectiveCheckout/validation untouched); this only pre-fills the reviewable form.
-- **Status:** on branch `feat-flat-pricing-import`, **not committed, not deployed** — awaiting review.
+- **Status:** on branch `feat-flat-pricing-import`, **not committed, not deployed** - awaiting review.
 
-## 2026-06-15 — Display-only "Later phases" line items (Phase-2 pricing, never billed)
+## 2026-06-15 - Display-only "Later phases" line items (Phase-2 pricing, never billed)
 
 Answer to "how do I show a future service with pricing but not charge for it?" (e.g. monthly SEO
-that starts after the build). The billing path has no scheduled-start support — a recurring add-on
-bills at signing — so this adds a separate, **display-only** line type instead.
+that starts after the build). The billing path has no scheduled-start support - a recurring add-on
+bills at signing - so this adds a separate, **display-only** line type instead.
 
 - **`PaymentConfig.futureItems`** (new `FutureItem`: label, displayString, amountCents,
   intervalMonths, startsNote). It's its **own field that `effectiveCheckout` never reads**, so it
-  can't reach Stripe — unbillable by construction, locked by a guard test.
+  can't reach Stripe - unbillable by construction, locked by a guard test.
 - **Validation:** shape + unique ids + cap 6 (zod) and `displayString`↔`amountCents` at send time,
-  same guard as every other priced line. TDD'd — **+5 tests → 98 total**.
+  same guard as every other priced line. TDD'd - **+5 tests → 98 total**.
 - **Render:** a dashed "Later phases" block in *Your Investment*, **identical on web + PDF**
-  (`proposalView` + `ProposalPdf`), labelled "Shown for planning — billed separately when each
+  (`proposalView` + `ProposalPdf`), labelled "Shown for planning - billed separately when each
   begins, not collected today." Each row shows the price + a "Starts: …" note.
 - **Admin form:** a repeater under Add-ons (label / price / recurring toggle / Starts). Scope is
   **global + display-only** (Rahul's call); not offered on sign-only.
 - **Import + docs:** `Investment.FutureItems` import inference (mirrors `Investment.AddOns`) so the
-  generate-proposal skill can emit them. `/docs` ("Proposal import schema") updated for accuracy —
+  generate-proposal skill can emit them. `/docs` ("Proposal import schema") updated for accuracy -
   futureItems in the PaymentConfig section, a Later-phases example, the `Investment.FutureItems`
   import block, and a gotcha. Every code block on `/docs` now has a **click-to-copy** button
   (`CopyableCode`). NB: the skill prompt itself still needs a separate update to start emitting them.
@@ -719,18 +719,18 @@ bills at signing — so this adds a separate, **display-only** line type instead
 - **Status:** committed + pushed to `main` (which auto-deploys), confirmed with an explicit
   `vercel deploy --prod`. Live on `proposals.rsla.io`.
 
-## 2026-06-15 — Dashboard visual upgrade (deployed to prod; merged into main alongside the PDF rebuild)
+## 2026-06-15 - Dashboard visual upgrade (deployed to prod; merged into main alongside the PDF rebuild)
 
 Executed the Claude Design "Insightful" dashboard upgrade in an isolated git worktree. Turned out
-to be **~90% a visual/layout job, not a data project** — the old dashboard already computed every
+to be **~90% a visual/layout job, not a data project** - the old dashboard already computed every
 metric the mockup shows (win rate, contracted one-time, MRR, signed-this-month vs last, avg
 time-to-sign, oldest-open). Two decisions were Rahul's: **Satoshi + Inter** font direction, and
 **real-but-hide-if-sparse** sparklines.
 
-- **Fonts — retired Space Grotesk.** `--font-tag` / `.font-tag` repointed to Inter and the
+- **Fonts - retired Space Grotesk.** `--font-tag` / `.font-tag` repointed to Inter and the
   `Space_Grotesk` import dropped from `layout.tsx`; the 7 `font-tag` consumers inherit it for free.
   Note this also restyles the small uppercase labels on the **client-facing** proposal view +
-  signing modal (Inter instead of Space Grotesk) — judged more consistent, not flagged as blocking.
+  signing modal (Inter instead of Space Grotesk) - judged more consistent, not flagged as blocking.
   Now a clean two-font stack (Satoshi display + Inter everything).
 - **New pure module `src/lib/dashboardMetrics.ts` (TDD, +19 tests).** 6-month MRR stock series +
   signed/avg-sign flow series, month-over-month MRR delta, attention detection (signed+awaiting/
@@ -753,18 +753,18 @@ time-to-sign, oldest-open). Two decisions were Rahul's: **Satoshi + Inter** font
 - **Design source** archived to `docs/mockups/dashboardUpgrade/` (camelCased; `support.js` kept so
   the `.dc.html` files still render; Downloads folder cleared).
 - **Status:** committed + pushed. My first prod deploy (`dpl_7ccVDmbU2yyXjDDbymUx5BCodWLJ`) shipped
-  the dashboard from a branch point (`da33518`) that predated the PDF rebuild below — which had
-  already landed on `main` + been deployed — so it briefly reverted the PDF rebuild on prod. Fixed by
+  the dashboard from a branch point (`da33518`) that predated the PDF rebuild below - which had
+  already landed on `main` + been deployed - so it briefly reverted the PDF rebuild on prod. Fixed by
   merging the PDF rebuild into this branch and redeploying the combined build, then fast-forwarding
   `main`. End state: `main` = prod = dashboard + PDF rebuild.
 - **Root cause + doc fix:** the project is git-linked to `main` (pushing `main` auto-deploys to
-  prod) — the "not git-linked" notes in CLAUDE.md/BRAIN.md were stale and led to the manual
+  prod) - the "not git-linked" notes in CLAUDE.md/BRAIN.md were stale and led to the manual
   stale-branch deploy that caused the revert. Both corrected.
 
-## 2026-06-15 — Executed PDF rebuilt as a paginated replica of the web signing doc
+## 2026-06-15 - Executed PDF rebuilt as a paginated replica of the web signing doc
 
 Rahul: the emailed/downloaded PDF didn't match the web signing document. Rewrote the PDF renderer
-(`src/components/pdf/ProposalPdf.tsx`, **presentational only** — no data/logic change; the shared
+(`src/components/pdf/ProposalPdf.tsx`, **presentational only** - no data/logic change; the shared
 `ProposalSections` builder and the web `ProposalView` are untouched) into a faithful, paginated
 replica of the web doc.
 
@@ -774,7 +774,7 @@ replica of the web doc.
   selected white-check; add-ons are checkboxes; the deposit schedule is an accent box;
   How-to-Proceed steps are numbered blue circles. Spacing/type matched to the web tokens
   (Satoshi `-0.02em`, 10pt body).
-- **Pagination:** collapsed the 6 hard page-groups into a continuous flow — 3 logical `<Page>`s
+- **Pagination:** collapsed the 6 hard page-groups into a continuous flow - 3 logical `<Page>`s
   (proposal body flows cover→acceptance→notes, MSA on a fresh page, then the certificate).
   `wrap={false}` on short atomic blocks + `minPresenceAhead` ~72pt on headings -> no section splits
   across a page and no orphaned headings (the Acceptance heading + its signature cards no longer
@@ -783,19 +783,19 @@ replica of the web doc.
 - **Cosmetic pass (Rahul's review):** At-a-Glance corners now round (`overflow: hidden` clips the
   label fill); step numbers center + the tier/add-on white checkmarks render (`lineHeight: 1`);
   footer `rsla.io` confirmed live + canonical. The green signature blocks in the smoke render are
-  fixture placeholders (`fakeSignaturePng`) — real signed PDFs use the actual signature.
+  fixture placeholders (`fakeSignaturePng`) - real signed PDFs use the actual signature.
 - **Verified:** `pdfSmoke` both variants render with no overflow warnings + visually read;
   production build green; 74 tests pass. Plan: `~/.claude/plans/cozy-jingling-pudding.md`.
 
-## 2026-06-15 — Recurring + ACH + renewal verification (local sandbox, PASSED)
+## 2026-06-15 - Recurring + ACH + renewal verification (local sandbox, PASSED)
 
 Closed the only go-live residual: the never-exercised subscription / ACH / renewal webhook paths
 are now proven. All run in a local Stripe **Sandbox** (the `sk_test` key Rahul pasted into local
-`.env`; a hard `sk_test` guard in the harness blocked any live call) — **prod live key untouched**.
+`.env`; a hard `sk_test` guard in the harness blocked any live call) - **prod live key untouched**.
 
 - **Setup:** installed the Stripe CLI; `stripe listen --api-key <sandbox>` forwarded to
   `localhost:1235` and minted the `whsec` (written to local `.env`); dev booted on :1235.
-  Confirmed first there was **no deploy gap** — prod serves the polished `--radius:.5rem` and the
+  Confirmed first there was **no deploy gap** - prod serves the polished `--radius:.5rem` and the
   latest prod deploy postdates every source commit; the earlier "NOT committed/deployed" LOG line
   was stale (corrected).
 - **Session building (real test Stripe via `createCheckoutSession`):** recurring config -> mode
@@ -822,14 +822,14 @@ are now proven. All run in a local Stripe **Sandbox** (the `sk_test` key Rahul p
   webhook subscribes all 6 events. So one-time (prod $1 test) + recurring + ACH are covered live.
 - **Cleanup:** sandbox subscription canceled; all `[TEST-MX]`/`[TEST-R2]` proposals removed
   (dashboard back to 0 proposals); a handful of inert webhook dedup rows from the session remain
-  (harmless, joins the existing orphaned-row backlog — a precise purge was declined by the auto-mode
+  (harmless, joins the existing orphaned-row backlog - a precise purge was declined by the auto-mode
   guard, left for an authorized cleanup). Local `.env` keeps the sandbox `sk_test` key (gitignored)
   with `STRIPE_WEBHOOK_SECRET` reset to empty (refill from `stripe listen` next time). Reusable
   harness kept at `.tmp/paymentMatrix.ts` + `.tmp/test2.ts`.
 - **Net:** recurring + ACH proposals are safe to send for real. The PandaDoc replacement is now
   verified across one-time, subscription, and ACH. Not committed (docs only this session).
 
-## 2026-06-15 — Go-live verification + live $1 smoke test (PASSED)
+## 2026-06-15 - Go-live verification + live $1 smoke test (PASSED)
 
 Verified the tool is production-ready for real proposals. Key finding: prod Stripe is **LIVE** (a
 `cs_live_` checkout session was created on prod today), resolving the only go-live blocker.
@@ -860,7 +860,7 @@ Verified the tool is production-ready for real proposals. Key finding: prod Stri
   The one-time card path is fully proven; safe to send one-time/card proposals now.
 - **Note:** BRAIN/ROADMAP/LOG edits this session are uncommitted (no commit requested).
 
-## 2026-06-15 — UI/UX polish pass (tighter & crisper, whole web app)
+## 2026-06-15 - UI/UX polish pass (tighter & crisper, whole web app)
 
 Harmonized the web app's visual details (Rahul: rounded corners, spacing, text, toast cards).
 Direction: **tighter & crisper**; scope: whole web app except the PDF. Purely presentational, no
@@ -885,7 +885,7 @@ logic touched, 74 tests still green.
   and deployed to prod 2026-06-15** (deploy created 01:34 PDT, aliased to proposals.rsla.io; verified
   live serving the polished `--radius:.5rem`). The earlier "NOT committed/deployed" note was stale.
 
-## 2026-06-15 — Per-proposal editable Track Record (text + URL)
+## 2026-06-15 - Per-proposal editable Track Record (text + URL)
 
 "Our Track Record" was a hardcoded constant shown identically on every proposal (the restaurant /
 salon / software case studies). Made it per-proposal editable, mirroring the add-ons lifecycle.
@@ -900,7 +900,7 @@ salon / software case studies). Made it per-proposal editable, mirroring the add
   disclaimer stay fixed; new proposals **start blank** and zero case studies **hides the whole
   section**. Legacy/pre-migration rows fall back to the original 3 so the one in-flight proposal
   (ConnectHealth) is unchanged.
-- **Dynamic footnotes:** numbering is now computed in `buildProposalSections` — the disclaimer is
+- **Dynamic footnotes:** numbering is now computed in `buildProposalSections` - the disclaimer is
   note 1 only when the section shows; otherwise scope/timeline/investment renumber 1/2/3. The
   disclaimer marker moved onto the section heading (robust to an empty intro).
 - **Form:** new "Our Track Record" card (intro + repeatable text/URL rows, max 6, add/remove,
@@ -909,27 +909,27 @@ salon / software case studies). Made it per-proposal editable, mirroring the add
 - **Renderers:** web + PDF guard the block (hidden when empty), render link-or-plain per row; no
   style changes (links already blue/underlined). `/docs` gained a Content.TrackRecord section;
   testProposalTokens.json carries a block.
-- **Verified:** 74 tests (was 65; +9 — schema, present/absent renumber, legacy fallback), pdfSmoke
+- **Verified:** 74 tests (was 65; +9 - schema, present/absent renumber, legacy fallback), pdfSmoke
   rendered both states to docs/pdfSmoke.pdf + pdfSmoke-empty.pdf and visually read (links, heading
   marker, plain-text bullet, renumbering all correct), lint clean, production build green, migration
   applied + Prisma client regenerated. Committed (`ff675ce`), pushed to
   `HQ-RSL-A/proposal-generator` main, deployed to proposals.rsla.io (landing 200, /docs +
   /dashboard gated 307). In-app click-through (auth-gated) left for Rahul to test.
 
-## 2026-06-14 — Post-ship cleanup (prod proposals + dead component)
+## 2026-06-14 - Post-ship cleanup (prod proposals + dead component)
 
-- Cleared the prod DB to a clean slate for the real pipeline. Deleted 3 test proposals —
+- Cleared the prod DB to a clean slate for the real pipeline. Deleted 3 test proposals -
   "Ongoing SEO Phase II" and "Lauda Lasun" (both SBC, SIGNED/PAID in test-mode Stripe) and the
-  "[TEST] Brightline" rehearsal — plus 33 webhook dedup rows; cascade removed their parties,
+  "[TEST] Brightline" rehearsal - plus 33 webhook dedup rows; cascade removed their parties,
   signatures, audit events, emails, payments, documents, and jobs. **Kept the one real
   prospect: "Website Stabilization & Refresh for ConnectHealth Staff" (VIEWED).** Script:
-  `.tmp/keepOneProposal.ts` (gitignored) — keep-by-title with a one-keeper safety abort + dry-run.
+  `.tmp/keepOneProposal.ts` (gitignored) - keep-by-title with a one-keeper safety abort + dry-run.
 - Deleted the now-unused `signInVisual.tsx` (replaced by the sign-in abstract art panel). It was
   already unimported, so no redeploy was needed.
 - Note: deleting those test proposals orphaned their signature PNGs / executed PDFs in Vercel
-  Blob (harmless, tiny, private) — this is the backlog "orphaned-blob cleanup" item.
+  Blob (harmless, tiny, private) - this is the backlog "orphaned-blob cleanup" item.
 
-## 2026-06-14 — Landing + sign-in premium redesign (shipped + deployed)
+## 2026-06-14 - Landing + sign-in premium redesign (shipped + deployed)
 
 Rahul flagged the landing + sign-in as generic. Reworked both to "light but premium"
 (his pick over dark / bold-blue). Committed `8a3266a`, pushed to
@@ -957,7 +957,7 @@ Verified in Chrome at 1440px + 390px (landing hero/steps, sign-in both themes), 
 65 tests, production build green. Open follow-up: delete the now-unused `signInVisual.tsx`;
 optionally regenerate the sign-in art.
 
-## 2026-06-14 — Session wrap (big session, all shipped + pushed)
+## 2026-06-14 - Session wrap (big session, all shipped + pushed)
 
 Everything below from 2026-06-13/14 is committed, pushed to `HQ-RSL-A/proposal-generator`
 (main in sync), and deployed to proposals.rsla.io. Per-feature detail in the entries below;
@@ -980,18 +980,18 @@ Shipped this session:
   Google button right), 6-KPI dashboard (win rate, contracted one-time, MRR, signed this month
   vs last, avg time-to-sign, oldest open).
 - **Admin toasts** unified into a shared `brandToast` helper (`src/lib/toast.tsx`); the signing
-  flow uses it too. The pre-existing `signatureModal` lint error is fixed — `npm run lint` is green.
+  flow uses it too. The pre-existing `signatureModal` lint error is fixed - `npm run lint` is green.
 
 Decisions: deposit = tool charges deposit only, build-fee only, retainer deferred (minimal, no
 schema change); sign-in went dark-split → then reworked to the lighter interactive split per
 Rahul's 21st.dev reference; dashboard KPIs = all 6.
 
-Left (both Rahul's call): (1) **Stripe live-key swap** — the only revenue blocker (runbook at
+Left (both Rahul's call): (1) **Stripe live-key swap** - the only revenue blocker (runbook at
 `docs/stripeKeySwapGuide.md`). (2) Clear the **[TEST] "Brightline"** proposal from the prod DB.
 Backlog (ROADMAP): attorney MSA v4, in-app AI generation, tool-driven deposit balance + retainer
 auto-start, orphaned-blob cleanup.
 
-## 2026-06-13 — Sign-in: lighter interactive split (replaces the dark split)
+## 2026-06-13 - Sign-in: lighter interactive split (replaces the dark split)
 
 Rahul linked a 21st.dev "animated characters login" and asked to adapt it lighter, with the
 interactive element on one side and just the Google button. Since we have no password field
@@ -1005,7 +1005,7 @@ trust line. Mobile shows the form only (visual hidden below lg). The `auth()` re
 1280px and confirmed the tilt fires (the card's computed transform is a rotated matrix3d).
 Build + lint clean. Supersedes the dark-split sign-in from the design pass.
 
-## 2026-06-13 — Landing snapshot hero + signature-modal lint fix
+## 2026-06-13 - Landing snapshot hero + signature-modal lint fix
 
 - **Lint fix.** `signatureModal.tsx` reset-on-open moved off `useEffect` to the
   "adjust state during render" pattern (track `prevOpen`, reset errors + drawn when it flips).
@@ -1021,7 +1021,7 @@ Build + lint clean. Supersedes the dark-split sign-in from the design pass.
 
 Build + lint + 65 tests green.
 
-## 2026-06-13 — Admin action toasts: shared branded toast helper (Phase D)
+## 2026-06-13 - Admin action toasts: shared branded toast helper (Phase D)
 
 Extracted the signing flow's branded `toast.custom` into `src/lib/toast.tsx` as `brandToast`
 (top-center, icon, tone = brand/success/error/info) and pointed both the signing flow and the
@@ -1032,22 +1032,22 @@ behavior is unchanged). `proposalActions.tsx` (the void / revise / delete / PDF-
 regenerate + self-refresh actions all run through `run()`) now uses `brandToast` for its
 success/error toasts. Build + lint clean, 65 tests green. Phase D, the last of the plan.
 
-## 2026-06-13 — Design pass: bolder landing, dark-split sign-in, 6-KPI dashboard (Phase C)
+## 2026-06-13 - Design pass: bolder landing, dark-split sign-in, 6-KPI dashboard (Phase C)
 
 Decisions: landing = bolder/more visual, sign-in = dark split, dashboard = all 6 KPIs.
 Verified the two public pages in Chrome DevTools at 1280px + 390px; dashboard is auth-gated
 (build-verified).
 
-- **Landing (`app/page.tsx`)** — soft radial glows behind the hero, a big display headline
+- **Landing (`app/page.tsx`)** - soft radial glows behind the hero, a big display headline
   with the last line in `.gradient-text`, a two-column hero with a floating div-built mock
   proposal card (logomark, Signed chip, a cursive signature, a "$3,000 paid" badge;
   `.animate-floaty` 6s, motion-safe; entrance via tw-animate-css), and bolder feature cards
   with gradient-blue icon chips. Logomark-only header kept.
-- **Sign-in (`app/sign-in/page.tsx`)** — full-bleed two-panel: left Deep Slate panel with a
+- **Sign-in (`app/sign-in/page.tsx`)** - full-bleed two-panel: left Deep Slate panel with a
   blue radial glow + logomark + tagline, right white panel with the subtitle + Google button +
   a trust line. Mobile collapses to the white panel. The `auth()` redirect and the
   `signIn("google")` server action are untouched.
-- **Dashboard (`app/(admin)/dashboard/page.tsx`)** — replaced the 3 ops stats with the 6-KPI
+- **Dashboard (`app/(admin)/dashboard/page.tsx`)** - replaced the 3 ops stats with the 6-KPI
   set (win rate, contracted one-time, MRR, signed this month vs last, avg time to sign, oldest
   open), responsive `grid-cols-2 lg:grid-cols-3`. `StatCard` gained a context sub-line and an
   amber tone for an oldest-open over 14 days. All computed from the already-fetched array (+
@@ -1057,7 +1057,7 @@ Verified the two public pages in Chrome DevTools at 1280px + 390px; dashboard is
 Added a motion-safe `floaty` keyframe to globals.css. Build + lint clean, 65 tests green.
 Phase C of the plan.
 
-## 2026-06-13 — /docs updated for add-ons + deposit (Phase B)
+## 2026-06-13 - /docs updated for add-ons + deposit (Phase B)
 
 The agent-facing import-schema page predated add-ons/deposit. `src/app/(admin)/docs/page.tsx`
 now documents both: the **Pricing (PaymentConfig)** section gained an "Optional add-ons" block
@@ -1069,30 +1069,30 @@ two new gotchas. `docs/testProposalTokens.json` gained two add-ons (one one-time
 so the ready-to-use token exercises them; ROADMAP's reference section updated to match. Build +
 lint clean, test token is valid JSON. Phase B of the plan.
 
-## 2026-06-13 — Mobile pass: internal forms + detail + settings (Phase A)
+## 2026-06-13 - Mobile pass: internal forms + detail + settings (Phase A)
 
 Continued the internal-app mobile pass. The recurring offender was `grid grid-cols-12` (and a
 couple of `grid-cols-2`) that never collapsed, plus right-aligned button clusters crushing the
 left text at 390px. Fixes:
 
-- `proposalForm.tsx` — token field cards `grid-cols-1 sm:grid-cols-2`; `MoneyFields`
+- `proposalForm.tsx` - token field cards `grid-cols-1 sm:grid-cols-2`; `MoneyFields`
   `grid-cols-2 sm:grid-cols-12` (Label/Shown full-width, Charged + interval share a row on
   mobile); tier header stacks on mobile. Add-on rows inherit the MoneyFields fix.
-- `sendForm.tsx` — party row `grid-cols-2 sm:grid-cols-12`: name + email full-width, payer +
+- `sendForm.tsx` - party row `grid-cols-2 sm:grid-cols-12`: name + email full-width, payer +
   delete share a row on mobile.
-- `teamSettings.tsx` — user rows stack the action buttons under the identity on mobile
+- `teamSettings.tsx` - user rows stack the action buttons under the identity on mobile
   (`flex-col sm:flex-row`); "Add a teammate" grid responsive.
-- `partyList.tsx` — party rows stack Copy link + Remind under the name on mobile.
-- `systemHealth.tsx` — email-issue row wraps long content; cron row gets `min-w-0` + truncate
+- `partyList.tsx` - party rows stack Copy link + Remind under the name on mobile.
+- `systemHealth.tsx` - email-issue row wraps long content; cron row gets `min-w-0` + truncate
   so long paths don't overflow.
-- `proposals/[id]/page.tsx` — detail `TabsList` is `w-full sm:w-fit` (even full-width tab bar
+- `proposals/[id]/page.tsx` - detail `TabsList` is `w-full sm:w-fit` (even full-width tab bar
   on mobile, fit-content on desktop).
 
 Build + lint clean, 65 tests green. Auth-gated screens, so verified by build; confirm on a
 real phone. Shipped as Phase A of the approved 4-phase plan (mobile -> docs -> design pass ->
 admin toasts).
 
-## 2026-06-13 — Mobile: nav hamburger + signing action bar no longer crushed
+## 2026-06-13 - Mobile: nav hamburger + signing action bar no longer crushed
 
 Two phone fixes, both verified at a 390px viewport in Chrome DevTools (signing page loaded
 via demoSeed; desktop re-checked at 1280px; demo proposal deleted from prod after).
@@ -1111,7 +1111,7 @@ via demoSeed; desktop re-checked at 1280px; demo proposal deleted from prod afte
 Build + lint clean. The nav fix is auth-gated so it was verified by code + build (the signing
 bar was verified visually); confirm the nav hamburger on a real phone.
 
-## 2026-06-13 — Dashboard mobile: card list instead of the wide table
+## 2026-06-13 - Dashboard mobile: card list instead of the wide table
 
 Rahul: the dashboard should be simpler to use on mobile. The 5-column proposals table
 cramped/overflowed on a phone. `dashboard/page.tsx` now computes each proposal's display row
@@ -1127,7 +1127,7 @@ mobile pass (proposal form, detail tabs, settings) is still open. The 6-KPI "ops
 center" desktop redesign remains a separate task (awaiting visual sign-off). Verify on a
 real phone.
 
-## 2026-06-13 — Signing: no auto-scroll to signature fields (reverses earlier auto-advance)
+## 2026-06-13 - Signing: no auto-scroll to signature fields (reverses earlier auto-advance)
 
 Rahul: tapping a "tap to sign" box shouldn't auto-scroll the page; the signer should scroll
 themselves or tap the button to jump to the next box. Reverses the earlier "auto-advance for
@@ -1137,7 +1137,7 @@ and the action-bar "Review and sign" button remain as the manual jump-to-field c
 still call scrollToSlot), and the toasts now point to scrolling/the button. handleStamp also
 restructured to set state + toast outside the updater. Build + lint + 65 tests green.
 
-## 2026-06-13 — Fix: signature pad misaligned after rotating the phone
+## 2026-06-13 - Fix: signature pad misaligned after rotating the phone
 
 Rahul on mobile: open /settings (or the signing modal), rotate to landscape, draw with a
 finger -> the ink lands away from the finger, offset growing toward the right. Root cause in
@@ -1150,7 +1150,7 @@ Also made the handle's `isEmpty` toData-based, since signature_pad keeps `_isEmp
 fromData (would otherwise read empty after a re-fit restored the drawing). Build + lint clean.
 Fixes both the admin saved-signature pad and the client signing modal.
 
-## 2026-06-13 — Optional add-ons + 50% deposit (shipped to prod)
+## 2026-06-13 - Optional add-ons + 50% deposit (shipped to prod)
 
 Two new payment capabilities, both extending the one resolver -> Stripe -> render surface.
 Plan + decisions in `~/.claude/plans/need-to-add-a-fuzzy-hickey.md`. Build green, 65/65 tests
@@ -1167,7 +1167,7 @@ clean, no layout corruption).
   importable from the skill JSON via `Investment.AddOns`.
 - **Deposit.** New `PaymentConfig.deposit { depositPercent }` (default 50). When set and an
   effective one-time build fee exists, the signing checkout charges ONLY the deposit as a
-  single one-time line in `mode: "payment"` — the retainer (and any recurring add-ons) are
+  single one-time line in `mode: "payment"` - the retainer (and any recurring add-ons) are
   DEFERRED, so no subscription opens at signing. Rahul collects the balance + starts the
   retainer manually (the chosen minimal approach; no payments-schema change, still one Payment
   row, `amountTotalCents` = the deposit). Payment schedule communicated on proposal/PDF/the
@@ -1186,7 +1186,7 @@ clean, no layout corruption).
   (untouched by this work; newer react-hooks set-state-in-effect rule) is the only `npm run
   lint` failure. Manual e2e (configure -> send -> sign -> pay) still to do against a [TEST] draft.
 
-## 2026-06-13 — Session wrap: client experience + receipts shipped; visual redesign next
+## 2026-06-13 - Session wrap: client experience + receipts shipped; visual redesign next
 
 Big session, all shipped to prod across many deploys (latest 9cdf60f). Done tonight:
 
@@ -1207,25 +1207,25 @@ messaging keyed to status, not method.
 
 NEXT UP (open work, full detail in `ROADMAP.md`):
 
-1. Landing + sign-in + dashboard design pass + the 6 KPIs — Rahul's flagged next. Plan +
+1. Landing + sign-in + dashboard design pass + the 6 KPIs - Rahul's flagged next. Plan +
    KPIs decided (`docs/plans/visualRedesign.md`); confirm visual direction per page, then
    build via the design skills.
 2. Mobile optimization of the INTERNAL app (dashboard table, proposal form, detail tabs,
    settings). Client-facing surfaces are already done.
-3. Admin-side action toasts (PDF / self-refresh) — the last slice of the toast pass.
-4. Stripe live-key swap — the only go-live blocker (Rahul's step; runbook ready; it also
+3. Admin-side action toasts (PDF / self-refresh) - the last slice of the toast pass.
+4. Stripe live-key swap - the only go-live blocker (Rahul's step; runbook ready; it also
    subscribes `invoice.paid` live).
 5. Eventual: attorney MSA v4, in-app AI generation, orphaned-blob cleanup.
 
 HEADS UP: a [TEST] "Brightline" proposal + Rahul's sent copy are still in PROD (kept for
-testing) — clear before launch (the `.tmp/clearTestData.ts` pattern). Commits this session
+testing) - clear before launch (the `.tmp/clearTestData.ts` pattern). Commits this session
 are local + deployed via Vercel CLI; NOT pushed to GitHub origin yet (ask-first).
 
-## 2026-06-13 — Receipts on every transaction: invoice.paid renewal handler
+## 2026-06-13 - Receipts on every transaction: invoice.paid renewal handler
 
 Closed the launch-critical silent-renewal gap. Added an `invoice.paid` case to the Stripe
-webhook that, for `billing_reason: "subscription_cycle"` only (so the first charge —
-covered by checkout.session.completed — never double-sends), maps the invoice to its
+webhook that, for `billing_reason: "subscription_cycle"` only (so the first charge -
+covered by checkout.session.completed - never double-sends), maps the invoice to its
 proposal via `stripeSubscriptionId`, logs a PAYMENT_PAID (kind: subscription_renewal)
 event, and sends the branded `payment_received_client` receipt + admin notice for that
 month's amount. Does NOT touch paymentStatus (already PAID); idempotent via
@@ -1239,7 +1239,7 @@ receipt; §11 evidence is the customer metadata). The live webhook subscribes `i
 at the Stripe swap (runbook already lists 6 events). Build green, 47 tests pass. Verify a
 real renewal via a Stripe test event (runbook step 8) or the first live cycle.
 
-## 2026-06-13 — Unified post-sign payment copy (status-based, method-agnostic)
+## 2026-06-13 - Unified post-sign payment copy (status-based, method-agnostic)
 
 Rahul: combine the messaging, don't distinguish by payment method. The duplicate copy on
 `/sign/[token]/paid` and `/pay/[token]` (invalid link, payment confirmed, payment
@@ -1251,7 +1251,7 @@ accuracy guardrail: a payment still clearing reads "Your payment is on its way",
 paid" now matches the `/paid` success. Emails left as is (they already fire only on
 actual settlement, so they're status-based already). (3bd0378)
 
-## 2026-06-13 — Post-sign outcome screens polished
+## 2026-06-13 - Post-sign outcome screens polished
 
 `OutcomeCard` (shared by signed / paid / declined / expired / pay-recovery) now uses the
 brand dot-pattern backdrop, a gentle fade+zoom entrance (reduced-motion safe), and
@@ -1259,7 +1259,7 @@ tighter mobile padding. One change lifts all five screens. Tier-card stacking an
 decline dialog were reviewed on mobile (fine, no changes). Client post-sign emails are
 being verified live by Rahul via the [TEST] proposal in his inbox. (1480621)
 
-## 2026-06-13 — Signing polish round 2 (pricing scroll, badge, CTA fade, caret)
+## 2026-06-13 - Signing polish round 2 (pricing scroll, badge, CTA fade, caret)
 
 More phone-test feedback from Rahul, all built + shipped:
 
@@ -1276,7 +1276,7 @@ More phone-test feedback from Rahul, all built + shipped:
 - Fixed the caret rendering below short inputs on mobile: `text-base` line-height (24px)
   overflowed the `h-8` box (22px). Tightened the shared Input line-height. (fbb5a3a)
 
-## 2026-06-13 — Signing redesign shipped + phone-test fixes (bar, toasts, validation)
+## 2026-06-13 - Signing redesign shipped + phone-test fixes (bar, toasts, validation)
 
 Deployed the signing redesign (commits 002f245, then fixes below) and Rahul tested it on
 his phone against a seeded [TEST] Brightline draft sent to rahul.lalia23@gmail.com.
@@ -1295,7 +1295,7 @@ Feedback addressed, each built + shipped:
 Build green, 47 tests pass throughout. Open: the [TEST] Brightline draft + Rahul's sent
 copy are still in prod; clean up when he is done testing.
 
-## 2026-06-13 — Signing flow redesign (mobile-first) built
+## 2026-06-13 - Signing flow redesign (mobile-first) built
 
 Implemented the approved signing UX rework. View-state only: the one-shot sign
 transaction, stamp timestamps, tier-reset, and decline flow are untouched. Build green,
@@ -1320,21 +1320,21 @@ labels), proposalView.tsx (SigningInteraction.activePlace + active-field ring). 
 Next: visual QA on a real phone, then commit + deploy. Admin-side action toasts (PDF /
 self-refresh) redesign still open.
 
-## 2026-06-13 — Built the three safe quick wins (audit icons, /docs, logo-only)
+## 2026-06-13 - Built the three safe quick wins (audit icons, /docs, logo-only)
 
 Per Rahul's go-ahead ("safe quick wins now"). All in the working tree, verified, NOT
 yet committed or deployed.
 
-- **Audit-trail icons** — `auditTimeline.tsx` EVENT_META now maps each of the 24 event
+- **Audit-trail icons** - `auditTimeline.tsx` EVENT_META now maps each of the 24 event
   types to a lucide icon (emoji strings gone), with tone colors (emerald for
   signed/paid, red for failed/declined/voided/expired/bounced, muted otherwise). Kept
   the unknown-type fallback (Dot). Internal admin view only.
-- **/docs page** — new team-gated `src/app/(admin)/docs/page.tsx` documenting the import
+- **/docs page** - new team-gated `src/app/(admin)/docs/page.tsx` documenting the import
   schema with generic names (Acme Corp / Jordan Avery). The field table is derived from
   `TOKEN_KEYS` and `FIELD_META` is typed `Record<keyof TokensJson>`, so the build fails
   if types.ts drifts. Added a "Docs" nav item (all roles). Covers TokensJson, every
   PaymentConfig shape, Investment.Structure, and the gotchas.
-- **Logo-only** — removed the wordmark `<span>`s from the landing header and the app
+- **Logo-only** - removed the wordmark `<span>`s from the landing header and the app
   nav; emails + PDF were already logomark-only. Net: 2 deletions.
 
 Verified: `npm run build` green (13 routes incl. /docs), `npm test` 47/47.
@@ -1345,32 +1345,32 @@ next field (Rahul overrode my tap rec); dashboard KPIs = **all 6**; /docs = team
 Shipped: committed (1386023) + deployed to proposals.rsla.io (smoke-checked: landing
 200, /docs gated 307, logomark 200). Not pushed to origin yet (ask-first).
 
-## 2026-06-13 — Planning sweep: research-backed plans for all no-input items
+## 2026-06-13 - Planning sweep: research-backed plans for all no-input items
 
 Rahul asked to plan + research everything that doesn't need his input (incl. nicer
 landing/login/dashboard), make the docs page generic, add a Stripe-swap guide + a
 "receipt on every transaction" task, and not touch anything risky without thinking it
 through. Ran four parallel research agents (sonnet) over the actual code + best
-practices. No app code changed this session — plans only, per his "don't proceed if it
+practices. No app code changed this session - plans only, per his "don't proceed if it
 might alter something" guardrail.
 
 Produced 5 docs:
 
-- `docs/plans/signingFlowRedesign.md` — mobile signing rework (collect-then-place,
+- `docs/plans/signingFlowRedesign.md` - mobile signing rework (collect-then-place,
   "Ready to sign" → "Review and sign", a "next field" chip replacing the auto-scroll),
   toast redesign (top-center, persistent, role=alert), audit-trail lucide icons.
   Phase enum is client-only; the one-shot sign transaction + stamp timestamps untouched.
-- `docs/plans/visualRedesign.md` — landing (prestige product page), sign-in (dark
+- `docs/plans/visualRedesign.md` - landing (prestige product page), sign-in (dark
   split), dashboard (6-KPI ops view, all computable from current schema), logo-only
   (net = 2 JSX deletions; emails/PDF already correct).
-- `docs/plans/transactionReceipts.md` — **found a real gap:** subscription RENEWALS
+- `docs/plans/transactionReceipts.md` - **found a real gap:** subscription RENEWALS
   fire no receipt (no `invoice.paid` handler). Plan: branded Resend receipts on every
   type, Stripe emails off, add `invoice.paid` (billing_reason guard) + set
   `receipt_email`. Live webhook is **6 events, not 5**.
-- `docs/plans/tokenSchemaDocsPage.md` — generic `/docs` page, team-gated, table driven
+- `docs/plans/tokenSchemaDocsPage.md` - generic `/docs` page, team-gated, table driven
   off an exhaustive `Record<keyof TokensJson>` so it can't drift from types.ts. Noted
   ROADMAP drift (both date fields self-heal; recurring regex matches mo/quarter/yr too).
-- `docs/stripeKeySwapGuide.md` — full swap runbook (Rahul does dashboard key+webhook,
+- `docs/stripeKeySwapGuide.md` - full swap runbook (Rahul does dashboard key+webhook,
   Claude does env swap + deploy + verify; $1 live smoke test + rollback).
 
 ROADMAP updated: 2 new tasks added earlier (Stripe-swap guide, receipts), blocker
@@ -1378,27 +1378,27 @@ corrected to 6 webhook events, and a "Detailed plans" index added. Open decision
 Rahul: visual direction per page, the dashboard KPI set, docs-page gating, and the
 three signing-redesign choices (button copy, affordance style, tap-vs-auto-advance).
 
-## 2026-06-13 — Backlog grew: client-experience polish (Rahul mobile test)
+## 2026-06-13 - Backlog grew: client-experience polish (Rahul mobile test)
 
 Four new ROADMAP items under "Client experience and polish", from Rahul testing
 the signing flow on a phone:
 
-- **Signing ceremony UX redesign (mobile-first)** — collect name/title/signature
+- **Signing ceremony UX redesign (mobile-first)** - collect name/title/signature
   FIRST under a "Ready to sign" button, then the button flips to "Review and Sign"
   and enters a tap-to-place mode (signature already adopted, just stamp fields). A
   floating "jump to next field" pointer replaces the auto-scroll-to-bottom and also
   catches any field left unsigned. Goal: foolproof for non-technical/older signers.
-- **Toast / notification redesign** — in-flow guidance ("tap the fields to sign")
+- **Toast / notification redesign** - in-flow guidance ("tap the fields to sign")
   is missed: bottom-right, too brief, low-priority feel. Make prominent +
   persistent, recenter, rewrite copy. Mobile + desktop.
-- **Audit trail icons** — swap emojis for clean SVG/lucide icons per event type.
-- **Logo-only branding** — RSL/A logomark with no adjacent text everywhere, hero
+- **Audit trail icons** - swap emojis for clean SVG/lucide icons per event type.
+- **Logo-only branding** - RSL/A logomark with no adjacent text everywhere, hero
   first, then navbar/emails/PDF/sign-in.
 
-No code yet — backlog capture only. Build-time questions (button copy, pointer
+No code yet - backlog capture only. Build-time questions (button copy, pointer
 style, auto-advance vs tap) noted inline in ROADMAP.
 
-## 2026-06-13 — Backlog groomed + reusable test token + GEMINI.md
+## 2026-06-13 - Backlog groomed + reusable test token + GEMINI.md
 
 - **ROADMAP.md created** (open/planned work, linked from README). Three new items from
   Rahul: (1) whole-app mobile optimization across screen sizes, client signing flow first;
@@ -1409,7 +1409,7 @@ style, auto-advance vs tap) noted inline in ROADMAP.
 - **Answered: pasting JSON is optional.** `/proposals/new` has a labeled input for every
   field; the JSON paste only pre-fills them (it's the `generate-proposal` skill's output).
   Captured the 17-key `TokensJson` + `PaymentConfig` schema in ROADMAP's reference section.
-- **docs/testProposalTokens.json** — reusable tiered test token (Brightline Test Co,
+- **docs/testProposalTokens.json** - reusable tiered test token (Brightline Test Co,
   3 tiers). Deliberately omits the two date fields so `normalizeImportedTokens` defaults
   them fresh (+30d) on every import, keeping it always signable. Validated against the real
   importer. Paste into the import box to spin up a full test proposal instantly.
@@ -1421,7 +1421,7 @@ Next: Stripe live-key swap is the only thing gating real revenue. For the planne
 mobile-first is the suggested start (touches the live client experience; design pass can
 ride along). Dashboard KPIs need Rahul's pick of which metrics matter most before building.
 
-## 2026-06-13 — Cleared all test data from prod (pre-launch clean slate)
+## 2026-06-13 - Cleared all test data from prod (pre-launch clean slate)
 
 Rahul asked to clear the dashboard before the first real deal. Deleted all 5
 test/demo proposals from the prod DB (`.tmp/clearTestData.ts`, gitignored):
@@ -1432,12 +1432,12 @@ logs, payments, documents, and jobs; also cleared 67 WebhookEvent dedup rows
 first (no cascade on that relation). `proposals remaining: 0`.
 
 Caveats: signature PNGs + executed PDFs remain in Vercel Blob as orphans
-(harmless, tiny, private — deterministic paths if a purge is ever wanted).
+(harmless, tiny, private - deterministic paths if a purge is ever wanted).
 Stripe still holds the test-mode customers/sessions/payments from these runs;
 they clear naturally on the live-key swap (separate live data store). All
 Stripe work (live keys, webhook, ACH) deferred by Rahul.
 
-## 2026-06-13 — Rehearsal bug: success page died after token rotation (fixed + shipped)
+## 2026-06-13 - Rehearsal bug: success page died after token rotation (fixed + shipped)
 
 Rahul's prod rehearsal surfaced a race at the payment landing: checkout's
 success_url carries the last signer's token; five seconds after signing, the
@@ -1453,14 +1453,14 @@ whenever the path token is dead. Verified on prod against the real failed
 session: dead token + session id renders "You're all set"; dead token alone
 still gates. Fresh [TEST] draft re-seeded for the payment-leg re-test.
 
-**Re-test PASSED (Rahul, prod):** full loop on the new build end to end — sign
+**Re-test PASSED (Rahul, prod):** full loop on the new build end to end - sign
 both places → pay (4242) → "You're all set" with a working download button,
 executed copy delivered. The token-rotation race is closed. The entire
 PandaDoc-replacement flow is now verified in production. Only remaining work:
 the Stripe live-key swap (live restricted key → recreate webhook in live mode
 → swap STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET on Vercel).
 
-## 2026-06-12 — Design system pass: emails, PDF, two-place signing, footnotes, alerts
+## 2026-06-12 - Design system pass: emails, PDF, two-place signing, footnotes, alerts
 
 Big batch from Rahul's review of the first executed document:
 
@@ -1478,7 +1478,7 @@ Big batch from Rahul's review of the first executed document:
   price). Walked end to end in Chrome on the demo seed; submit path left for the prod
   rehearsal.
 - **Web document now mirrors the PDF**: "Agreed and Accepted" execution block renders after
-  the MSA on the signing page AND dashboard preview (was PDF-only — that was the missing
+  the MSA on the signing page AND dashboard preview (was PDF-only - that was the missing
   "second space to sign"). All applied signatures now visible everywhere via token-gated
   `/api/sign/[token]/signature/[partyId]` + admin `/api/proposals/[id]/signature/[partyId]`;
   drafts show empty slots built from tokens (parties only exist after send).
@@ -1487,7 +1487,7 @@ Big batch from Rahul's review of the first executed document:
   after Acceptance. MSA deliberately untouched (selective emphasis in legal text invites
   weight arguments; attorney review pending).
 - **PDF redesigned Stripe-clean** (modeled on rslaTools invoice generator): Inter body
-  (statics extracted losslessly from the official Inter.ttc — never convert outlines) +
+  (statics extracted losslessly from the official Inter.ttc - never convert outlines) +
   Satoshi headings, hairline At-a-Glance def list, slate headings (blue reserved for
   links/accents), case-study links now blue + underlined and the footer rsla.io link blue
   (the "links don't look like links" fix), refined tier cards, certificate kept in the
@@ -1502,13 +1502,13 @@ Big batch from Rahul's review of the first executed document:
 - **UI pass**: favicon + navbar + landing + sign-in all use the real logomark (fake
   icon.svg/logomark.svg deleted), navbar wordmark and mark sized up, queue-backed action
   toasts now explain what happens next (PDF toast + self-refresh at 8s/25s).
-- **demoSeed.ts renamed to Brightline Test Co** — it still carried the real Scorpion name;
+- **demoSeed.ts renamed to Brightline Test Co** - it still carried the real Scorpion name;
   completing a signature on it would have re-triggered the Notion CRM overwrite.
 - Verified: tsc, lint, 47 tests, production build, pdfSmoke + visual read, Chrome
   walkthrough of the full ceremony, zero console errors.
 
 **Shipped same day**: committed (78369d6) and deployed to proposals.rsla.io via
-`vercel deploy --prod` (the Vercel project is CLI-deployed, NOT git-linked — a push alone
+`vercel deploy --prod` (the Vercel project is CLI-deployed, NOT git-linked - a push alone
 does not deploy). Post-deploy hotfix 0a13c06: the middleware matcher excluded static assets
 by exact filename (icon.svg/logomark.svg), so the renamed .png logo + favicon 307'd to
 sign-in on prod while dev looked fine (Vercel runs middleware before public/ assets; next
@@ -1519,7 +1519,7 @@ landing/sign-in render, dashboard still auth-gated, screenshots in .tmp/shots.
 "[TEST] Full Rehearsal: Brightline Test Co" is seeded and ready to send), then live-key
 swap. team@rsla.io group exists (confirmed).
 
-## 2026-06-11 — Initial build (full V1 codebase)
+## 2026-06-11 - Initial build (full V1 codebase)
 
 Planned and built the PandaDoc-replacement e-signing tool end-to-end in one session:
 
@@ -1527,7 +1527,7 @@ Planned and built the PandaDoc-replacement e-signing tool end-to-end in one sess
   with Rahul: V1 imports skill JSON (in-app AI generation = fast-follow), RSL/A signature
   auto-applies at send, per-proposal payment config, Resend for email.
 - **Foundation**: Next 16 + Prisma 7 multiSchema (`proposals` schema in the shared Supabase
-  project — free org is at the 2-project cap), NextAuth clone, middleware, migration SQL
+  project - free org is at the 2-project cap), NextAuth clone, middleware, migration SQL
   with RLS, seed (MSA v3 from msaV3.md + AdminSettings).
 - **Backend**: signing service (serializable last-signer transaction, one checkout session
   per proposal), Stripe Checkout (inline price_data, subscription mode, ACH + async
@@ -1550,9 +1550,9 @@ Planned and built the PandaDoc-replacement e-signing tool end-to-end in one sess
 Stripe keys/webhooks/ACH, Resend account + send.rsla.io DNS, Google OAuth client, Notion
 integration + DB connect, Vercel project + domain + env. See README checklist.
 
-## 2026-06-12 — Visual demo + signing-consent hardening
+## 2026-06-12 - Visual demo + signing-consent hardening
 
-- Seeded a demo proposal (`scripts/demoSeed.ts` — runs without Blob/Resend/Stripe) and
+- Seeded a demo proposal (`scripts/demoSeed.ts` - runs without Blob/Resend/Stripe) and
   walked the signing experience in Chrome: full document render (37 MSA sections, merged
   data), tier selection, signature modal (draw + 4 typed fonts), ESIGN consent. Screenshots
   in `docs/screenshots/`.
@@ -1561,9 +1561,9 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
   armed, never persisted to DB (provably client-state only). Concluded automation-environment
   artifact, not an app bug.
 - Hardening anyway: the signature modal now restates the selected tier + price at the
-  moment of consent ("You're signing for: Growth — $3,000/month").
+  moment of consent ("You're signing for: Growth - $3,000/month").
 
-## 2026-06-12 — SaaS layer + voice DNA pass
+## 2026-06-12 - SaaS layer + voice DNA pass
 
 - Users + roles: `User` allowlist table (Google-only sign-in, rsla.io lock kept), ADMIN/
   MEMBER roles, team management in /settings (add, role change, remove access, last-admin
@@ -1578,7 +1578,7 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
   sign-out via next-auth/react. Verified: tsc, lint, 47 tests, build (29 routes), landing
   public + dashboard gated smoke test.
 
-## 2026-06-13 — Launch debugging: deploy, sign-in, PDF engine
+## 2026-06-13 - Launch debugging: deploy, sign-in, PDF engine
 
 - Vercel deploy fixed (lazy Prisma client; env vars pushed via CLI; aws-1 pooler URL after
   ENOTFOUND tenant error crashed sign-in). Domain proposals.rsla.io live (CNAME at
@@ -1598,7 +1598,7 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
   now; scripts/pdfSmoke.ts is the regression check. All GENERATE_PDF jobs DONE; executed
   PDF (98 KB) in Blob; fully_signed_admin DELIVERED to lalia@rsla.io with attachment.
 
-## 2026-06-13 (cont.) — Executed-PDF redesign per Rahul's first-document review
+## 2026-06-13 (cont.) - Executed-PDF redesign per Rahul's first-document review
 
 - Real Logomark.png on cover + certificate (was a styled-text brandmark).
 - Signature modal now requires full name → title → company (company prefilled); stored on
@@ -1617,7 +1617,7 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
 - Demo PDF regeneration queued (email dedupe guard prevents re-sends). Fresh [TEST]
   Brightline draft seeded for the full rehearsal with the new design.
 
-## 2026-06-15 — Proposal-detail polish (delete confirm + audit trail)
+## 2026-06-15 - Proposal-detail polish (delete confirm + audit trail)
 
 - Delete-draft no longer fires the browser's native `confirm()` "system card". New
   `brandConfirm()` in `src/lib/toast.tsx` renders a top-center card in the same family as
@@ -1626,23 +1626,23 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
   cancel/dismiss/timeout, true on confirm. `proposalActions.tsx` awaits it before deleting.
 - Audit timeline (`auditTimeline.tsx`) rebuilt from the `border-l … -left-[31px]`
   magic-number layout to a per-row flex layout. Connector is `left-3.5 -translate-x-1/2`
-  under a 28px badge, so the line threads exactly through every icon center — verified in a
+  under a 28px badge, so the line threads exactly through every icon center - verified in a
   real browser: badge-center minus line-center delta = 0px on every row (the prior
   off-center complaint is gone).
 - Icons are now color-coded SVG badges by event family (slate/blue/violet/indigo/emerald/
-  amber/rose/cyan) — tinted fill + saturated glyph + faint ring — replacing the flat mono
+  amber/rose/cyan) - tinted fill + saturated glyph + faint ring - replacing the flat mono
   icons. Bigger badges (h-7) and cleaner spacing.
 - Verified via a throwaway no-auth `/devpreview` route (deleted after QA) since the admin
   view is Google-OAuth gated; screenshots + DOM measurements confirmed centering, colors,
   and that the confirm buttons dismiss/resolve correctly. No console errors.
 
-## 2026-06-15 (cont.) — Shipped the polish; wiped prod proposals; external-cleanup status
+## 2026-06-15 (cont.) - Shipped the polish; wiped prod proposals; external-cleanup status
 
 - The polish above shipped: commit `289dcc2`, live on prod (proposals.rsla.io,
   `dpl_DcDHLPmZdt…`, Ready). Local `npm run build` + in-browser QA passed first. (A concurrent
   Claude session's `e44b238 import flat pricing` had landed on `main` moments earlier and
-  swept up the LOG note + its own files — unrelated; left untouched. Scope your commits to
-  your own files and `git fetch` before pushing — the tree changes under you here.)
+  swept up the LOG note + its own files - unrelated; left untouched. Scope your commits to
+  your own files and `git fetch` before pushing - the tree changes under you here.)
 - **Deleted ALL proposals from prod at Rahul's request** (both were his tests):
   `Valley Oak Landscape Co` (SIGNED, payment AWAITING, 2 sigs + executed PDF) and
   `Meridian Test Co` (VOIDED). Confirmed scope first because one looked like a real signed
@@ -1650,21 +1650,21 @@ integration + DB connect, Vercel project + domain + env. See README checklist.
   cleared every child (verified 0 parties/sigs/docs/payments/jobs/events/emails). One-off
   list/delete scripts removed after.
 - External cleanup:
-  - **Notion — nothing to clean (no-op).** The sync only *updates* an existing CRM row matched
+  - **Notion - nothing to clean (no-op).** The sync only *updates* an existing CRM row matched
     by company name in DB `2e6fbb11…806d`; neither company had a row. The
     "Proposal for Christian (Valley Oak Landscape Co)" page is Rahul's real **high-priority
-    task** in Lalia's Tasks — left untouched (so Valley Oak/Christian is a real lead he tested
+    task** in Lalia's Tasks - left untouched (so Valley Oak/Christian is a real lead he tested
     the tool with).
-  - **Blob — PENDING (handoff).** Orphaned `proposals/{id}/…` signature PNGs + Valley Oak
-    `signed.pdf` remain (private, now unreferenced). Cannot delete from CLI — local OIDC is
+  - **Blob - PENDING (handoff).** Orphaned `proposals/{id}/…` signature PNGs + Valley Oak
+    `signed.pdf` remain (private, now unreferenced). Cannot delete from CLI - local OIDC is
     development-scoped and the store rejects it; no static RW token exists. **Next step:** in
     the Vercel dashboard Blob browser delete the `proposals/` prefix (KEEP
     `settings/admin-signature.png`), or paste a dashboard RW token and I'll
     `vercel blob del`. (Details now in BRAIN Gotchas.) **Superseded (2026-06-19):** do NOT
-    blanket-delete the `proposals/` prefix — a later spot-check found leftover blobs mapping to
+    blanket-delete the `proposals/` prefix - a later spot-check found leftover blobs mapping to
     live `Proposal` rows, so DB-verify each `{id}` first (orphan only if no `Proposal` row owns
     it). See the reframed ROADMAP cleanup item + the BRAIN Blob gotcha.
-  - **Stripe — left to auto-expire.** Any unpaid live Checkout Session from the Valley Oak
+  - **Stripe - left to auto-expire.** Any unpaid live Checkout Session from the Valley Oak
     test self-expires (~24h); declined to pull the live key (safety guard + needless exposure).
 - Upgraded Vercel CLI 53.1.1 → 54.14.0 (adds blob `--oidc-token`/`--store-id` flags).
 - BRAIN.md updated: Blob write-lifecycle + the CLI-can't-delete-locally reality, and the

@@ -1,7 +1,7 @@
 # Plan — Visual redesign (landing, sign-in, dashboard) + KPIs + logo-only
 
 Status: planned, not started. The build itself runs through the design skills per
-`~/lalia/CLAUDE.md` (emilDesignEng for motion/polish, frontend-design, `/ui`). This
+`~/Developer/CLAUDE.md` (emilDesignEng for motion/polish, frontend-design, `/ui`). This
 doc is the research-backed direction + the decisions to lock first.
 
 Decisions needed are marked **[DECIDE]**.

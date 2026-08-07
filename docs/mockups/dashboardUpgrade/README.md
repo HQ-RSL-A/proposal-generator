@@ -1,4 +1,4 @@
-# Dashboard Upgrade — design source
+# Dashboard Upgrade - design source
 
 Claude Design exports for the June 2026 proposals-dashboard visual upgrade. Open the `.dc.html`
 files in a browser to view the live mockups (`support.js` is the Claude Design canvas runtime

@@ -4,12 +4,12 @@ Captured 2026-06-24 from a live Cited Co client proposal at
 `https://clients.citedco.ai/proposal/1f19369a4b22873142e187bd`, saved so the findings
 survive if the URL is unpublished.
 
-- **[citedCoTeardown.md](citedCoTeardown.md)** — the full writeup: tech stack, architecture,
+- **[citedCoTeardown.md](citedCoTeardown.md)** - the full writeup: tech stack, architecture,
   backend API surface, merge-token system, page structure, pricing, case-study metrics,
   analytics, security notes, and a side-by-side comparison with our own proposal generator.
-- **proposalData.json** — the complete proposal payload from their public Supabase function
+- **proposalData.json** - the complete proposal payload from their public Supabase function
   (the single most useful artifact; their entire content/pricing data model).
-- **rawAssets/** — the live code as served: SPA shell (`index.html`), full app bundle
+- **rawAssets/** - the live code as served: SPA shell (`index.html`), full app bundle
   (`index-DmMryqjH.js`, 1.99 MB), stylesheet, Lovable analytics scripts (`flock.js`,
   `l5e-events.js`), and images (`ogPreview.png`, `lauren-hero.jpg`).
 

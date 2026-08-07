@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - **Money is integer cents everywhere.** Never floats. Display strings live alongside cents; a line's `amountCents` is ALWAYS the NET (post-discount) charged amount — the source of truth `effectiveCheckout` / Stripe / deposit / Notion all read. Do not change any amount math.
-- **No emojis anywhere** (emails, subjects, screens, PDF). No em/en dashes in any user-facing copy (admin form text included) — use short sentences and ranges as "X to Y" per `myBusiness/brandGuidelines/voiceDna.md`.
+- **No emojis anywhere** (emails, subjects, screens, PDF). No em/en dashes in any user-facing copy (admin form text included) — use short sentences and ranges as "X to Y" per `my-business/brand-guidelines/voice-dna.md`.
 - **Sent proposals are immutable.** None of these changes mutate sent content. RSL-39 only hardens the frozen-content READ path.
 - **No schema migration.** Nothing here touches the Prisma schema or the DB.
 - **TDD, one issue per commit.** Branch `audit/backlog-rsl-36-39` cut from `main`. Failing test first, minimal implementation, green, commit. Each task ends independently shippable.
@@ -730,7 +730,7 @@ shape each block uses, so a mis-shaped discount is obvious on review.
 Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>"
 ```
 
-> Follow-up (umbrella repo, not this repo, optional): mirror the dialect note in the skill's `myBusiness/skills/skills/generateProposal/references/platformImportSchema.md`.
+> Follow-up (skills tree, not this repo, optional): mirror the dialect note in the skill's `my-business/skills/skills/generateProposal/references/platformImportSchema.md`.
 
 ---
 
