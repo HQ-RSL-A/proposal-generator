@@ -57,8 +57,8 @@ for open and planned work.
 
 ```bash
 npm run dev                    # localhost:1235
-npm test                       # vitest (pure logic: tokens, hashing, cents, MSA parser, validation)
-npm run build                  # prisma generate + next build
+npm test                       # vitest (pure logic: tokens, hashing, cents, MSA parser, validation); does NOT type-check
+npm run build                  # prisma generate + next build; the type-check gate (vitest passes type errors, so run before shipping)
 npx prisma db seed             # seed MsaVersion v3 + AdminSettings
 npx tsx scripts/pdfSmoke.ts    # render the full PDF locally (required after any PDF change)
 npx tsx scripts/emailPreview.tsx  # render all 14 emails to docs/emailPreviews/

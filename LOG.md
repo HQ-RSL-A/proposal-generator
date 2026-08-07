@@ -1,5 +1,101 @@
 # LOG.md — proposalGenerator
 
+## 2026-07-15 — Cron log heartbeat policy + 30-day retention (Supabase Disk IO Budget warning)
+
+Supabase warned that the shared free-tier Nano project (`bjqouysamajtmghyztoa`, also hosts
+expenseVault) is depleting its Disk IO Budget. Diagnosis (pg_stat_statements/pg_stat_io): the
+biggest app-side writer was **this app's `process-jobs` cron logging a `CronLog` row every
+5 minutes, 24/7** — 9.7k rows, ~98 MB of WAL, since each tiny INSERT lands right after a
+5-min checkpoint and forces full-page writes. Reads were a non-issue (15 MB DB, 100% cache hit).
+
+Fix: `src/lib/cronLogPolicy.ts` (`shouldWriteCronLog`, pure + vitest'd) — failures and runs
+that did work always log; quiet runs collapse to **one heartbeat row per day**; the first
+success after a failure always logs so the health panel shows recovery. `logCronRun` gained
+`opts.noop`; process-jobs passes `ran===0 && failed===0`, reconcile-payments passes
+`stuck.length===0`, daily always logs. The daily cron now also **prunes CronLog rows older
+than 30 days** (audit tables — AuditEvent/EmailLog/WebhookEvent — deliberately untouched).
+`systemHealth.tsx` reaches `take: 30` deep so uneven per-path volume can't crowd a cron out
+of the panel. Expected: ~288 CronLog writes/day → ~10. Polling itself stays at */5 (claim/reap
+UPDATEs that match 0 rows write no WAL — the ticks are nearly free once the INSERT is gone).
+
+**Deployed + verified same day:** commit `34f3487` → `dpl_3wH6gLvYhs3mL3r6s8K4fwayfr9r` READY
+on proposals.rsla.io (22:33 UTC). Post-deploy, three cron ticks (22:35/22:40/22:45) returned
+200 in Vercel logs while the CronLog row count stayed frozen at 9,754 and zero failure rows
+appeared — quiet runs suppressed exactly as designed. First 30-day purge lands at the next
+13:00 UTC daily run.
+
+Remaining levers live outside this repo: free-plan Nano baseline churn (~25 WAL write ops/sec
+at idle) is Supabase platform behavior — Rahul chose to stay on the free plan for now, so the
+watch item is the dashboard's Disk IO Budget chart over the next days. Full investigation
+logged in expenseVault's LOG.md (2026-07-15).
+
+## 2026-07-11 — scripts/exportDraftPdf.ts: unsigned "bare doc" export for any proposal
+
+New utility (pdfSmoke pattern): renders a proposal's CURRENT document (frozen content if present, else live tokens) through the real `ProposalPdf` with `signers: []` and an empty certificate, so signature cards come out blank ("Date: ____"). The unconditional trailing E-Signature Certificate page must be stripped downstream (pypdf: drop last page; assert it contains "E-Signature Certificate" first). Built for Select Landscape (email attachment before send).
+
+Run: `npx tsx scripts/exportDraftPdf.ts <proposalId> <outPath>`. Gotcha: the local `.env` `DATABASE_URL` uses the Supabase DIRECT host, which is IPv6 only and unreachable from IPv4 networks (P1001). Override with the session pooler: `postgresql://postgres.bjqouysamajtmghyztoa:<pw>@aws-1-us-west-1.pooler.supabase.com:5432/postgres` (aws-1, not aws-0; see BRAIN.md).
+
+## 2026-06-24 — Competitive teardown: Cited Co proposal platform (research, no app changes)
+
+Captured a live Cited Co client proposal (`clients.citedco.ai/proposal/1f19369a4b22873142e187bd`)
+and saved a full teardown + the raw served code under `docs/competitiveResearch/citedCo/`.
+Findings: their whole agency (marketing site, SEO blog, proposals, contracts/e-sign, intake,
+client portal + AI-visibility product) runs as one **Lovable**-built React/Vite SPA on
+**Supabase** (6 public edge functions), sourced from **Airtable**, billed via **QuickBooks**
+(no Stripe), deployed on Cloudflare. Same core concept as ours (structured JSON of copy +
+pricing with `{{merge}}` tokens, rendered on a custom domain, homegrown e-sign), but their
+public `proposals-public` function leaks lead PII + the raw `contract_sign_token` (validates
+our hashed-token/rotation design by contrast). Worth borrowing: the live-metrics case-study
+block and single-tier pricing layout. No code in this repo changed. Saved artifacts: pretty
+`proposalData.json`, the 1.99 MB app bundle, CSS, Lovable analytics scripts, og + hero images.
+
+## 2026-06-22 — Backlog RSL-36..39 fixed + deployed (Sid's Jun-19 new-feature audit leftovers)
+
+Sid filed four more issues 2026-06-22 from his Jun-19 new-feature audit (discounts / manual-invoice /
+LastName-optional) — "confirmed but never filed" in that pass, all Backlog, net-new beyond the closed
+RSL-6..35 waves. Found by re-listing the team (the standing "re-check before declaring all clear" pattern).
+Planned, then executed subagent-driven (fresh implementer + spec/quality review per issue, whole-branch
+review, one fix-wave). Plan: [`docs/plans/backlogRsl36-39.md`](docs/plans/backlogRsl36-39.md). Branch
+`audit/backlog-rsl-36-39`, ff-merged to `main`, deployed.
+
+- **RSL-36 (Medium)** — capped charged-line labels + `Client.ProposalTitle` with Zod `.max()`
+  (`MAX_LINE_LABEL_CHARS`/`MAX_PROPOSAL_TITLE_CHARS` = 200), enforced at save AND send (the schemas
+  `proposals.ts` parses), with a humanized error instead of a mid-checkout Stripe throw; backstop in
+  `buildLineItems` (RSL-30 pattern). Commit `2e31c07`.
+- **RSL-38 (Low)** — `handleSave` now blocks client-side on any priced-line advisory (display/charged
+  mismatch, discount >= price, blank reason) via a new pure `moneyDraft.ts` (single source shared with
+  `MoneyFields`); inline blank-reason warning added; net-positive invariant made explicit in
+  `paymentConfigSchema.superRefine` + pinned by a test. Commit `35462cd`.
+- **RSL-39 (Low, latent)** — `frozenTokens` validates-on-read (coerces every token key to a trimmed
+  string, RSL-21 spirit) so a legacy/hand-edited snapshot missing `Client.LastName` can't 500 the signing
+  render / PDF job; defensive coercion also at `clientFullName` + the two `proposalContent.ts` trim sites.
+  pdfSmoke confirmed. Commit `d0b14e8`.
+- **RSL-37 (Low)** — kept the two import discount dialects distinct by design (human authoring keys =
+  list-minus vs the internal config dump = already-net; unifying would break the round-trip). Instead the
+  post-import toast lists each resolved "was X, now Y (reason)" via `summarizeImportedDiscounts`, and
+  `/docs` documents both shapes. Commit `1801ce1`.
+
+**The process caught a real bug.** The integrated `npm run build` gate found a type error all four per-task
+reviews + vitest missed (vitest does not type-check): RSL-37's toast assembly put draft-typed
+`inferredTiers`/`inferredAddOns` into a `PaymentConfig`. The fix-wave (`cc4cb7a`) routed the summary through
+the canonical `stateToConfig` (which also made tier/add-on discounts actually summarize), plus **N1**: the
+RSL-36 backstop now guards Stripe's real 250-char product-name limit on the effective (deposit-wrapped) label
+via `STRIPE_MAX_PRODUCT_NAME_CHARS`, while the schema keeps the 200-char source cap — closing a narrow band
+(~186-200 char label + deposit) that saved fine but could still throw at the client's checkout. Whole-branch
+review (opus) + fix re-review both Approved, 0 Critical / 0 Important. **Lesson:** every task's verification
+must include `npm run build` (tsc), not just `vitest` — vitest strips types without checking.
+
+**Verified (integrated, controller-run):** `npm run build` PASS, `npm test` 299/299, `eslint src` 0 errors,
+`pdfSmoke` 3/3. No schema migration. Nothing changed what a client is charged or shown — caps reject at
+authoring, the discount gate is client-side UX, the invariant is explicit-but-redundant, and the import-toast
+and `frozenTokens` reads are read-only.
+
+**Status:** SHIPPED — `main` ff `5ea4d0f..cc4cb7a` (6 commits: plan doc + RSL-36/38/39/37 + fix-wave), pushed
+to origin; Vercel git deploy auto-triggered; prod smoke green (landing 200 / dashboard 307 / unauthed
+`/api/.../pdf` 401). Linear **RSL-36..39 moved to Done** with resolution comments. Branch kept as the record.
+Deferred cosmetic minors (signOnly gate not explicitly scoped — no regression/no charge impact; a tier/add-on
+test using `[0]` vs `.some()`; constant ordering) — none ship-blocking.
+
 ## 2026-06-21 — Docs sync: manual-invoice + discounts + the "tokens fill blanks" model
 
 Brought every doc surface up to date with the two recent features (manual-invoice mode, per-line
