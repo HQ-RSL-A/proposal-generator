@@ -916,6 +916,58 @@ salon / software case studies). Made it per-proposal editable, mirroring the add
   `HQ-RSL-A/proposal-generator` main, deployed to proposals.rsla.io (landing 200, /docs +
   /dashboard gated 307). In-app click-through (auth-gated) left for Rahul to test.
 
+## 2026-06-15 (cont.) - Shipped the polish; wiped prod proposals; external-cleanup status
+
+- The polish above shipped: commit `289dcc2`, live on prod (proposals.rsla.io,
+  `dpl_DcDHLPmZdt…`, Ready). Local `npm run build` + in-browser QA passed first. (A concurrent
+  Claude session's `e44b238 import flat pricing` had landed on `main` moments earlier and
+  swept up the LOG note + its own files - unrelated; left untouched. Scope your commits to
+  your own files and `git fetch` before pushing - the tree changes under you here.)
+- **Deleted ALL proposals from prod at Rahul's request** (both were his tests):
+  `Valley Oak Landscape Co` (SIGNED, payment AWAITING, 2 sigs + executed PDF) and
+  `Meridian Test Co` (VOIDED). Confirmed scope first because one looked like a real signed
+  contract; Rahul confirmed both disposable. Hard-deleted by id in a txn; `onDelete: Cascade`
+  cleared every child (verified 0 parties/sigs/docs/payments/jobs/events/emails). One-off
+  list/delete scripts removed after.
+- External cleanup:
+  - **Notion - nothing to clean (no-op).** The sync only *updates* an existing CRM row matched
+    by company name in DB `2e6fbb11…806d`; neither company had a row. The
+    "Proposal for Christian (Valley Oak Landscape Co)" page is Rahul's real **high-priority
+    task** in Lalia's Tasks - left untouched (so Valley Oak/Christian is a real lead he tested
+    the tool with).
+  - **Blob - PENDING (handoff).** Orphaned `proposals/{id}/…` signature PNGs + Valley Oak
+    `signed.pdf` remain (private, now unreferenced). Cannot delete from CLI - local OIDC is
+    development-scoped and the store rejects it; no static RW token exists. **Next step:** in
+    the Vercel dashboard Blob browser delete the `proposals/` prefix (KEEP
+    `settings/admin-signature.png`), or paste a dashboard RW token and I'll
+    `vercel blob del`. (Details now in BRAIN Gotchas.) **Superseded (2026-06-19):** do NOT
+    blanket-delete the `proposals/` prefix - a later spot-check found leftover blobs mapping to
+    live `Proposal` rows, so DB-verify each `{id}` first (orphan only if no `Proposal` row owns
+    it). See the reframed ROADMAP cleanup item + the BRAIN Blob gotcha.
+  - **Stripe - left to auto-expire.** Any unpaid live Checkout Session from the Valley Oak
+    test self-expires (~24h); declined to pull the live key (safety guard + needless exposure).
+- Upgraded Vercel CLI 53.1.1 → 54.14.0 (adds blob `--oidc-token`/`--store-id` flags).
+- BRAIN.md updated: Blob write-lifecycle + the CLI-can't-delete-locally reality, and the
+  env-var table corrected (no static `BLOB_READ_WRITE_TOKEN`; OIDC via `BLOB_STORE_ID`).
+## 2026-06-15 - Proposal-detail polish (delete confirm + audit trail)
+
+- Delete-draft no longer fires the browser's native `confirm()` "system card". New
+  `brandConfirm()` in `src/lib/toast.tsx` renders a top-center card in the same family as
+  `brandToast` (dark info-tone fill, icon badge, title/description) with Keep / Delete
+  buttons (active:scale press feedback). Returns a `Promise<boolean>`; resolves false on
+  cancel/dismiss/timeout, true on confirm. `proposalActions.tsx` awaits it before deleting.
+- Audit timeline (`auditTimeline.tsx`) rebuilt from the `border-l … -left-[31px]`
+  magic-number layout to a per-row flex layout. Connector is `left-3.5 -translate-x-1/2`
+  under a 28px badge, so the line threads exactly through every icon center - verified in a
+  real browser: badge-center minus line-center delta = 0px on every row (the prior
+  off-center complaint is gone).
+- Icons are now color-coded SVG badges by event family (slate/blue/violet/indigo/emerald/
+  amber/rose/cyan) - tinted fill + saturated glyph + faint ring - replacing the flat mono
+  icons. Bigger badges (h-7) and cleaner spacing.
+- Verified via a throwaway no-auth `/devpreview` route (deleted after QA) since the admin
+  view is Google-OAuth gated; screenshots + DOM measurements confirmed centering, colors,
+  and that the confirm buttons dismiss/resolve correctly. No console errors.
+
 ## 2026-06-14 - Post-ship cleanup (prod proposals + dead component)
 
 - Cleared the prod DB to a clean slate for the real pipeline. Deleted 3 test proposals -
@@ -1460,6 +1512,45 @@ PandaDoc-replacement flow is now verified in production. Only remaining work:
 the Stripe live-key swap (live restricted key → recreate webhook in live mode
 → swap STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET on Vercel).
 
+## 2026-06-13 (cont.) - Executed-PDF redesign per Rahul's first-document review
+
+- Real Logomark.png on cover + certificate (was a styled-text brandmark).
+- Signature modal now requires full name → title → company (company prefilled); stored on
+  Signature (migration 0003) and rendered as "Name / Title, Company" everywhere.
+- "Agreed and Accepted" execution block added after MSA §37 reproducing both signatures
+  (§37 already provides the one-signature-executes-both mechanism).
+- Certificate retitled "E-Signature Certificate" and redesigned to the industry format
+  (researched PandaDoc/DocuSign): bordered frame, reference, sent/viewed/signed timestamps,
+  IP, signature images, completion line, ESIGN statement + SHA-256 integrity line. Dropped
+  user-agent strings + raw event log from the client-facing document.
+- Footer: "{Company} · Proposal & Service Agreement" + rsla.io link.
+- Root-caused the "DomInIque" glyph bug: the earlier OTF→TTF conversion corrupted lowercase
+  "i"; original Satoshi OTFs restored (they were never the crash cause).
+- Initials through the agreement: recommended against (hash + certificate already prove
+  integrity; ESIGN/UETA don't require them; friction on mobile).
+- Demo PDF regeneration queued (email dedupe guard prevents re-sends). Fresh [TEST]
+  Brightline draft seeded for the full rehearsal with the new design.
+
+## 2026-06-13 - Launch debugging: deploy, sign-in, PDF engine
+
+- Vercel deploy fixed (lazy Prisma client; env vars pushed via CLI; aws-1 pooler URL after
+  ENOTFOUND tenant error crashed sign-in). Domain proposals.rsla.io live (CNAME at
+  Hostinger). Blob = OIDC auth (BLOB_STORE_ID + VERCEL_OIDC_TOKEN, no static token);
+  blob.ts rewritten to SDK get/put. Stripe test mode fully wired (key validated, webhook
+  endpoint we_1Thbkh… created via API, secrets on Vercel). Resend verified at root rsla.io;
+  sender proposals@rsla.io; tracking off by choice (click tracking would rewrite signing
+  links). Account-menu crash fixed (GroupLabel outside Menu.Group throws in Base UI).
+- First live deal loop proven on the demo proposal: tier select → sign → checkout (4242) →
+  paid. Notion sync wrote to the REAL Scorpion CRM page (demo reused a real company name);
+  restored with Rahul's approval (Monthly 497, Contract Start 2026-03-10, test note
+  deleted). Test/seed data uses fake company names from now on.
+- PDF engine crash ("unsupported number: -9.6e21") root-caused by elimination: not fonts
+  (TTF conversion kept anyway), not page-splitting (atomic blocks kept anyway), not
+  hyphenation (disabled anyway). Actual cause: dynamic render-callback Text (page numbers)
+  inside the fixed footer corrupts layout boxes on long flowing pages. Footer is static
+  now; scripts/pdfSmoke.ts is the regression check. All GENERATE_PDF jobs DONE; executed
+  PDF (98 KB) in Blob; fully_signed_admin DELIVERED to lalia@rsla.io with attachment.
+
 ## 2026-06-12 - Design system pass: emails, PDF, two-place signing, footnotes, alerts
 
 Big batch from Rahul's review of the first executed document:
@@ -1519,6 +1610,34 @@ landing/sign-in render, dashboard still auth-gated, screenshots in .tmp/shots.
 "[TEST] Full Rehearsal: Brightline Test Co" is seeded and ready to send), then live-key
 swap. team@rsla.io group exists (confirmed).
 
+## 2026-06-12 - SaaS layer + voice DNA pass
+
+- Users + roles: `User` allowlist table (Google-only sign-in, rsla.io lock kept), ADMIN/
+  MEMBER roles, team management in /settings (add, role change, remove access, last-admin
+  guard), profile card with Google avatar. Members can't void/delete/manage settings
+  (enforced in actions, hidden in UI).
+- Routes: public landing page at `/` ("Send it. They sign. You get paid."), dashboard moved
+  to /dashboard, role-gated nav, account dropdown with sign out.
+- Voice DNA pass over every user-facing string (emails, signing pages, toasts, PDF labels):
+  killed all em/en dashes, rewrote subjects and copy conversational per
+  brandGuidelines/voiceDna.md.
+- Fixes: Base UI `nativeButton={false}` on link-rendered buttons, favicon (app/icon.svg),
+  sign-out via next-auth/react. Verified: tsc, lint, 47 tests, build (29 routes), landing
+  public + dashboard gated smoke test.
+
+## 2026-06-12 - Visual demo + signing-consent hardening
+
+- Seeded a demo proposal (`scripts/demoSeed.ts` - runs without Blob/Resend/Stripe) and
+  walked the signing experience in Chrome: full document render (37 MSA sections, merged
+  data), tier selection, signature modal (draw + 4 typed fonts), ESIGN consent. Screenshots
+  in `docs/screenshots/`.
+- Investigated phantom TIER_SELECTED audit events: DOM-order sweep of tier buttons ~500ms
+  apart, only under the chrome-devtools MCP browser, never reproduced with a click listener
+  armed, never persisted to DB (provably client-state only). Concluded automation-environment
+  artifact, not an app bug.
+- Hardening anyway: the signature modal now restates the selected tier + price at the
+  moment of consent ("You're signing for: Growth - $3,000/month").
+
 ## 2026-06-11 - Initial build (full V1 codebase)
 
 Planned and built the PandaDoc-replacement e-signing tool end-to-end in one session:
@@ -1550,122 +1669,3 @@ Planned and built the PandaDoc-replacement e-signing tool end-to-end in one sess
 Stripe keys/webhooks/ACH, Resend account + send.rsla.io DNS, Google OAuth client, Notion
 integration + DB connect, Vercel project + domain + env. See README checklist.
 
-## 2026-06-12 - Visual demo + signing-consent hardening
-
-- Seeded a demo proposal (`scripts/demoSeed.ts` - runs without Blob/Resend/Stripe) and
-  walked the signing experience in Chrome: full document render (37 MSA sections, merged
-  data), tier selection, signature modal (draw + 4 typed fonts), ESIGN consent. Screenshots
-  in `docs/screenshots/`.
-- Investigated phantom TIER_SELECTED audit events: DOM-order sweep of tier buttons ~500ms
-  apart, only under the chrome-devtools MCP browser, never reproduced with a click listener
-  armed, never persisted to DB (provably client-state only). Concluded automation-environment
-  artifact, not an app bug.
-- Hardening anyway: the signature modal now restates the selected tier + price at the
-  moment of consent ("You're signing for: Growth - $3,000/month").
-
-## 2026-06-12 - SaaS layer + voice DNA pass
-
-- Users + roles: `User` allowlist table (Google-only sign-in, rsla.io lock kept), ADMIN/
-  MEMBER roles, team management in /settings (add, role change, remove access, last-admin
-  guard), profile card with Google avatar. Members can't void/delete/manage settings
-  (enforced in actions, hidden in UI).
-- Routes: public landing page at `/` ("Send it. They sign. You get paid."), dashboard moved
-  to /dashboard, role-gated nav, account dropdown with sign out.
-- Voice DNA pass over every user-facing string (emails, signing pages, toasts, PDF labels):
-  killed all em/en dashes, rewrote subjects and copy conversational per
-  brandGuidelines/voiceDna.md.
-- Fixes: Base UI `nativeButton={false}` on link-rendered buttons, favicon (app/icon.svg),
-  sign-out via next-auth/react. Verified: tsc, lint, 47 tests, build (29 routes), landing
-  public + dashboard gated smoke test.
-
-## 2026-06-13 - Launch debugging: deploy, sign-in, PDF engine
-
-- Vercel deploy fixed (lazy Prisma client; env vars pushed via CLI; aws-1 pooler URL after
-  ENOTFOUND tenant error crashed sign-in). Domain proposals.rsla.io live (CNAME at
-  Hostinger). Blob = OIDC auth (BLOB_STORE_ID + VERCEL_OIDC_TOKEN, no static token);
-  blob.ts rewritten to SDK get/put. Stripe test mode fully wired (key validated, webhook
-  endpoint we_1Thbkh… created via API, secrets on Vercel). Resend verified at root rsla.io;
-  sender proposals@rsla.io; tracking off by choice (click tracking would rewrite signing
-  links). Account-menu crash fixed (GroupLabel outside Menu.Group throws in Base UI).
-- First live deal loop proven on the demo proposal: tier select → sign → checkout (4242) →
-  paid. Notion sync wrote to the REAL Scorpion CRM page (demo reused a real company name);
-  restored with Rahul's approval (Monthly 497, Contract Start 2026-03-10, test note
-  deleted). Test/seed data uses fake company names from now on.
-- PDF engine crash ("unsupported number: -9.6e21") root-caused by elimination: not fonts
-  (TTF conversion kept anyway), not page-splitting (atomic blocks kept anyway), not
-  hyphenation (disabled anyway). Actual cause: dynamic render-callback Text (page numbers)
-  inside the fixed footer corrupts layout boxes on long flowing pages. Footer is static
-  now; scripts/pdfSmoke.ts is the regression check. All GENERATE_PDF jobs DONE; executed
-  PDF (98 KB) in Blob; fully_signed_admin DELIVERED to lalia@rsla.io with attachment.
-
-## 2026-06-13 (cont.) - Executed-PDF redesign per Rahul's first-document review
-
-- Real Logomark.png on cover + certificate (was a styled-text brandmark).
-- Signature modal now requires full name → title → company (company prefilled); stored on
-  Signature (migration 0003) and rendered as "Name / Title, Company" everywhere.
-- "Agreed and Accepted" execution block added after MSA §37 reproducing both signatures
-  (§37 already provides the one-signature-executes-both mechanism).
-- Certificate retitled "E-Signature Certificate" and redesigned to the industry format
-  (researched PandaDoc/DocuSign): bordered frame, reference, sent/viewed/signed timestamps,
-  IP, signature images, completion line, ESIGN statement + SHA-256 integrity line. Dropped
-  user-agent strings + raw event log from the client-facing document.
-- Footer: "{Company} · Proposal & Service Agreement" + rsla.io link.
-- Root-caused the "DomInIque" glyph bug: the earlier OTF→TTF conversion corrupted lowercase
-  "i"; original Satoshi OTFs restored (they were never the crash cause).
-- Initials through the agreement: recommended against (hash + certificate already prove
-  integrity; ESIGN/UETA don't require them; friction on mobile).
-- Demo PDF regeneration queued (email dedupe guard prevents re-sends). Fresh [TEST]
-  Brightline draft seeded for the full rehearsal with the new design.
-
-## 2026-06-15 - Proposal-detail polish (delete confirm + audit trail)
-
-- Delete-draft no longer fires the browser's native `confirm()` "system card". New
-  `brandConfirm()` in `src/lib/toast.tsx` renders a top-center card in the same family as
-  `brandToast` (dark info-tone fill, icon badge, title/description) with Keep / Delete
-  buttons (active:scale press feedback). Returns a `Promise<boolean>`; resolves false on
-  cancel/dismiss/timeout, true on confirm. `proposalActions.tsx` awaits it before deleting.
-- Audit timeline (`auditTimeline.tsx`) rebuilt from the `border-l … -left-[31px]`
-  magic-number layout to a per-row flex layout. Connector is `left-3.5 -translate-x-1/2`
-  under a 28px badge, so the line threads exactly through every icon center - verified in a
-  real browser: badge-center minus line-center delta = 0px on every row (the prior
-  off-center complaint is gone).
-- Icons are now color-coded SVG badges by event family (slate/blue/violet/indigo/emerald/
-  amber/rose/cyan) - tinted fill + saturated glyph + faint ring - replacing the flat mono
-  icons. Bigger badges (h-7) and cleaner spacing.
-- Verified via a throwaway no-auth `/devpreview` route (deleted after QA) since the admin
-  view is Google-OAuth gated; screenshots + DOM measurements confirmed centering, colors,
-  and that the confirm buttons dismiss/resolve correctly. No console errors.
-
-## 2026-06-15 (cont.) - Shipped the polish; wiped prod proposals; external-cleanup status
-
-- The polish above shipped: commit `289dcc2`, live on prod (proposals.rsla.io,
-  `dpl_DcDHLPmZdt…`, Ready). Local `npm run build` + in-browser QA passed first. (A concurrent
-  Claude session's `e44b238 import flat pricing` had landed on `main` moments earlier and
-  swept up the LOG note + its own files - unrelated; left untouched. Scope your commits to
-  your own files and `git fetch` before pushing - the tree changes under you here.)
-- **Deleted ALL proposals from prod at Rahul's request** (both were his tests):
-  `Valley Oak Landscape Co` (SIGNED, payment AWAITING, 2 sigs + executed PDF) and
-  `Meridian Test Co` (VOIDED). Confirmed scope first because one looked like a real signed
-  contract; Rahul confirmed both disposable. Hard-deleted by id in a txn; `onDelete: Cascade`
-  cleared every child (verified 0 parties/sigs/docs/payments/jobs/events/emails). One-off
-  list/delete scripts removed after.
-- External cleanup:
-  - **Notion - nothing to clean (no-op).** The sync only *updates* an existing CRM row matched
-    by company name in DB `2e6fbb11…806d`; neither company had a row. The
-    "Proposal for Christian (Valley Oak Landscape Co)" page is Rahul's real **high-priority
-    task** in Lalia's Tasks - left untouched (so Valley Oak/Christian is a real lead he tested
-    the tool with).
-  - **Blob - PENDING (handoff).** Orphaned `proposals/{id}/…` signature PNGs + Valley Oak
-    `signed.pdf` remain (private, now unreferenced). Cannot delete from CLI - local OIDC is
-    development-scoped and the store rejects it; no static RW token exists. **Next step:** in
-    the Vercel dashboard Blob browser delete the `proposals/` prefix (KEEP
-    `settings/admin-signature.png`), or paste a dashboard RW token and I'll
-    `vercel blob del`. (Details now in BRAIN Gotchas.) **Superseded (2026-06-19):** do NOT
-    blanket-delete the `proposals/` prefix - a later spot-check found leftover blobs mapping to
-    live `Proposal` rows, so DB-verify each `{id}` first (orphan only if no `Proposal` row owns
-    it). See the reframed ROADMAP cleanup item + the BRAIN Blob gotcha.
-  - **Stripe - left to auto-expire.** Any unpaid live Checkout Session from the Valley Oak
-    test self-expires (~24h); declined to pull the live key (safety guard + needless exposure).
-- Upgraded Vercel CLI 53.1.1 → 54.14.0 (adds blob `--oidc-token`/`--store-id` flags).
-- BRAIN.md updated: Blob write-lifecycle + the CLI-can't-delete-locally reality, and the
-  env-var table corrected (no static `BLOB_READ_WRITE_TOKEN`; OIDC via `BLOB_STORE_ID`).
