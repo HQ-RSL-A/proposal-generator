@@ -80,9 +80,10 @@ export function PartyList({
                 <Button
                   size="sm"
                   variant="ghost"
-                  disabled={busyId === party.id}
+                  loading={busyId === `${party.id}:copy`}
+                  disabled={busyId !== null && busyId.startsWith(`${party.id}:`)}
                   onClick={async () => {
-                    setBusyId(party.id);
+                    setBusyId(`${party.id}:copy`);
                     try {
                       const result = await getFreshSigningLink(party.id);
                       if (!result.ok) return void brandToast("error", result.error);
@@ -108,9 +109,10 @@ export function PartyList({
                 <Button
                   size="sm"
                   variant="secondary"
-                  disabled={busyId === party.id}
+                  loading={busyId === `${party.id}:remind`}
+                  disabled={busyId !== null && busyId.startsWith(`${party.id}:`)}
                   onClick={async () => {
-                    setBusyId(party.id);
+                    setBusyId(`${party.id}:remind`);
                     try {
                       const result = await remindParty(party.id);
                       if (!result.ok) return void brandToast("error", result.error);

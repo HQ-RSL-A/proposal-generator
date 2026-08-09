@@ -141,8 +141,8 @@ export function SignatureSettings({
         </Tabs>
 
         <div className="flex justify-end">
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving…" : "Save signature"}
+          <Button onClick={handleSave} loading={saving}>
+            Save signature
           </Button>
         </div>
       </CardContent>

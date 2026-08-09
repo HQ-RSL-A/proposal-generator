@@ -3,8 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { brandConfirm, brandToast } from "@/lib/toast";
+import { brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { confirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -51,14 +52,16 @@ export function ProposalActions({
   const [voidOpen, setVoidOpen] = React.useState(false);
   const [voidReason, setVoidReason] = React.useState("");
   const [notifyParties, setNotifyParties] = React.useState(true);
-  const [busy, setBusy] = React.useState(false);
+  /* One action in flight at a time; the key names WHICH button shows its spinner. */
+  const [pendingKey, setPendingKey] = React.useState<string | null>(null);
 
   async function run(
+    key: string,
     action: () => Promise<{ ok: boolean; error?: string }>,
     success: string,
     description?: string
   ) {
-    setBusy(true);
+    setPendingKey(key);
     try {
       const result = await action();
       if (!result.ok) {
@@ -72,7 +75,7 @@ export function ProposalActions({
       brandToast("success", success, description);
       router.refresh();
     } finally {
-      setBusy(false);
+      setPendingKey(null);
     }
   }
 
@@ -99,9 +102,10 @@ export function ProposalActions({
               size="sm"
               variant="ghost"
               className="text-destructive"
-              disabled={busy}
+              loading={pendingKey === "delete"}
+              disabled={pendingKey !== null}
               onClick={async () => {
-                const ok = await brandConfirm({
+                const ok = await confirmDialog({
                   title: "Delete this draft?",
                   description: "This can't be undone.",
                   confirmLabel: "Delete draft",
@@ -110,7 +114,7 @@ export function ProposalActions({
                   tone: "danger",
                 });
                 if (!ok) return;
-                run(() => deleteDraft(proposalId), "Draft deleted").then(() =>
+                run("delete", () => deleteDraft(proposalId), "Draft deleted").then(() =>
                   router.push("/dashboard")
                 );
               }}
@@ -131,9 +135,11 @@ export function ProposalActions({
             <Button
               size="sm"
               variant="secondary"
-              disabled={busy}
+              loading={pendingKey === "generate-pdf"}
+              disabled={pendingKey !== null}
               onClick={() =>
                 run(
+                  "generate-pdf",
                   () => regeneratePdf(proposalId),
                   "PDF is rendering",
                   "It builds in the background and shows up under Documents in about a minute. This page refreshes on its own."
@@ -147,9 +153,11 @@ export function ProposalActions({
             <Button
               size="sm"
               variant="ghost"
-              disabled={busy}
+              loading={pendingKey === "regenerate-pdf"}
+              disabled={pendingKey !== null}
               onClick={() =>
                 run(
+                  "regenerate-pdf",
                   () => regeneratePdf(proposalId),
                   "Fresh PDF is rendering",
                   "It replaces the current copy under Documents in about a minute. Executed-copy emails are not re-sent."
@@ -162,9 +170,10 @@ export function ProposalActions({
           {paymentStatus === "MANUAL_INVOICE" && isAdmin ? (
             <Button
               size="sm"
-              disabled={busy}
+              loading={pendingKey === "mark-paid"}
+              disabled={pendingKey !== null}
               onClick={async () => {
-                const ok = await brandConfirm({
+                const ok = await confirmDialog({
                   title: "Mark this proposal as paid?",
                   description:
                     "Use this once you've collected payment offline. It records the deal as paid, clears the to-invoice flag, and updates your dashboard and CRM. No email goes to the client.",
@@ -175,6 +184,7 @@ export function ProposalActions({
                 });
                 if (!ok) return;
                 run(
+                  "mark-paid",
                   () => markPaidManually({ id: proposalId }),
                   "Marked as paid",
                   "The deal now shows as paid on your dashboard."
@@ -197,9 +207,10 @@ export function ProposalActions({
         <Button
           size="sm"
           variant="secondary"
-          disabled={busy}
+          loading={pendingKey === "revise"}
+          disabled={pendingKey !== null}
           onClick={async () => {
-            setBusy(true);
+            setPendingKey("revise");
             try {
               const result = await reviseProposal(proposalId);
               if (!result.ok) {
@@ -213,7 +224,7 @@ export function ProposalActions({
               );
               router.push(`/proposals/${result.data!.id}/edit`);
             } finally {
-              setBusy(false);
+              setPendingKey(null);
             }
           }}
         >
@@ -249,9 +260,10 @@ export function ProposalActions({
             </Button>
             <Button
               variant="destructive"
-              disabled={busy}
+              loading={pendingKey === "void"}
               onClick={() =>
                 run(
+                  "void",
                   () => voidProposal({ id: proposalId, reason: voidReason, notifyParties }),
                   "Proposal voided",
                   notifyParties

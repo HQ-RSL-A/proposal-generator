@@ -1,5 +1,43 @@
 # log.md - proposal-generator
 
+## 2026-08-09 16:15 PT - Phase 2 wave 5: ConfirmDialog + Button `loading` (one confirm, one async pattern)
+
+Built on `ui/consistency-pass` on top of wave 4, **unmerged, pending Rahul's checkpoint**
+(waves 4+5 will checkpoint together). Also this session: Rahul's 6 open action items
+filed into his Notion tracker (Lalia's Tasks) per his ask.
+
+- **`ui/button` grows the `loading` prop**: spinner + preserved label, disables while
+  pending, and a `data-loading` rule hides any other icon in the button so spinner and
+  icon never stack. `ui/spinner` now tags itself `data-slot="spinner"` (that's what the
+  rule keys on).
+- **`ui/confirm-dialog` (new)**: promise-based `confirmDialog()` + `<ConfirmDialogHost>`
+  mounted in AppShell - the Dialog-primitive replacement for the toast-based
+  `brandConfirm`, which is now deleted from `lib/toast`. Focus-trapped, Esc/backdrop =
+  cancel, tone danger/default drives the icon chip + confirm-button variant, DialogFooter
+  band. One real bug found + fixed while verifying: the dialog opened and instantly
+  dismissed itself - the click that requests the confirm was still bubbling when the
+  dialog mounted, so Base UI read that same click as an outside press. Fix: the host
+  opens on a fresh task (`setTimeout 0`, not rAF - rAF stalls in occluded windows).
+- **Adoption**: proposalActions Delete-draft + Mark-as-paid run through confirmDialog
+  (Void/Decline keep their richer dialogs); the shared `busy` there became a per-action
+  `pendingKey` so exactly the clicked button spins (delete / generate-pdf /
+  regenerate-pdf / mark-paid / revise / void). teamSettings: panel-wide `busy` ->
+  per-row `busyKey` (`user:role`, `user:active`, `add`) - one row locking no longer
+  freezes the whole team card. partyList: per-action keys (`party:copy`,
+  `party:remind`). sendForm ("Sending..."), proposalForm ("Saving..."),
+  signatureSettings ("Saving..."), retryJobButton ("Retrying...") all drop label-swap
+  for `loading` with stable labels. sign-in: new `SignInButton` client island wires
+  `useFormStatus` so the Google button shows the redirect as pending (Phase 3's
+  sign-in item, done early since the prop landed).
+- Signing files untouched (signingExperience's two pending buttons wait for a
+  rehearsal-gated wave).
+
+Verified: 306/306 vitest + clean build. Chrome walk on a fresh e2eSeed [TEST] draft:
+Delete -> ConfirmDialog (danger chip, footer band) -> confirm -> spinner path ->
+"Draft deleted" toast -> dashboard, seeded row gone (cleaned itself up). Prod is back
+to exactly the two original [TEST] rows; the VIEWED phone-walk row was never touched.
+CSS probe confirmed the data-loading rule compiles (spinner shows, sibling icon hides).
+
 ## 2026-08-09 15:52 PT - Phase 2 wave 4: primitives adoption (table, tabs, select, tooltip, DialogFooter)
 
 Session resumed from the 03:19 snapshot. Action-item scan on resume: BOTH [TEST] rows

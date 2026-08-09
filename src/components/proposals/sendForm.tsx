@@ -142,8 +142,8 @@ export function SendForm({
           <Button variant="ghost" onClick={() => router.back()}>
             Back
           </Button>
-          <Button onClick={handleSend} disabled={sending}>
-            {sending ? "Sending…" : "Send proposal"}
+          <Button onClick={handleSend} loading={sending}>
+            Send proposal
           </Button>
         </div>
       </CardContent>

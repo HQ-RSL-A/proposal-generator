@@ -8,19 +8,27 @@ content hash). Checkpoint note that survives the merge: danger/warning timeline 
 weren't exercisable locally (no bounced/declined/expired rows). Rahul's pending action
 items + the full status snapshot: log 2026-08-09 03:19. Two [TEST] rows sit in prod;
 e2eCleanup only after his phone walk.
-**Wave 4 (primitives adoption — Phase 2 item 3) is committed on `ui/consistency-pass`,
-unmerged, PENDING HIS CHECKPOINT** (log 15:52): proposals list → real ui/table
+**Waves 4+5 are committed on `ui/consistency-pass`, unmerged, PENDING HIS CHECKPOINT**
+(they checkpoint together; logs 15:52 + 16:15).
+Wave 4 (primitives adoption — Phase 2 item 3): proposals list → real ui/table
 (semantics; row-overlay link verified clickable), dashboard filter → ui/tabs
 (arrow-key + Enter activation, Badge counts, wave-1 pill look kept), both native
 selects → ui/select (numeric interval via Base UI `items`; also fixes their h-9-beside-
 h-8-Input drift), Remove-signer + avatar-menu aria-labels with TooltipProvider mounted
 in AppShell (delay 0→600ms, instant-subsequent verified), Void dialog → DialogFooter.
-signatureModal's footer is a signing file — deferred to a rehearsal-gated wave.
+Wave 5 (one confirm + one async pattern — Phase 2 item 4): Button `loading` prop
+(spinner + preserved label, data-loading hides sibling icons), `ui/confirm-dialog`
+promise API + host in AppShell replacing the deleted `brandConfirm` (opens on a fresh
+task — the requesting click otherwise reads as an outside press and insta-dismisses),
+per-action/per-row pending keys in proposalActions/teamSettings/partyList, label-swap
+buttons (send/save/signature/retry) → `loading`, sign-in Google button pending via
+`useFormStatus` (Phase 3's sign-in item, done early). Signing files untouched —
+signingExperience's pending buttons + signatureModal's footer wait for a
+rehearsal-gated wave.
 **RESUME POINT — next steps in order:**
-(1) ConfirmDialog replacing brandConfirm + Button `loading`
-prop everywhere (per-row busy, not panel-wide); (2) type/color hygiene per Phase 2 list
+(1) type/color hygiene per Phase 2 list
 (headings, arbitrary px, bg-white→bg-card, transition-all→named incl. the ui/tabs
-trigger, #00C2FF→--chart-2, ring recipes); (3) dashboard motion + skeletons (Phase 2
+trigger, #00C2FF→--chart-2, ring recipes); (2) dashboard motion + skeletons (Phase 2
 items 6-7).
 **Added 2026-08-09 by Rahul — BOTH DONE 2026-08-09** (log 02:50): PDF reviewed (cert
 font-name leak fixed; page numbers / Notes-page flow / footnote anchors / footer naming

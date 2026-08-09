@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { retryJob } from "@/actions/proposals";
 import { brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 
 export function RetryJobButton({ jobId }: { jobId: string }) {
   const router = useRouter();
@@ -33,9 +32,8 @@ export function RetryJobButton({ jobId }: { jobId: string }) {
   };
 
   return (
-    <Button size="sm" variant="secondary" disabled={busy} onClick={run}>
-      {busy ? <Spinner /> : null}
-      {busy ? "Retrying…" : "Retry"}
+    <Button size="sm" variant="secondary" loading={busy} onClick={run}>
+      Retry
     </Button>
   );
 }

@@ -39,10 +39,16 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
   const [name, setName] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [role, setRole] = React.useState<"ADMIN" | "MEMBER">("MEMBER");
-  const [busy, setBusy] = React.useState(false);
+  /* Per-control pending key ("<userId>:role", "<userId>:active", "add") — only the
+     clicked control spins and only its row locks, never the whole panel. */
+  const [busyKey, setBusyKey] = React.useState<string | null>(null);
 
-  async function run(action: () => Promise<{ ok: boolean; error?: string }>, success: string) {
-    setBusy(true);
+  async function run(
+    key: string,
+    action: () => Promise<{ ok: boolean; error?: string }>,
+    success: string
+  ) {
+    setBusyKey(key);
     try {
       const result = await action();
       if (!result.ok) {
@@ -52,7 +58,7 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
       brandToast("success", success);
       router.refresh();
     } finally {
-      setBusy(false);
+      setBusyKey(null);
     }
   }
 
@@ -115,9 +121,13 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
                   <Button
                     size="sm"
                     variant="ghost"
-                    disabled={busy || !user.active}
+                    loading={busyKey === `${user.id}:role`}
+                    disabled={
+                      (busyKey !== null && busyKey.startsWith(`${user.id}:`)) || !user.active
+                    }
                     onClick={() =>
                       run(
+                        `${user.id}:role`,
                         () =>
                           setUserRole({
                             userId: user.id,
@@ -132,9 +142,11 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
                   <Button
                     size="sm"
                     variant={user.active ? "destructive" : "secondary"}
-                    disabled={busy}
+                    loading={busyKey === `${user.id}:active`}
+                    disabled={busyKey !== null && busyKey.startsWith(`${user.id}:`)}
                     onClick={() =>
                       run(
+                        `${user.id}:active`,
                         () => setUserActive({ userId: user.id, active: !user.active }),
                         user.active ? "Access removed" : "Access restored"
                       )
@@ -188,15 +200,18 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
             <div className="col-span-1 sm:col-span-2">
               <Button
                 className="w-full"
-                disabled={busy || !name.trim() || !email.trim()}
+                loading={busyKey === "add"}
+                disabled={!name.trim() || !email.trim()}
                 onClick={() =>
-                  run(() => addUser({ name, email, role }), "Teammate added. They can sign in now.").then(
-                    () => {
-                      setName("");
-                      setEmail("");
-                      setRole("MEMBER");
-                    }
-                  )
+                  run(
+                    "add",
+                    () => addUser({ name, email, role }),
+                    "Teammate added. They can sign in now."
+                  ).then(() => {
+                    setName("");
+                    setEmail("");
+                    setRole("MEMBER");
+                  })
                 }
               >
                 Add

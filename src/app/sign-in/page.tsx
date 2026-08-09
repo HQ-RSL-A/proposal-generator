@@ -1,8 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { GoogleG } from "@/components/googleG";
+import { SignInButton } from "@/components/signInButton";
 
 export default async function SignInPage() {
   const session = await auth();
@@ -30,15 +29,7 @@ export default async function SignInPage() {
                 await signIn("google", { redirectTo: "/dashboard" });
               }}
             >
-              <Button
-                type="submit"
-                size="lg"
-                variant="outline"
-                className="cta-lift h-12 w-full gap-2.5 rounded-xl border-border bg-white text-base font-semibold text-foreground shadow-md hover:bg-white hover:shadow-lg"
-              >
-                <GoogleG className="size-4.5" />
-                Continue with Google
-              </Button>
+              <SignInButton />
             </form>
 
             <p className="mt-5 text-xs text-muted-foreground">

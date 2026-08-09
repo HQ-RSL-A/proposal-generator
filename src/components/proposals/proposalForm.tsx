@@ -1667,8 +1667,8 @@ export function ProposalForm({
         <Button variant="ghost" onClick={() => router.back()}>
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? "Saving…" : mode === "create" ? "Create draft" : "Save changes"}
+        <Button onClick={handleSave} loading={saving}>
+          {mode === "create" ? "Create draft" : "Save changes"}
         </Button>
       </div>
     </div>
