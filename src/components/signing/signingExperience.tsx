@@ -91,6 +91,8 @@ export function SigningExperience({
 
   function handleTierSelect(tierId: string) {
     setSelectedTierId(tierId);
+    // A choice was made — the attention ring has done its job.
+    document.querySelector("[data-tier-anchor]")?.removeAttribute("data-attention");
     // Changing the deal after adopting invalidates the ceremony: the consent
     // restated the old tier, so the signature has to be adopted again.
     if (adopted) {
@@ -136,11 +138,9 @@ export function SigningExperience({
       });
       const anchor = document.querySelector("[data-tier-anchor]");
       anchor?.scrollIntoView({ behavior: appScrollBehavior(), block: "center" });
-      // Pulse the tier grid so the guidance lands at the point of decision, not just
-      // in a toast. Remove + re-add restarts the animation on repeat taps.
-      anchor?.removeAttribute("data-attention");
-      requestAnimationFrame(() => anchor?.setAttribute("data-attention", ""));
-      window.setTimeout(() => anchor?.removeAttribute("data-attention"), 1700);
+      // Light the tier grid and keep it lit until a plan is picked (cleared in
+      // handleTierSelect) — the guidance stays at the point of decision.
+      anchor?.setAttribute("data-attention", "");
       return;
     }
     setModalOpen(true);

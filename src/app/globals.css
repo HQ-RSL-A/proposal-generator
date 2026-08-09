@@ -140,20 +140,26 @@ main {
   }
 }
 
-/* Attention pulse: draws the eye to a required choice (e.g. the tier grid when the
-   client hits "Ready to sign" without picking a plan). Two soft amber pulses. */
-@keyframes attention-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
-  18%, 58% { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.4); }
-  38%, 78% { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15); }
+/* Attention ring: lights up a required choice (the tier grid when the client hits
+   "Ready to sign" without picking a plan) and STAYS lit until a selection is made —
+   the attribute is cleared in handleTierSelect. Swells in once, settles steady;
+   removal fades out via the transition below. */
+@keyframes attention-in {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  45% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.45); }
+  100% { box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5); }
+}
+[data-tier-anchor] {
+  border-radius: 1rem;
+  transition: box-shadow 0.3s var(--ease-out-strong);
 }
 [data-attention] {
-  border-radius: 1rem;
-  animation: attention-pulse 1.6s var(--ease-out-strong) both;
+  animation: attention-in 0.6s var(--ease-out-strong) both;
 }
 @media (prefers-reduced-motion: reduce) {
   [data-attention] {
     animation: none;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.5);
   }
 }
 
