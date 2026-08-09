@@ -1,6 +1,37 @@
 # log.md - proposal-generator
 
-## 2026-08-09 - Wave 2 (mobile sheet + action-bar) feel-tested, merged, deployed
+## 2026-08-09 02:06 PT - Phase 2 wave 1: dashboard migrated onto Card/CardLabel
+
+First Phase 2 wave on `ui/consistency-pass` (plan: `docs/plans/ui-consistency-pass.md`),
+building on the committed Card variant API: `dashboard/metrics.tsx` +
+`dashboard/proposalsPanel.tsx` no longer hand-roll a single surface.
+
+- **metrics.tsx**: the local `CARD` recipe and the private `CardLabel` clone (10.5px /
+  0.08em - the "self-contradiction" with the canonical 11px/tracking-widest) are gone.
+  Every tile is `Card size="lg" hoverable` + one `CardContent`; the warn state of
+  OldestOpen is `tone="warning"`. Raw ambers/emeralds/roses moved to the
+  warning/success/destructive token families; the hero gradient's `#F4F8FF` stop is now
+  `var(--accent)`; `rounded-[10px]`, `text-[40px]`, and the redundant arbitrary trackings
+  (font-heading already bakes -0.02em) retired; quarter-step spacing snapped to the scale
+  (internal rhythm converges on mt-3).
+- **proposalsPanel.tsx**: attention banner → `Card tone="warning"` (kills
+  `rounded-[14px]`; dot is `bg-warning ring-warning/20`); desktop table + empty state →
+  `Card size="lg"` with cell padding driven by the card's own `px-(--card-spacing)`;
+  header cells → shared `CardLabel`; mobile rows → `Card` inside the Link (press scale
+  stays on the Link - `:active` doesn't propagate down); the five bespoke grays
+  (#EEF1F6/#FCFCFD/#E9EDF3/#F4F6F9/#F4F8FF) → `border-subtle`/`surface-raised`/accent;
+  filter pill track `rounded-[11px]` → `rounded-xl` + `bg-border-subtle`, active pill
+  `bg-white` → `bg-card`, bespoke shadow → `shadow-sm`, easing → `ease-out-strong`
+  (full Tabs conversion stays in Phase 2 step 3).
+- Verified: 306/306 vitest + clean `next build`; Chrome visual pass at 1280 and mobile
+  width (macOS Chrome min-window floors the viewport at ~570px - still the sub-`md`
+  layout; real 390 comes with Rahul's phone walk) - hero/KPI/table/mobile cards/empty
+  state all checked. Not exercised (no attention rows in DB): the warning banner and warn
+  OldestOpen - same committed tone map, eyeball at the checkpoint.
+
+**Pending Rahul's visual checkpoint; merge on his go.** Next per plan: status-system
+unification (statusChip exports the scale; systemHealth enum leak; sparkline → chart
+tokens).
 
 Phase 1 wave 2, iterated live with Rahul on localhost (fresh $1 rehearsal, mobile
 emulation): the signature modal is a **bottom sheet below `sm`** via an opt-in
