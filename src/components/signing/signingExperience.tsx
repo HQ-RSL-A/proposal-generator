@@ -25,10 +25,16 @@ import { buildSelectedSummary, declineOutcome } from "@/lib/signingOutcome";
 
 const PLACE_ORDER: SignaturePlace[] = ["proposal", "agreement"];
 
+/* JS scrollIntoView ignores the CSS scroll-behavior gate in globals.css, so honor
+   prefers-reduced-motion here explicitly. */
+function scrollBehavior(): ScrollBehavior {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+}
+
 function scrollToSlot(place: SignaturePlace) {
   document
     .querySelector(`[data-signature-slot="${place}"]`)
-    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    ?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
 }
 
 export function SigningExperience({
@@ -133,7 +139,7 @@ export function SigningExperience({
       });
       document
         .querySelector("[data-tier-anchor]")
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        ?.scrollIntoView({ behavior: scrollBehavior(), block: "center" });
       return;
     }
     setModalOpen(true);

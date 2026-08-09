@@ -2,23 +2,13 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --font-mono: ui-monospace, monospace;
   --font-heading: var(--font-satoshi), ui-sans-serif, system-ui, sans-serif;
   --font-tag: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);
   --color-chart-3: var(--chart-3);
@@ -41,9 +31,16 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border-subtle: var(--border-subtle);
   --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-subtle-foreground: var(--success-subtle-foreground);
   --color-warning: var(--warning);
-  --color-danger: var(--danger);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-subtle-foreground: var(--warning-subtle-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-subtle-foreground: var(--destructive-subtle-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -58,6 +55,8 @@
   --background: #FFFFFF;
   --foreground: #111827;
   --surface: #F9FAFB;
+  --surface-raised: #FCFCFD;
+  --border-subtle: #EEF1F6;
   --card: #FFFFFF;
   --card-foreground: #111827;
   --popover: #FFFFFF;
@@ -70,10 +69,18 @@
   --muted-foreground: #6B7280;
   --accent: #F0F4FF;
   --accent-foreground: #0070F3;
-  --destructive: #FF6B6B;
-  --success: #10B981;
+  /* Status colors: base values pass WCAG AA as text on white; -subtle pairs are for
+     chips/banners (tinted bg + darker text). Warning base is fill/icon-only — warning
+     text always uses --warning-subtle-foreground. */
+  --destructive: #DC2626;
+  --destructive-subtle: #FEE2E2;
+  --destructive-subtle-foreground: #B91C1C;
+  --success: #059669;
+  --success-subtle: #D1FAE5;
+  --success-subtle-foreground: #047857;
   --warning: #F59E0B;
-  --danger: #FF6B6B;
+  --warning-subtle: #FEF3C7;
+  --warning-subtle-foreground: #B45309;
   --border: #E5E7EB;
   --input: #E5E7EB;
   --ring: #0070F3;
@@ -83,14 +90,8 @@
   --chart-4: #F59E0B;
   --chart-5: #8B5CF6;
   --radius: 0.5rem;
-  --sidebar: #FAFBFC;
-  --sidebar-foreground: #374151;
-  --sidebar-primary: #0070F3;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #EFF6FF;
-  --sidebar-accent-foreground: #0070F3;
-  --sidebar-border: #F3F4F6;
-  --sidebar-ring: #0070F3;
+  /* Strong ease-out for UI interactions (Emil Kowalski's curve) */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @layer base {
@@ -124,17 +125,6 @@
   font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Gradient accent: Anchor Blue -> Electric Cyan */
-.gradient-blue {
-  background: linear-gradient(135deg, #0070F3 0%, #00C2FF 100%);
-}
-.gradient-text {
-  background: linear-gradient(135deg, #0070F3 0%, #00C2FF 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
 /* Smooth page transitions */
 main {
   animation: fadeIn 0.15s ease-out;
@@ -142,6 +132,11 @@ main {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(2px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  main {
+    animation: none;
+  }
 }
 
 /* Card hover effect */
@@ -173,15 +168,6 @@ main {
   line-height: 1.7;
 }
 
-/* Hide scrollbar but keep scroll functionality */
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
-}
-
 /* Note anchors (superscript markers) glide instead of jump */
 @media (prefers-reduced-motion: no-preference) {
   html {
@@ -193,11 +179,6 @@ main {
 .dot-pattern {
   background-image: radial-gradient(circle, rgba(17, 24, 39, 0.08) 1px, transparent 1px);
   background-size: 22px 22px;
-}
-
-/* Premium landing/sign-in motion + depth (Emil Kowalski's strong ease-out) */
-:root {
-  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 /* Primary CTA: lifts on hover, presses on click for real feedback */

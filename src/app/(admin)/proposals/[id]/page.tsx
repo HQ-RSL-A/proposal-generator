@@ -14,7 +14,7 @@ import { ProposalActions } from "@/components/proposals/proposalActions";
 import { PartyList, type PartyRow } from "@/components/proposals/partyList";
 import { AuditTimeline } from "@/components/proposals/auditTimeline";
 import { ProposalView } from "@/components/proposal/proposalView";
-import { retryJob } from "@/actions/proposals";
+import { RetryJobButton } from "@/components/settings/retryJobButton";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -127,21 +127,12 @@ export default async function ProposalDetailPage({
               {deadJobs.length} background task{deadJobs.length > 1 ? "s" : ""} failed permanently
             </p>
             {deadJobs.map((job) => (
-              <form
-                key={job.id}
-                action={async () => {
-                  "use server";
-                  await retryJob(job.id);
-                }}
-                className="flex items-center justify-between gap-2 text-sm"
-              >
+              <div key={job.id} className="flex items-center justify-between gap-2 text-sm">
                 <span className="truncate">
                   {job.jobType} · {job.lastError?.slice(0, 120) ?? "unknown error"}
                 </span>
-                <Button size="sm" variant="secondary" type="submit">
-                  Retry
-                </Button>
-              </form>
+                <RetryJobButton jobId={job.id} />
+              </div>
             ))}
           </CardContent>
         </Card>

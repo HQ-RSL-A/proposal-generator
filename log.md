@@ -1,6 +1,47 @@
 # log.md - proposal-generator
 
-## 2026-07-15 - Cron log heartbeat policy + 30-day retention (Supabase Disk IO Budget warning)
+## 2026-08-08 22:45 PT - UI consistency audit + plan; Phase 0 built on `ui/consistency-pass`
+
+Rahul flagged inconsistent UI (toasts, cards, et al) + proposal-form fields clipping long
+text. Ran a six-dimension parallel code audit (feedback/toasts, cards, buttons/forms,
+overlays/async states, tokens/typography/dark-mode, motion). Verdict: strong foundations
+(zero raw-sonner bypasses, Base UI primitives, token-exact PDF/emails) undermined by three
+drift engines - unadopted primitives (32 hand-rolled card recipes, div-grid proposals
+table, dead `select`/`tooltip`/`DialogFooter`), broken status tokens (`--destructive
+#FF6B6B` 2.8:1 and `--success #10B981` 2.6:1 fail WCAG as text, so 4 greens + 3 reds ship;
+EXPIRED renders orange/rose/amber by surface), and unsystematized async states (zero
+loading/error/not-found files, zero spinners, toast severity flattened). Full findings +
+target system + 4 phases: `docs/plans/ui-consistency-pass.md`. Decisions locked with Rahul:
+client signing flow first, full systematization, light-only, phased merges he gates.
+
+**Phase 0 built (branch `ui/consistency-pass`, pending Rahul's visual review + merge):**
+- Tokens: `--destructive` -> #DC2626, `--success` -> #059669, added
+  `-subtle`/`-subtle-foreground` pairs (danger/success/warning) + `--surface-raised` +
+  `--border-subtle`; deleted `--danger` dup, 8 dead sidebar tokens, dead gradient/scrollbar
+  utilities; `--ease-out-strong` consolidated into `:root`; `main` fadeIn gets
+  reduced-motion opt-out.
+- Killed the OS-theme toast leak (`ui/sonner.tsx` forced light; macOS-dark users were
+  getting dark toasts); Toaster mount de-lied (`richColors bottom-right` -> real
+  `top-center`); uninstalled `next-themes`; stripped all 17 dead `dark:` variants + the
+  `dark` custom-variant (light-only is now explicit).
+- Route states: branded root `not-found`/`error`/`global-error`, `(admin)` loading +
+  error (in-shell), `sign/[token]` + `pay/[token]` loading + error (OutcomeCard-styled,
+  SUPPORT_EMAIL only) - clients no longer see Next's raw crash screen on the money path.
+- `RetryJobButton` (settings/): the two fire-and-forget Retry forms (proposal detail,
+  system health) now show pending + success/error toasts; `retryJob` revalidates
+  `/settings` instead of the redirect-stub `/health`.
+- `partyList`: DRAFT proposals get a real empty state (was a bare bordered box); clipboard
+  failure on Copy-link now toasts instead of silently stranding a rotated token.
+- Signing scroll honors `prefers-reduced-motion` (JS `scrollIntoView` was bypassing the
+  CSS gate).
+- **Form fields (Rahul's report):** new `ui/growing-input.tsx` - single-line semantics
+  (Enter blocked, pasted newlines collapse) on the auto-growing Textarea
+  (`field-sizing-content`), so long values wrap instead of clipping. Applied to proposal
+  title, at-a-glance summaries, problem/solution titles, pricing label/shown-to-client/
+  discount reason, tier name, future-item starts note, case-study URL.
+
+Verified: 306/306 vitest, `next build` clean, dev smoke (branded 404 renders, landing +
+sign-in 200). No PDF changes. Next: Phase 1 (client signing flow polish) after merge.
 
 Supabase warned that the shared free-tier Nano project (`bjqouysamajtmghyztoa`, also hosts
 expenseVault) is depleting its Disk IO Budget. Diagnosis (pg_stat_statements/pg_stat_io): the

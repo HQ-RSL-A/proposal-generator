@@ -6,6 +6,7 @@ import { brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { GrowingInput } from "@/components/ui/growing-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -576,22 +577,24 @@ function inferTrackRecordFromImport(
   return { intro: (block.intro ?? "").trim(), caseStudies };
 }
 
-const tokenFieldGroups: { heading: string; fields: { key: keyof TokensJson; label: string; multiline?: boolean }[] }[] = [
+/* multiline: real paragraphs (Textarea). grow: single-line semantics but sentence-length
+   values — renders as a wrapping GrowingInput so nothing clips out of view. */
+const tokenFieldGroups: { heading: string; fields: { key: keyof TokensJson; label: string; multiline?: boolean; grow?: boolean }[] }[] = [
   {
     heading: "Client",
     fields: [
       { key: "Client.FirstName", label: "First name" },
       { key: "Client.LastName", label: "Last name (optional)" },
       { key: "Client.Company", label: "Company" },
-      { key: "Client.ProposalTitle", label: "Proposal title" },
+      { key: "Client.ProposalTitle", label: "Proposal title", grow: true },
     ],
   },
   {
     heading: "At a Glance",
     fields: [
       { key: "Client.AtGlanceServices", label: "What we're building", multiline: true },
-      { key: "Client.AtGlanceInvestment", label: "Investment summary" },
-      { key: "Client.AtGlanceTimeline", label: "Timeline summary" },
+      { key: "Client.AtGlanceInvestment", label: "Investment summary", grow: true },
+      { key: "Client.AtGlanceTimeline", label: "Timeline summary", grow: true },
       { key: "Document.CreatedDate", label: "Created date" },
       { key: "Client.ValidUntil", label: "Valid until" },
     ],
@@ -599,9 +602,9 @@ const tokenFieldGroups: { heading: string; fields: { key: keyof TokensJson; labe
   {
     heading: "Narrative",
     fields: [
-      { key: "Client.ProblemTitle", label: "Problem title" },
+      { key: "Client.ProblemTitle", label: "Problem title", grow: true },
       { key: "Client.ProblemText", label: "Problem text", multiline: true },
-      { key: "Client.SolutionTitle", label: "Solution title" },
+      { key: "Client.SolutionTitle", label: "Solution title", grow: true },
       { key: "Client.SolutionText", label: "Solution text", multiline: true },
     ],
   },
@@ -665,7 +668,7 @@ export function MoneyFields({
       <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
         <div className="col-span-2 sm:col-span-4">
           <Label className="text-xs">Label{withDiscount ? " (name on Stripe)" : ""}</Label>
-          <Input
+          <GrowingInput
             value={value.label}
             onChange={(e) => onChange({ ...value, label: e.target.value })}
             placeholder="Website build"
@@ -698,7 +701,7 @@ export function MoneyFields({
           <>
             <div className="col-span-2 sm:col-span-4">
               <Label className="text-xs">Shown to client</Label>
-              <Input
+              <GrowingInput
                 value={value.displayString}
                 onChange={(e) => {
                   const displayString = e.target.value;
@@ -744,7 +747,7 @@ export function MoneyFields({
         <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
           <div className="sm:col-span-8">
             <Label className="text-xs">Discount reason (shown to client)</Label>
-            <Input
+            <GrowingInput
               value={value.discountReason ?? ""}
               onChange={(e) => onChange({ ...value, discountReason: e.target.value })}
               placeholder="Loyalty discount"
@@ -1014,6 +1017,13 @@ export function ProposalForm({
                     }
                     className="min-h-24"
                   />
+                ) : field.grow ? (
+                  <GrowingInput
+                    value={state.tokens[field.key] ?? ""}
+                    onChange={(e) =>
+                      set("tokens", { ...state.tokens, [field.key]: e.target.value })
+                    }
+                  />
                 ) : (
                   <Input
                     value={state.tokens[field.key] ?? ""}
@@ -1076,7 +1086,7 @@ export function ProposalForm({
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Link URL (optional)</Label>
-                <Input
+                <GrowingInput
                   value={cs.href}
                   onChange={(e) => {
                     const caseStudies = [...state.caseStudies];
@@ -1174,7 +1184,7 @@ export function ProposalForm({
                   <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
                     <div className="col-span-2 sm:col-span-5">
                       <Label className="text-xs">Tier name</Label>
-                      <Input
+                      <GrowingInput
                         value={tier.label}
                         onChange={(e) => {
                           const tiers = [...state.tiers];
@@ -1477,7 +1487,7 @@ export function ProposalForm({
                   />
                   <div className="space-y-1">
                     <Label className="text-xs">Starts</Label>
-                    <Input
+                    <GrowingInput
                       value={item.startsNote}
                       placeholder="After launch"
                       onChange={(e) => {

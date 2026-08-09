@@ -30,6 +30,16 @@ export function PartyList({
   const router = useRouter();
   const [busyId, setBusyId] = React.useState<string | null>(null);
 
+  if (parties.length === 0) {
+    return (
+      <div className="rounded-xl border border-border bg-white p-6 text-center">
+        <p className="text-sm text-muted-foreground">
+          No recipients yet. Parties appear here once the proposal is sent.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="divide-y divide-border rounded-xl border border-border bg-white">
       {parties.map((party) => (
@@ -76,7 +86,17 @@ export function PartyList({
                     try {
                       const result = await getFreshSigningLink(party.id);
                       if (!result.ok) return void brandToast("error", result.error);
-                      await navigator.clipboard.writeText(result.data!.url);
+                      try {
+                        await navigator.clipboard.writeText(result.data!.url);
+                      } catch {
+                        // The token already rotated above — earlier links are dead, so a
+                        // silent failure here would strand the party with no valid link.
+                        return void brandToast(
+                          "error",
+                          "Couldn't reach the clipboard",
+                          "Earlier links were already refreshed — use Remind to email the new link."
+                        );
+                      }
                       brandToast("success", "Fresh link copied. Earlier emailed links are now invalid.");
                     } finally {
                       setBusyId(null);

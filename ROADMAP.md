@@ -172,6 +172,19 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       first, then navbar, emails, PDF, sign-in). Audit every logo placement and
       drop the adjacent wordmark/tagline so the mark stands alone.
 
+## UI consistency pass (added 2026-08-08)
+
+- [ ] **Full UI systematization** — six-dimension audit (toasts, cards, buttons/forms,
+      overlays/async states, tokens/typography, motion) found three drift engines:
+      unadopted primitives (32 card recipes, hand-rolled table/tabs), broken status tokens
+      (WCAG-failing `--destructive`/`--success` → four greens/three reds shipping), and
+      unsystematized async states (zero loading/error/not-found routes, zero spinners).
+      Plan + phase tracking: [`docs/plans/ui-consistency-pass.md`](docs/plans/ui-consistency-pass.md).
+      Decisions locked: client signing flow first, full systematization, light-only,
+      phased merges gated by Rahul. **Phase 0 (bugs + tokens + route states + growing
+      form fields) built 2026-08-08 on `ui/consistency-pass`** — pending visual review +
+      merge. Phases 1 (client signing), 2 (admin), 3 (sweep + guardrails) follow.
+
 ## Eventual / backlog
 
 - [ ] **Attorney MSA review → v4.** When revised text lands, seed a new `MsaVersion`
@@ -227,6 +240,9 @@ Research-backed, code-grounded plans with file refs, risks, and open decisions:
 - [`docs/plans/mobileInternalSurfaces.md`](docs/plans/mobileInternalSurfaces.md) - mobile pass
   for the internal admin surfaces (proposal form, detail tabs, settings); audit + prioritized
   P0/P1/P2 fixes, all presentational.
+- [`docs/plans/ui-consistency-pass.md`](docs/plans/ui-consistency-pass.md) - full UI
+  systematization: six-dimension audit findings, target design system (tokens, Card API,
+  status scale, feedback/async conventions, motion), four phased milestones.
 
 ---
 

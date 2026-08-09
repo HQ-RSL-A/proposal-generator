@@ -34,10 +34,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${satoshi.variable} ${inter.variable} font-sans antialiased bg-white`}
+        className={`${satoshi.variable} ${inter.variable} font-sans antialiased bg-background`}
       >
         {children}
-        <Toaster richColors position="bottom-right" />
+        <Toaster position="top-center" />
       </body>
     </html>
   );

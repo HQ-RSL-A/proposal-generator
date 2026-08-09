@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/dates";
-import { retryJob } from "@/actions/proposals";
+import { RetryJobButton } from "@/components/settings/retryJobButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 /**
  * The system panel inside Settings (admin-only). Anything that appears here
@@ -84,12 +83,8 @@ export async function SystemHealthPanel() {
           ) : (
             <div className="space-y-2">
               {deadJobs.map((job) => (
-                <form
+                <div
                   key={job.id}
-                  action={async () => {
-                    "use server";
-                    await retryJob(job.id);
-                  }}
                   className="flex flex-col items-start gap-2 rounded-lg border border-border p-3 md:flex-row md:items-center md:justify-between md:gap-3 text-sm"
                 >
                   <div className="min-w-0">
@@ -101,10 +96,8 @@ export async function SystemHealthPanel() {
                       {job.attempts} attempts · {job.lastError?.slice(0, 140) ?? "unknown error"}
                     </p>
                   </div>
-                  <Button size="sm" variant="secondary" type="submit">
-                    Retry
-                  </Button>
-                </form>
+                  <RetryJobButton jobId={job.id} />
+                </div>
               ))}
             </div>
           )}

@@ -542,7 +542,7 @@ export async function retryJob(jobId: string): Promise<ActionResult> {
   try {
     await retryDeadJob(jobId);
     after(async () => runJobNow(jobId));
-    revalidatePath("/health");
+    revalidatePath("/settings");
     return { ok: true };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
