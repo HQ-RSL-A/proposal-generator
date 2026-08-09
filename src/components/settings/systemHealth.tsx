@@ -4,6 +4,8 @@ import { formatDateTime } from "@/lib/dates";
 import { RetryJobButton } from "@/components/settings/retryJobButton";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PaymentChip, STATUS_TONES } from "@/components/dashboard/statusChip";
+import { cn } from "@/lib/utils";
 
 /**
  * The system panel inside Settings (admin-only). Anything that appears here
@@ -125,9 +127,7 @@ export async function SystemHealthPanel() {
                       Signed {proposal.completedAt ? formatDateTime(proposal.completedAt) : "—"}
                     </p>
                   </div>
-                  <Badge variant="secondary" className="border-0 bg-amber-100 text-amber-700">
-                    {proposal.paymentStatus}
-                  </Badge>
+                  <PaymentChip paymentStatus={proposal.paymentStatus} status={proposal.status} />
                 </Link>
               ))}
             </div>
@@ -181,11 +181,10 @@ export async function SystemHealthPanel() {
                   </div>
                   <Badge
                     variant="secondary"
-                    className={
-                      log.ok
-                        ? "border-0 bg-emerald-100 text-emerald-700"
-                        : "border-0 bg-rose-100 text-rose-700"
-                    }
+                    className={cn(
+                      "border-0 font-medium",
+                      STATUS_TONES[log.ok ? "success" : "danger"].chip
+                    )}
                   >
                     {log.ok ? "ok" : "failed"}
                   </Badge>

@@ -1,5 +1,44 @@
 # log.md - proposal-generator
 
+## 2026-08-09 02:26 PT - Phase 2 wave 2: status system unified (one tone scale)
+
+Wave 1 merged + auto-deployed on Rahul's go (deploy `j1aatx95v` READY in 37s - auto-deploy
+verified per his ask). Wave 2 built on `ui/consistency-pass`, **unmerged, pending his
+checkpoint**:
+
+- **`statusChip.tsx` now exports THE status scale**: `StatusTone`
+  (neutral/brand/info/engaged/success/warning/danger) with `chip` + `icon` class flavors,
+  plus `PROPOSAL_STATUS_META` / `PAYMENT_STATUS_META` (label + tone per enum value).
+  success/warning/danger ride the theme tokens; blue (info) and violet (engaged) are
+  sanctioned raw hues defined only there. Semantic fixes: EXPIRED + SESSION_EXPIRED →
+  warning (orange dies), VIEWED → engaged violet (was indigo, contradicting the violet
+  timeline), VOIDED → neutral (was gray chip / rose timeline), PROCESSING → info (was
+  sky chip / amber timeline). PAID keeps the one solid chip (`solid` flag).
+- **`auditTimeline.tsx`**: local 8-hue TONE_STYLE deleted; EVENT_META tones are now
+  StatusTones (24 raw palette classes gone; slate/cyan/indigo/orange retired - icons
+  carry event identity, tone carries meaning: info = mechanics, engaged = client
+  touches, success = milestones, warning = expiry/reminders, danger = failures,
+  neutral = records incl. VOIDED).
+- **`outcomeCard.tsx`**: toneStyles → the scale's `icon` flavor via a TONE_MAP
+  (public OutcomeTone API unchanged; `info` → `brand` = accent/primary); icon circle
+  gains the timeline's ring-1; `bg-white` → `bg-card`.
+- **`systemHealth.tsx`**: the raw `SESSION_EXPIRED` enum leak is dead - "Signed but
+  unpaid" rows render `<PaymentChip>` (real labels, real tones: FAILED red, PROCESSING
+  blue, not blanket amber); cron ok/failed badges consume the scale.
+- **`sparkline.tsx`**: hex ramps → `var(--chart-1)`/`var(--chart-3)` at rising
+  fillOpacity (0.28/0.5/1); line default → `var(--chart-1)`. No raw chart hexes left.
+
+Verified: 306/306 vitest, clean build, Chrome pass - dashboard chips (Viewed violet,
+solid Paid), Charette audit trail (full ceremony reads: blue mechanics / violet views /
+green milestones / neutral records; Checkout-created now info not amber), settings
+System panel (ok badges on success tokens), /sign/bad-token OutcomeCard (neutral +
+ring). Not exercised live: danger/warning timeline events (no bounced/declined/expired
+rows). Also observed: the daily cron pruned 295 CronLog rows - the 30-day purge from
+the 08-08 Disk-IO fix is confirmed working in prod.
+
+Next per plan: remaining Card adoption (11× `rounded-lg border p-3` recipe,
+proposalView interiors, outcomeCard raised variant, action bar floating).
+
 ## 2026-08-09 02:06 PT - Phase 2 wave 1: dashboard migrated onto Card/CardLabel
 
 First Phase 2 wave on `ui/consistency-pass` (plan: `docs/plans/ui-consistency-pass.md`),

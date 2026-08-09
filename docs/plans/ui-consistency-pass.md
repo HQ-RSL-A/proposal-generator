@@ -1,22 +1,22 @@
 # Plan — UI consistency pass (full systematization)
 
-Status (2026-08-09): **Phases 0-1 SHIPPED** — merged to `main` + deployed through wave 2
-(bottom-sheet signature modal, pinned X, Step-N-of-3 readout), feel-tested by Rahul
-locally and on prod. **Phase 2 in progress** on branch `ui/consistency-pass`: the Card
-variant API + CardLabel are committed, and wave 1 — `dashboard/metrics.tsx` +
-`proposalsPanel.tsx` migrated onto them (self-contradicting dashboard gone: local
-CARD/CardLabel clones deleted, 3 arbitrary radii + bespoke grays + half-steps → tokens
-and scale; 306 tests + build + Chrome 1280/mobile pass) — is committed but **unmerged,
-pending Rahul's visual checkpoint** (eyeball the unexercised attention banner + warn
-OldestOpen there). **RESUME POINT — next steps in order:**
-(1) status-system unification (statusChip exports the single tone scale; fix
-`systemHealth` raw-enum leak; auditTimeline/outcomeCard consume it; sparkline → chart
-tokens); (2) remaining Card adoption in payoff order (the 11 copies of
+Status (2026-08-09): **Phases 0-1 SHIPPED**; **Phase 2 waves 1 (Card API + dashboard
+migration) MERGED + deployed** after Rahul's checkpoint. **Wave 2 (status-system
+unification) is committed on `ui/consistency-pass`, unmerged, pending his checkpoint**:
+statusChip exports THE tone scale (StatusTone × chip/icon flavors + both STATUS_META
+maps); auditTimeline/outcomeCard/systemHealth consume it (EXPIRED→warning,
+VIEWED→engaged violet, VOIDED→neutral, PROCESSING→info; SESSION_EXPIRED enum leak dead
+via PaymentChip reuse); sparkline on --chart-* tokens. Checkpoint note: danger/warning
+timeline tones weren't exercisable locally (no bounced/declined/expired rows).
+**RESUME POINT — next steps in order:**
+(1) remaining Card adoption in payoff order (the 11 copies of
 `rounded-lg border border-border p-3` → `proposalView` interior blocks (tone/selected) →
-`outcomeCard` raised + signing action bar floating); (3) primitives adoption (proposals
+`outcomeCard` raised + signing action bar floating); (2) primitives adoption (proposals
 table → ui/table, dashboard filter → ui/tabs, native selects → ui/select, tooltips on
-icon buttons, DialogFooter); (4) ConfirmDialog replacing brandConfirm + Button `loading`
-prop everywhere (per-row busy, not panel-wide); (5) type/color hygiene per Phase 2 list. Workflow rhythm: work in
+icon buttons, DialogFooter); (3) ConfirmDialog replacing brandConfirm + Button `loading`
+prop everywhere (per-row busy, not panel-wide); (4) type/color hygiene per Phase 2 list
+(headings, arbitrary px, bg-white→bg-card, transition-all→named, #00C2FF→--chart-2,
+ring recipes); (5) dashboard motion + skeletons (Phase 2 items 6-7). Workflow rhythm: work in
 waves on this branch, `npm test` (306) + `npm run build` (the type gate) per wave, visual
 checkpoint with Rahul, HE says "merge" (main auto-deploys). Signing-flow tests use the $1
 rehearsal: `e2eSeed` → re-price to 3×$1 tiers (temp script; see log 2026-08-08) →

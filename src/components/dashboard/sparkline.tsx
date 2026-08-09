@@ -4,8 +4,10 @@
 
 import { cn } from "@/lib/utils";
 
-const BLUE_RAMP = ["#BFDBFE", "#93C5FD", "#0070F3"] as const;
-const GREEN_RAMP = ["#D1FAE5", "#A7F3D0", "#059669"] as const;
+/* Chart hues come from the --chart-* tokens; the ramp is the token at rising opacity
+   so the latest month reads strongest (plan Phase 2 §2: no raw chart hexes). */
+const TONE_VAR = { blue: "var(--chart-1)", green: "var(--chart-3)" } as const;
+const RAMP_OPACITY = [0.28, 0.5, 1] as const;
 
 /** Bars grow oldest -> newest, with the ramp deepening so the latest month reads strongest. */
 export function BarSparkline({
@@ -26,7 +28,7 @@ export function BarSparkline({
   fluid?: boolean;
   className?: string;
 }) {
-  const ramp = tone === "green" ? GREEN_RAMP : BLUE_RAMP;
+  const fill = TONE_VAR[tone];
   const max = Math.max(...data, 1);
   const n = data.length;
   const barW = (width - gap * (n - 1)) / n;
@@ -43,8 +45,19 @@ export function BarSparkline({
         const h = Math.max(3, Math.round((v / max) * height));
         const x = i * (barW + gap);
         const ratio = n > 1 ? i / (n - 1) : 1;
-        const fill = ratio < 0.5 ? ramp[0] : ratio < 0.999 ? ramp[1] : ramp[2];
-        return <rect key={i} x={x} y={height - h} width={barW} height={h} rx={2.5} fill={fill} />;
+        const opacity = ratio < 0.5 ? RAMP_OPACITY[0] : ratio < 0.999 ? RAMP_OPACITY[1] : RAMP_OPACITY[2];
+        return (
+          <rect
+            key={i}
+            x={x}
+            y={height - h}
+            width={barW}
+            height={h}
+            rx={2.5}
+            fill={fill}
+            fillOpacity={opacity}
+          />
+        );
       })}
     </svg>
   );
@@ -55,7 +68,7 @@ export function LineSparkline({
   data,
   width = 100,
   height = 30,
-  color = "#0070F3",
+  color = "var(--chart-1)",
 }: {
   data: (number | null)[];
   width?: number;
