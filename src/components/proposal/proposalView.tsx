@@ -139,7 +139,7 @@ export function TierCards({
             disabled={readOnly}
             onClick={() => onSelect?.(tier.id)}
             className={cn(
-              "relative flex flex-col rounded-xl border p-4 text-left transition-[border-color,background-color,box-shadow,transform] duration-150 ease-out outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+              "relative flex flex-col rounded-xl border p-4 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out-strong outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
               highlighted ? "border-primary bg-accent shadow-sm" : "border-border bg-white",
               !readOnly && "cursor-pointer hover:border-primary/60 hover:shadow-sm active:scale-[0.99]",
               readOnly && "cursor-default"
@@ -218,7 +218,7 @@ export function AddOnPicker({
             <label
               key={addOn.id}
               className={cn(
-                "flex items-center gap-3 rounded-xl border p-3.5 transition-[border-color,background-color,box-shadow,transform] duration-150 ease-out has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
+                "flex items-center gap-3 rounded-xl border p-3.5 transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out-strong has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
                 checked ? "border-primary bg-accent shadow-sm" : "border-border bg-white",
                 readOnly ? "cursor-default" : "cursor-pointer hover:border-primary/60 active:scale-[0.99]"
               )}
@@ -389,7 +389,7 @@ function SignatureSlotBox({
             onClick={() =>
               signing?.adoptedPngDataUrl ? signing.onStamp(place) : signing?.onRequestAdopt()
             }
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary/50 bg-white px-3 py-2.5 text-sm font-medium text-primary transition-[border-color,background-color,transform] duration-150 ease-out outline-none hover:border-primary hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary/50 bg-white px-3 py-2.5 text-sm font-medium text-primary transition-[border-color,background-color,transform] duration-200 ease-out-strong outline-none hover:border-primary hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98]"
           >
             <PenLine className="h-4 w-4" />
             {signing?.adoptedPngDataUrl ? "Tap to place your signature" : "Sign here"}

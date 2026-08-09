@@ -208,6 +208,12 @@ keyboard-only walk (tabs, table, menus, dialogs).
 
 ## Phase 3 — Sweep + guardrails
 
+0. **/docs completeness audit (Rahul, 2026-08-08):** verify the in-app `/docs` page lets
+   an agent reproduce EVERY form capability in import JSON — all token fields, tiered +
+   flat pricing, add-ons, deposits, later-phase (futureItems) lines, discounts, track
+   record/case studies, manual invoice — with a copy-paste example per shape. Cross-check
+   against `src/lib/types.ts` + the `infer*FromImport` helpers; extend the compile-time
+   drift guard where a shape isn't covered.
 1. Kill remaining one-off recipes surfaced by Phases 1–2 (grep-driven: arbitrary radii,
    `ring-black/*`, stray `p-*` steps, leftover raw palette classes outside the status maps).
 2. `docs/` + landing + sign-in aligned to the same primitives (docs headings, copy chip

@@ -234,7 +234,7 @@ export function SignatureModal({
                       type="button"
                       onClick={() => setFont(option)}
                       className={cn(
-                        "flex h-20 flex-col items-start justify-center rounded-lg border px-4 transition-[border-color,background-color,transform] duration-150 ease-out outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98]",
+                        "flex h-20 flex-col items-start justify-center rounded-lg border px-4 transition-[border-color,background-color,transform] duration-200 ease-out-strong outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98]",
                         font.id === option.id
                           ? "border-primary bg-accent"
                           : "border-border hover:border-primary/50"
