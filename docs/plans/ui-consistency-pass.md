@@ -1,6 +1,21 @@
 # Plan — UI consistency pass (full systematization)
 
-Status: Phase 0 in progress on branch `ui/consistency-pass` (2026-08-08).
+Status (2026-08-09): **Phases 0-1 SHIPPED** — merged to `main` + deployed through wave 2
+(bottom-sheet signature modal, pinned X, Step-N-of-3 readout), feel-tested by Rahul
+locally and on prod. **Phase 2 in progress** on branch `ui/consistency-pass`: the Card
+variant API + CardLabel are committed (unmerged). **RESUME POINT — next steps in order:**
+(1) migrate `dashboard/metrics.tsx` + `dashboard/proposalsPanel.tsx` onto Card/CardLabel
+(kills the self-contradicting dashboard, 3 arbitrary radii, half-step spacing);
+(2) status-system unification (statusChip exports the single tone scale; fix
+`systemHealth` raw-enum leak; auditTimeline/outcomeCard consume it; sparkline → chart
+tokens); (3) primitives adoption (proposals table → ui/table, dashboard filter →
+ui/tabs, native selects → ui/select, tooltips on icon buttons, DialogFooter);
+(4) ConfirmDialog replacing brandConfirm + Button `loading` prop everywhere (per-row
+busy, not panel-wide); (5) type/color hygiene per Phase 2 list. Workflow rhythm: work in
+waves on this branch, `npm test` (306) + `npm run build` (the type gate) per wave, visual
+checkpoint with Rahul, HE says "merge" (main auto-deploys). Signing-flow tests use the $1
+rehearsal: `e2eSeed` → re-price to 3×$1 tiers (temp script; see log 2026-08-08) →
+`e2eSend`; DATABASE_URL must be the aws-1 session pooler (direct host is IPv6-only).
 Decisions locked with Rahul 2026-08-08: **client signing flow first** after foundation ·
 **full systematization** (not a surface pass) · **light-only** (dark mode code removed) ·
 **implement in phases**, each phase gated by build + tests + visual pass before merge
