@@ -2,6 +2,9 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { appScrollBehavior } from "@/lib/reducedMotion";
+import { MAX_LINE_LABEL_CHARS, MAX_PROPOSAL_TITLE_CHARS } from "@/lib/constants";
 import { brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -577,16 +580,50 @@ function inferTrackRecordFromImport(
   return { intro: (block.intro ?? "").trim(), caseStudies };
 }
 
+/** Live character (and optional word) count. `max` marks the send-blocking limits from
+ * validation - near-limit turns amber, over-limit red (imports can exceed; typing can't). */
+function FieldCounter({ value, max, words }: { value: string; max?: number; words?: boolean }) {
+  const chars = value.length;
+  const wordCount = words ? (value.trim() ? value.trim().split(/\s+/).length : 0) : null;
+  const over = max !== undefined && chars > max;
+  const near = max !== undefined && !over && chars >= max * 0.9;
+  return (
+    <span
+      className={cn(
+        "shrink-0 text-[11px] tabular-nums",
+        over
+          ? "font-medium text-destructive"
+          : near
+            ? "text-warning-subtle-foreground"
+            : "text-muted-foreground/70"
+      )}
+    >
+      {wordCount !== null ? `${wordCount} words · ` : ""}
+      {chars}
+      {max !== undefined ? ` / ${max}` : ""} chars
+    </span>
+  );
+}
+
+function LabelRow({ label, children }: { label: React.ReactNode; children?: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2">
+      <Label className="text-xs">{label}</Label>
+      {children}
+    </div>
+  );
+}
+
 /* multiline: real paragraphs (Textarea). grow: single-line semantics but sentence-length
    values — renders as a wrapping GrowingInput so nothing clips out of view. */
-const tokenFieldGroups: { heading: string; fields: { key: keyof TokensJson; label: string; multiline?: boolean; grow?: boolean }[] }[] = [
+const tokenFieldGroups: { heading: string; fields: { key: keyof TokensJson; label: string; multiline?: boolean; grow?: boolean; max?: number }[] }[] = [
   {
     heading: "Client",
     fields: [
       { key: "Client.FirstName", label: "First name" },
       { key: "Client.LastName", label: "Last name (optional)" },
       { key: "Client.Company", label: "Company" },
-      { key: "Client.ProposalTitle", label: "Proposal title", grow: true },
+      { key: "Client.ProposalTitle", label: "Proposal title", grow: true, max: MAX_PROPOSAL_TITLE_CHARS },
     ],
   },
   {
@@ -667,9 +704,12 @@ export function MoneyFields({
     <div className="space-y-2">
       <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
         <div className="col-span-2 sm:col-span-4">
-          <Label className="text-xs">Label{withDiscount ? " (name on Stripe)" : ""}</Label>
+          <LabelRow label={`Label${withDiscount ? " (name on Stripe)" : ""}`}>
+            <FieldCounter value={value.label} max={MAX_LINE_LABEL_CHARS} />
+          </LabelRow>
           <GrowingInput
             value={value.label}
+            maxLength={MAX_LINE_LABEL_CHARS}
             onChange={(e) => onChange({ ...value, label: e.target.value })}
             placeholder="Website build"
           />
@@ -856,10 +896,10 @@ export function ProposalForm({
     (state.pricingMode === "flat" && state.oneTimeEnabled) ||
     (state.pricingMode === "tiers" && state.tiers.some((t) => t.oneTimeEnabled));
 
-  function handleImport() {
+  function handleImport(overrideText?: string) {
     let raw: unknown;
     try {
-      raw = JSON.parse(importText);
+      raw = JSON.parse(overrideText ?? importText);
     } catch {
       brandToast("error", "That isn't valid JSON.");
       return;
@@ -928,6 +968,12 @@ export function ProposalForm({
         ? `Imported with ${extras.join(", ")}. Review the amounts.`
         : "Imported. Set up pricing below.") + discountNote
     );
+    // Land the admin at the start of the filled-in proposal, not the import box.
+    requestAnimationFrame(() => {
+      document
+        .querySelector("[data-import-scroll-target]")
+        ?.scrollIntoView({ behavior: appScrollBehavior(), block: "start" });
+    });
   }
 
   async function handleSave() {
@@ -987,18 +1033,39 @@ export function ProposalForm({
             <Textarea
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
-              placeholder='Paste the tokens JSON ({"Client.ProposalTitle": ...})'
+              onPaste={(e) => {
+                // Pasting a full tokens JSON fills the form immediately — no extra click.
+                // Anything that isn't valid JSON pastes normally (partial edits).
+                const text = e.clipboardData.getData("text");
+                try {
+                  JSON.parse(text);
+                } catch {
+                  return;
+                }
+                e.preventDefault();
+                setImportText(text);
+                handleImport(text);
+              }}
+              placeholder='Paste the tokens JSON ({"Client.ProposalTitle": ...}) — it fills the form on paste'
               className="min-h-24 font-mono text-xs"
             />
-            <Button variant="secondary" size="sm" onClick={handleImport} disabled={!importText.trim()}>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleImport()}
+              disabled={!importText.trim()}
+            >
               Parse &amp; fill form
             </Button>
           </CardContent>
         </Card>
       ) : null}
 
-      {tokenFieldGroups.map((group) => (
-        <Card key={group.heading}>
+      {tokenFieldGroups.map((group, groupIndex) => (
+        <Card
+          key={group.heading}
+          {...(groupIndex === 0 ? { "data-import-scroll-target": "", className: "scroll-mt-20" } : {})}
+        >
           <CardHeader>
             <CardTitle className="text-base">{group.heading}</CardTitle>
           </CardHeader>
@@ -1006,9 +1073,19 @@ export function ProposalForm({
             {group.fields.map((field) => (
               <div
                 key={field.key}
-                className={field.multiline ? "col-span-2 space-y-1.5" : "space-y-1.5"}
+                className={
+                  field.multiline || field.grow ? "col-span-2 space-y-1.5" : "space-y-1.5"
+                }
               >
-                <Label className="text-xs">{field.label}</Label>
+                <LabelRow label={field.label}>
+                  {field.multiline || field.grow ? (
+                    <FieldCounter
+                      value={state.tokens[field.key] ?? ""}
+                      max={field.max}
+                      words={field.multiline}
+                    />
+                  ) : null}
+                </LabelRow>
                 {field.multiline ? (
                   <Textarea
                     value={state.tokens[field.key] ?? ""}
@@ -1020,6 +1097,7 @@ export function ProposalForm({
                 ) : field.grow ? (
                   <GrowingInput
                     value={state.tokens[field.key] ?? ""}
+                    maxLength={field.max}
                     onChange={(e) =>
                       set("tokens", { ...state.tokens, [field.key]: e.target.value })
                     }
@@ -1183,7 +1261,9 @@ export function ProposalForm({
                 <div key={index} className="space-y-3 rounded-lg border border-border p-3">
                   <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
                     <div className="col-span-2 sm:col-span-5">
-                      <Label className="text-xs">Tier name</Label>
+                      <LabelRow label="Tier name">
+                        <FieldCounter value={tier.label} />
+                      </LabelRow>
                       <GrowingInput
                         value={tier.label}
                         onChange={(e) => {

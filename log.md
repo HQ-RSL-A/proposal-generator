@@ -43,6 +43,16 @@ client signing flow first, full systematization, light-only, phased merges he ga
 Verified: 306/306 vitest, `next build` clean, dev smoke (branded 404 renders, landing +
 sign-in 200). No PDF changes. Next: Phase 1 (client signing flow polish) after merge.
 
+**Same-session follow-up (Rahul's form feedback, 23:00 PT):** title-class fields
+(proposal/problem/solution titles, at-a-glance summaries) now span the full form width and
+auto-expand; token text fields show live counters (`FieldCounter`: chars, + words on
+paragraph fields, `N / 200` where validation enforces a cap - title + Stripe line label,
+which also get native `maxLength`; imported over-limit values flag red). Pasting a tokens
+JSON into the import box now fills the form instantly (onPaste parse; invalid JSON pastes
+normally) and auto-scrolls to the first proposal card (`data-import-scroll-target`,
+reduced-motion aware via new shared `src/lib/reducedMotion.ts`, which signingExperience
+now also uses). Merge still pending Rahul's review.
+
 Supabase warned that the shared free-tier Nano project (`bjqouysamajtmghyztoa`, also hosts
 expenseVault) is depleting its Disk IO Budget. Diagnosis (pg_stat_statements/pg_stat_io): the
 biggest app-side writer was **this app's `process-jobs` cron logging a `CronLog` row every
