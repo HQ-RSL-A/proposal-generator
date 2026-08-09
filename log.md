@@ -1,5 +1,46 @@
 # log.md - proposal-generator
 
+## 2026-08-09 15:52 PT - Phase 2 wave 4: primitives adoption (table, tabs, select, tooltip, DialogFooter)
+
+Session resumed from the 03:19 snapshot. Action-item scan on resume: BOTH [TEST] rows
+still in prod (phone walk + e2eCleanup pending), Stripe CLI still logged out (no
+config.toml at all), Vercel CLI still 54.14.0 - all six items remain open.
+
+Wave 4 built on `ui/consistency-pass`, **unmerged, pending Rahul's checkpoint** - the
+plan's Phase 2 item 3, all five zero-importer primitives now adopted:
+
+- **proposals list -> ui/table** (`proposalsPanel.tsx`): the hand-rolled desktop div
+  grid is now a real `<table>` (thead/th/tbody semantics) inside the same lg Card -
+  fr ratios became fixed-layout % widths, CardLabel headers kept, border-border-subtle
+  + hover:bg-surface + the row-overlay Link preserved (`relative` on `<tr>` verified
+  clickable in Chrome). Mobile card list untouched.
+- **dashboard filter -> ui/tabs** (Base UI): arrow-key roving focus + Enter/Space
+  activation (manual-activation ARIA tabs pattern), focus ring, aria-selected - the
+  wave-1 pill look preserved via className overrides (twMerge); counts moved onto
+  `Badge` (secondary, accent/primary when active). The primitive's `transition-all`
+  is overridden with the named property list locally; the ui/tabs file itself gets
+  cleaned in the hygiene wave.
+- **native selects -> ui/select** (both sites): Settings team Role
+  (`teamSettings.tsx`) and pricing "Every" interval (`proposalForm.tsx`, numeric
+  1|3|12 values via Base UI `items` prop so the trigger shows Month/Quarter/Year).
+  Bonus fix: the raw selects were h-9 next to h-8 Inputs - the primitive's h-8
+  default kills that misalignment.
+- **icon buttons**: send-form Remove-signer gets `aria-label` + `ui/tooltip`;
+  appShell's avatar menu trigger gets `aria-label="Account"` (no tooltip on
+  click-to-open menus). TooltipProvider now mounts in AppShell; the provider default
+  delay 0 -> 600ms (first open waits, adjacent tooltips within the timeout open
+  instantly - both verified). copyableCode already had aria-label (docs surface,
+  Phase 3). Only other icon-only controls live in signing files - out of this wave.
+- **DialogFooter**: the Void dialog's hand-rolled action row -> the banded footer
+  primitive. signatureModal is a signing file - deferred to a rehearsal-gated wave.
+
+Verified: 306/306 vitest + clean `npm run build` + Chrome walk at 1280 and 570 (the
+extension's viewport floor; 390 not reachable) - tabs click/keyboard, table row click
+-> detail, both select popups, tooltip delay/instant-subsequent/anchoring, Void dialog
+opened + cancelled (never confirmed), mobile card list intact. Housekeeping in the same
+push: `components.json` shadcn registry list committed (was sitting uncommitted from
+the /ui stack), react-bits MCP logs (`mcp-server*.log`) gitignored.
+
 ## 2026-08-09 03:19 PT - STATUS SNAPSHOT: session wrap, everything merged + deployed
 
 Rahul's instruction: merge and deploy all work to date, log status + his action items.

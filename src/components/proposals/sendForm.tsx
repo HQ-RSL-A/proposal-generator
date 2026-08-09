@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { sendProposal } from "@/actions/proposals";
 import { Plus, Trash2 } from "lucide-react";
 
@@ -108,14 +109,22 @@ export function SendForm({
             </div>
             <div className="col-span-1 pb-1">
               {parties.length > 1 ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="text-destructive"
-                  onClick={() => setParties((prev) => prev.filter((_, i) => i !== index))}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remove signer"
+                        className="text-destructive"
+                        onClick={() => setParties((prev) => prev.filter((_, i) => i !== index))}
+                      />
+                    }
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </TooltipTrigger>
+                  <TooltipContent>Remove signer</TooltipContent>
+                </Tooltip>
               ) : null}
             </div>
           </Card>

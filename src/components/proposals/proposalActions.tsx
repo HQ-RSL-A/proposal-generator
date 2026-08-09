@@ -9,6 +9,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -242,7 +243,7 @@ export function ProposalActions({
             />
             Email the signers that it&apos;s withdrawn
           </label>
-          <div className="flex justify-end gap-2">
+          <DialogFooter>
             <Button variant="ghost" onClick={() => setVoidOpen(false)}>
               Cancel
             </Button>
@@ -261,7 +262,7 @@ export function ProposalActions({
             >
               Void proposal
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

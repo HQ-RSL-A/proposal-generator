@@ -8,8 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { addUser, setUserActive, setUserRole } from "@/actions/users";
 import { UserPlus } from "lucide-react";
+
+const ROLE_ITEMS = [
+  { value: "MEMBER", label: "Member" },
+  { value: "ADMIN", label: "Admin" },
+] as const;
 
 export interface TeamUserRow {
   id: string;
@@ -156,14 +168,22 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
             </div>
             <div className="col-span-1 sm:col-span-2">
               <Label className="text-xs">Role</Label>
-              <select
-                className="border-input h-9 w-full rounded-md border bg-transparent px-2 text-sm"
+              <Select
+                items={ROLE_ITEMS}
                 value={role}
-                onChange={(e) => setRole(e.target.value as "ADMIN" | "MEMBER")}
+                onValueChange={(value) => setRole(value as "ADMIN" | "MEMBER")}
               >
-                <option value="MEMBER">Member</option>
-                <option value="ADMIN">Admin</option>
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_ITEMS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="col-span-1 sm:col-span-2">
               <Button

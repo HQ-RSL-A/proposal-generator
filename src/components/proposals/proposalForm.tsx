@@ -12,6 +12,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { GrowingInput } from "@/components/ui/growing-input";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +47,12 @@ import {
 } from "@/lib/trackRecord";
 
 type PricingMode = "flat" | "tiers" | "signOnly";
+
+const INTERVAL_ITEMS = [
+  { value: 1, label: "Month" },
+  { value: 3, label: "Quarter" },
+  { value: 12, label: "Year" },
+] as const;
 
 /**
  * A draft money line in the form. `amountCents` is always the NET (what Stripe charges).
@@ -768,17 +781,24 @@ export function MoneyFields({
         {withInterval ? (
           <div className="col-span-1 sm:col-span-2">
             <Label className="text-xs">Every</Label>
-            <select
-              className="border-input h-9 w-full rounded-md border bg-transparent px-2 text-sm"
+            <Select
+              items={INTERVAL_ITEMS}
               value={value.intervalMonths ?? 1}
-              onChange={(e) =>
-                onChange({ ...value, intervalMonths: Number(e.target.value) as 1 | 3 | 12 })
+              onValueChange={(interval) =>
+                onChange({ ...value, intervalMonths: interval as 1 | 3 | 12 })
               }
             >
-              <option value={1}>Month</option>
-              <option value={3}>Quarter</option>
-              <option value={12}>Year</option>
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {INTERVAL_ITEMS.map((item) => (
+                  <SelectItem key={item.value} value={item.value}>
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         ) : null}
       </div>

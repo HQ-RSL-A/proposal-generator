@@ -1,28 +1,27 @@
 # Plan — UI consistency pass (full systematization)
 
-Status (2026-08-09): **Phases 0-1 SHIPPED**; **Phase 2 waves 1 (Card API + dashboard
-migration) MERGED + deployed** after Rahul's checkpoint. **Wave 2 (status-system
-unification) is committed on `ui/consistency-pass`, unmerged, pending his checkpoint**:
-statusChip exports THE tone scale (StatusTone × chip/icon flavors + both STATUS_META
-maps); auditTimeline/outcomeCard/systemHealth consume it (EXPIRED→warning,
-VIEWED→engaged violet, VOIDED→neutral, PROCESSING→info; SESSION_EXPIRED enum leak dead
-via PaymentChip reuse); sparkline on --chart-* tokens. Checkpoint note: danger/warning
-timeline tones weren't exercisable locally (no bounced/declined/expired rows).
-Wave 3 (all 12 hand-rolled `rounded-lg border p-3` recipes → Card outlined/sm incl. the
-dashed future-items box; outcomeCard shell → raised) is committed, unmerged, pending
-checkpoint. The signing-surface wave (proposalView interiors + eyebrows → Card/CardLabel, action
-bar → floating; e2e rehearsal PASSED - see log 03:13, incl. Stripe test pay + executed
-PDF with matching content hash) **MERGED + deployed 03:19 on Rahul's blanket go** -
-with that, the entire Card adoption chain is shipped. His pending action items + the
-full status snapshot: log 2026-08-09 03:19. Two [TEST] rows sit in prod; e2eCleanup
-only after Rahul's phone walk.
+Status (2026-08-09): **Phases 0-1 SHIPPED**. **Phase 2 waves 1-3 + the signing-surface
+wave ALL MERGED + deployed** (waves 2-3 + signing surface went out 03:19 on Rahul's
+blanket go — the entire Card adoption chain + THE status tone scale are live; e2e
+rehearsal PASSED, see log 03:13, incl. Stripe test pay + executed PDF with matching
+content hash). Checkpoint note that survives the merge: danger/warning timeline tones
+weren't exercisable locally (no bounced/declined/expired rows). Rahul's pending action
+items + the full status snapshot: log 2026-08-09 03:19. Two [TEST] rows sit in prod;
+e2eCleanup only after his phone walk.
+**Wave 4 (primitives adoption — Phase 2 item 3) is committed on `ui/consistency-pass`,
+unmerged, PENDING HIS CHECKPOINT** (log 15:52): proposals list → real ui/table
+(semantics; row-overlay link verified clickable), dashboard filter → ui/tabs
+(arrow-key + Enter activation, Badge counts, wave-1 pill look kept), both native
+selects → ui/select (numeric interval via Base UI `items`; also fixes their h-9-beside-
+h-8-Input drift), Remove-signer + avatar-menu aria-labels with TooltipProvider mounted
+in AppShell (delay 0→600ms, instant-subsequent verified), Void dialog → DialogFooter.
+signatureModal's footer is a signing file — deferred to a rehearsal-gated wave.
 **RESUME POINT — next steps in order:**
-(1) primitives adoption (proposals
-table → ui/table, dashboard filter → ui/tabs, native selects → ui/select, tooltips on
-icon buttons, DialogFooter); (2) ConfirmDialog replacing brandConfirm + Button `loading`
-prop everywhere (per-row busy, not panel-wide); (3) type/color hygiene per Phase 2 list
-(headings, arbitrary px, bg-white→bg-card, transition-all→named, #00C2FF→--chart-2,
-ring recipes); (4) dashboard motion + skeletons (Phase 2 items 6-7).
+(1) ConfirmDialog replacing brandConfirm + Button `loading`
+prop everywhere (per-row busy, not panel-wide); (2) type/color hygiene per Phase 2 list
+(headings, arbitrary px, bg-white→bg-card, transition-all→named incl. the ui/tabs
+trigger, #00C2FF→--chart-2, ring recipes); (3) dashboard motion + skeletons (Phase 2
+items 6-7).
 **Added 2026-08-09 by Rahul — BOTH DONE 2026-08-09** (log 02:50): PDF reviewed (cert
 font-name leak fixed; page numbers / Notes-page flow / footnote anchors / footer naming
 are open decisions for Rahul), copy pass done (3 email tightenings + em dash fix;

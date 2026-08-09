@@ -3,8 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardLabel } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaymentChip, StatusChip } from "@/components/dashboard/statusChip";
 import {
   filterCounts,
@@ -32,8 +41,6 @@ const TABS: { key: ProposalFilter; label: string }[] = [
   { key: "signed", label: "Signed" },
   { key: "attention", label: "Needs attention" },
 ];
-
-const COLS = "grid-cols-[2.4fr_2fr_1.5fr_1.6fr_0.9fr]";
 
 export function ProposalsPanel({
   rows,
@@ -73,34 +80,25 @@ export function ProposalsPanel({
       ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-1 rounded-xl bg-border-subtle p-1">
-          {TABS.map((t) => {
-            const active = t.key === filter;
-            return (
-              <button
+        <Tabs value={filter} onValueChange={(value) => setFilter(value as ProposalFilter)}>
+          <TabsList className="gap-1 rounded-xl bg-border-subtle p-1 group-data-horizontal/tabs:h-auto">
+            {TABS.map((t) => (
+              <TabsTrigger
                 key={t.key}
-                type="button"
-                onClick={() => setFilter(t.key)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-sm transition-[color,background-color,box-shadow] duration-150 ease-out-strong",
-                  active
-                    ? "bg-card font-semibold text-foreground shadow-sm"
-                    : "font-medium text-muted-foreground hover:text-foreground"
-                )}
+                value={t.key}
+                className="group/trigger h-auto flex-none rounded-lg px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-[color,background-color,box-shadow] duration-150 ease-out-strong hover:text-foreground data-active:bg-card data-active:font-semibold data-active:text-foreground data-active:shadow-sm"
               >
                 {t.label}
-                <span
-                  className={cn(
-                    "text-xs font-semibold tabular-nums",
-                    active ? "text-primary" : "text-muted-foreground/70"
-                  )}
+                <Badge
+                  variant="secondary"
+                  className="h-4.5 min-w-4.5 border-0 bg-foreground/5 px-1 text-xs tabular-nums text-muted-foreground group-data-active/trigger:bg-accent group-data-active/trigger:text-primary"
                 >
                   {counts[t.key]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                </Badge>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <p className="text-xs text-muted-foreground">
           {visible.length} proposal{visible.length === 1 ? "" : "s"}
         </p>
@@ -114,48 +112,62 @@ export function ProposalsPanel({
         <>
           {/* Desktop: full table */}
           <Card size="lg" className="hidden py-0 md:block">
-            <div
-              className={cn(
-                "grid gap-3 border-b border-border-subtle bg-surface-raised px-(--card-spacing) py-3",
-                COLS
-              )}
-            >
-              {["Proposal", "Client", "Deal", "Status"].map((h) => (
-                <CardLabel key={h}>{h}</CardLabel>
-              ))}
-              <CardLabel className="text-right">Valid until</CardLabel>
-            </div>
-
-            {visible.map((row) => (
-              <div
-                key={row.id}
-                className={cn(
-                  "group relative grid cursor-pointer items-center gap-3 border-b border-border-subtle px-(--card-spacing) py-3.5 transition-colors last:border-0 hover:bg-surface",
-                  COLS
-                )}
-              >
-                <div className="min-w-0">
-                  <Link
-                    href={`/proposals/${row.id}`}
-                    className="font-medium after:absolute after:inset-0 after:content-[''] group-hover:text-primary"
+            <Table className="table-fixed">
+              <TableHeader>
+                <TableRow className="border-border-subtle bg-surface-raised hover:bg-surface-raised">
+                  <TableHead className="h-auto w-[28%] py-3 pr-2 pl-(--card-spacing)">
+                    <CardLabel>Proposal</CardLabel>
+                  </TableHead>
+                  <TableHead className="h-auto w-[24%] px-2 py-3">
+                    <CardLabel>Client</CardLabel>
+                  </TableHead>
+                  <TableHead className="h-auto w-[18%] px-2 py-3">
+                    <CardLabel>Deal</CardLabel>
+                  </TableHead>
+                  <TableHead className="h-auto w-[19%] px-2 py-3">
+                    <CardLabel>Status</CardLabel>
+                  </TableHead>
+                  <TableHead className="h-auto w-[11%] py-3 pr-(--card-spacing) pl-2 text-right">
+                    <CardLabel>Valid until</CardLabel>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visible.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="group relative cursor-pointer border-border-subtle hover:bg-surface"
                   >
-                    {row.title}
-                  </Link>
-                  {row.version > 1 ? (
-                    <span className="ml-2 text-xs text-muted-foreground">v{row.version}</span>
-                  ) : null}
-                </div>
-                <div className="truncate text-sm text-muted-foreground">{row.clientLine}</div>
-                <div className="text-sm tabular-nums text-foreground/80">{row.deal}</div>
-                <div className="flex flex-wrap gap-1">
-                  <StatusChip status={row.status} />
-                  <PaymentChip paymentStatus={row.paymentStatus} status={row.status} />
-                </div>
-                <div className="text-right text-sm text-muted-foreground">
-                  {row.validUntil ?? "-"}
-                </div>
-              </div>
-            ))}
+                    <TableCell className="py-3.5 pr-2 pl-(--card-spacing) whitespace-normal">
+                      <Link
+                        href={`/proposals/${row.id}`}
+                        className="font-medium after:absolute after:inset-0 after:content-[''] group-hover:text-primary"
+                      >
+                        {row.title}
+                      </Link>
+                      {row.version > 1 ? (
+                        <span className="ml-2 text-xs text-muted-foreground">v{row.version}</span>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="truncate px-2 py-3.5 text-muted-foreground">
+                      {row.clientLine}
+                    </TableCell>
+                    <TableCell className="px-2 py-3.5 tabular-nums text-foreground/80">
+                      {row.deal}
+                    </TableCell>
+                    <TableCell className="px-2 py-3.5 whitespace-normal">
+                      <div className="flex flex-wrap gap-1">
+                        <StatusChip status={row.status} />
+                        <PaymentChip paymentStatus={row.paymentStatus} status={row.status} />
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3.5 pr-(--card-spacing) pl-2 text-right text-muted-foreground">
+                      {row.validUntil ?? "-"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </Card>
 
           {/* Mobile: tappable cards */}

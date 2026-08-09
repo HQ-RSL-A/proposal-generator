@@ -4,8 +4,10 @@ import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
 
 import { cn } from "@/lib/utils"
 
+/* First open waits (no flicker on cursor pass-through); adjacent tooltips within the
+   provider's timeout window open instantly. */
 function TooltipProvider({
-  delay = 0,
+  delay = 600,
   ...props
 }: TooltipPrimitive.Provider.Props) {
   return (
