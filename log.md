@@ -1,5 +1,31 @@
 # log.md - proposal-generator
 
+## 2026-08-09 - Phase 1 feel-tested with Rahul end-to-end; tuned, merged, deployed
+
+Rahul walked the full $1 rehearsal locally (sign -> Stripe test checkout -> /paid ->
+executed PDF + receipt emails) and drove three tuning rounds on feel:
+- **Motion softened globally:** page fade 150->400ms with a 6px rise, dialog enter
+  180->240ms / exit 160ms, tier/add-on/slot/font-tile transitions 150->200ms, all on
+  `--ease-out-strong` (now a `@theme` utility).
+- **Draw<->Type finally natural:** the harshness was the modal resizing instantly between
+  different-height panels - new `AnimatedHeight` wrapper in `signatureModal.tsx`
+  (ResizeObserver + 300ms height glide) under the existing fade/slide.
+- **No-tier attention, three iterations:** pulsing ring on the grid (too transient) ->
+  persistent group frame (collided with card edges + Recommended badge, read as layered
+  behind) -> **final: the tier cards themselves light amber** (`[data-attention] > button`
+  border + soft glow, animated by the cards' own transitions), staying lit until
+  `handleTierSelect` clears it. Toast (amber warning) + scroll + lit cards = one moment.
+- Rehearsal tooling: `e2eSeed` draft re-priced to 3 x $1.00 one-time tiers via a temp
+  script (deleted after use); `stripe listen` verified against the env webhook secret.
+- Note: `AGENTS.md` mirror appeared this session (correct CLAUDE.md copy, H1 only diff) -
+  kept, per workspace convention.
+
+**Merged to `main` and auto-deployed** after Rahul's full-flow sign-off (this entry ships
+in that merge). Wave 2 next: mobile bottom-sheet signature modal, action-bar label
+transitions, mobile progress line, font-picker dedupe. A fresh $1 rehearsal gets re-sent
+against prod for Rahul's real-phone walk (prod = LIVE Stripe - a completed pay is a real
+$1 charge). Prior local [TEST] row purged via `e2eCleanup`.
+
 ## 2026-08-08 23:15 PT - Phase 0 merged + deployed; Phase 1 wave 1 (signing-flow polish) built
 
 Phase 0 + the form follow-up ff-merged to `main` (`f4d2df1`) and auto-deployed; prod smoke
