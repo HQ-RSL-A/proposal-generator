@@ -27,6 +27,8 @@ next-env.d.ts
 .DS_Store
 *.pem
 npm-debug.log*
+# react-bits MCP server writes these into the CWD on every session
+mcp-server*.log
 
 # local scratch (auth browser profile, screenshots in flight)
 .tmp/
