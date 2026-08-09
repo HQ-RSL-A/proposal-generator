@@ -140,6 +140,23 @@ main {
   }
 }
 
+/* Attention pulse: draws the eye to a required choice (e.g. the tier grid when the
+   client hits "Ready to sign" without picking a plan). Two soft amber pulses. */
+@keyframes attention-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+  18%, 58% { box-shadow: 0 0 0 5px rgba(245, 158, 11, 0.4); }
+  38%, 78% { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15); }
+}
+[data-attention] {
+  border-radius: 1rem;
+  animation: attention-pulse 1.6s var(--ease-out-strong) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-attention] {
+    animation: none;
+  }
+}
+
 /* Card hover effect */
 .card-hover {
   transition:

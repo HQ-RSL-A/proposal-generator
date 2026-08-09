@@ -134,9 +134,13 @@ export function SigningExperience({
       brandToast("warning", "Select a plan before signing", "It's part of what you're agreeing to.", {
         duration: 6000,
       });
-      document
-        .querySelector("[data-tier-anchor]")
-        ?.scrollIntoView({ behavior: appScrollBehavior(), block: "center" });
+      const anchor = document.querySelector("[data-tier-anchor]");
+      anchor?.scrollIntoView({ behavior: appScrollBehavior(), block: "center" });
+      // Pulse the tier grid so the guidance lands at the point of decision, not just
+      // in a toast. Remove + re-add restarts the animation on repeat taps.
+      anchor?.removeAttribute("data-attention");
+      requestAnimationFrame(() => anchor?.setAttribute("data-attention", ""));
+      window.setTimeout(() => anchor?.removeAttribute("data-attention"), 1700);
       return;
     }
     setModalOpen(true);

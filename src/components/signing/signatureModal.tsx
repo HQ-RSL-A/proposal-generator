@@ -15,6 +15,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
+
+/**
+ * Animates its height to match the active child, so swapping Draw <-> Type glides the
+ * modal to its new size instead of snapping (the panels are different heights - the
+ * resize, not the fade, is what read as sudden).
+ */
+function AnimatedHeight({ children }: { children: React.ReactNode }) {
+  const innerRef = React.useRef<HTMLDivElement>(null);
+  const [height, setHeight] = React.useState<number | null>(null);
+  React.useEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div
+      className="overflow-hidden transition-[height] duration-300 ease-out-strong motion-reduce:transition-none"
+      style={{ height: height === null ? "auto" : `${height}px` }}
+    >
+      <div ref={innerRef}>{children}</div>
+    </div>
+  );
+}
 import {
   SIGNATURE_FONTS,
   typedNameToPng,
@@ -217,6 +242,7 @@ export function SignatureModal({
                   Type
                 </TabsTrigger>
               </TabsList>
+              <AnimatedHeight>
               <TabsContent value="draw" className="pt-3">
                 <SignaturePadCanvas
                   ref={padRef}
@@ -255,6 +281,7 @@ export function SignatureModal({
                   ))}
                 </div>
               </TabsContent>
+              </AnimatedHeight>
             </Tabs>
             {errors.signature ? (
               <p className="mt-2 text-xs text-destructive">{errors.signature}</p>
