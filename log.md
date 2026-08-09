@@ -1,5 +1,55 @@
 # log.md - proposal-generator
 
+## 2026-08-09 03:19 PT - STATUS SNAPSHOT: session wrap, everything merged + deployed
+
+Rahul's instruction: merge and deploy all work to date, log status + his action items.
+The signing-surface wave (below, rehearsal PASSED) merges to `main` with this entry.
+
+**Shipped to prod this session (2026-08-09, overnight):**
+1. Phase 2 wave 1 - dashboard onto Card/CardLabel (metrics + proposalsPanel).
+2. Phase 2 wave 2 - THE status tone scale (statusChip exports; timeline/outcome/
+   systemHealth consume; sparklines on chart tokens; EXPIRED/VIEWED/VOIDED/PROCESSING
+   contradictions resolved; SESSION_EXPIRED enum leak dead).
+3. Phase 2 wave 3 - all 12 hand-rolled `rounded-lg border p-3` recipes onto Card;
+   outcomeCard shell raised.
+4. Executed-PDF review (fix shipped: certificate no longer prints the signature font
+   name) + client-facing copy pass on voice DNA (3 email tightenings, em dash fix;
+   ESIGN consent untouched).
+5. Signing-surface wave - proposalView interiors + eyebrows onto Card/CardLabel, action
+   bar floating; e2e rehearsal passed end to end (sign -> Stripe test pay -> executed
+   PDF with matching content hash).
+
+**RAHUL'S ACTION ITEMS (manual, in rough priority order):**
+1. **Real-phone walk of your pending [TEST] rehearsal row** (the VIEWED one, valid
+   Sep 8, 3 x $1 tiers). Reminder: prod checkout = LIVE Stripe = a real $1 charge.
+2. **After that walk: `npx tsx scripts/e2eCleanup.ts`** - deletes BOTH [TEST] rows
+   (yours + tonight's SIGNED/AWAITING rehearsal row) plus their blobs. Until then,
+   tonight's row will sit in Settings -> System "Signed but unpaid" - known, ignore.
+3. **`stripe login`** (interactive browser auth) - the CLI's device auth expired
+   tonight; needed for any future local webhook rehearsal. ~1 minute.
+4. **Four PDF decisions** (from the 02:50 review): (a) add "Page N of M" page numbers?
+   (needs an investigation first - the standard react-pdf technique is the exact
+   render-callback-in-fixed pattern that corrupted long documents before); (b) let the
+   Notes flow after Acceptance instead of a near-empty page; (c) move footnote anchors
+   off section headings; (d) footer says "Proposal & Service Agreement" while the MSA
+   titles itself "Master Services Agreement". Say yes/no per item whenever.
+5. **Visual checkpoint at your leisure** (everything is live): dashboard, proposal
+   form boxes, Settings -> System, a signing link, an outcome page. States not yet seen
+   with real data: the amber attention banner, warn Oldest-open tile, danger/warning
+   timeline tones (bounced/declined/expired events).
+6. Optional: `npm i -g vercel@latest` (CLI 54.14.0 -> 58.x, nagged by tooling).
+
+**REMAINING WORK (in planned order - docs/plans/ui-consistency-pass.md):**
+- Phase 2 rest: (1) primitives adoption (proposals table -> ui/table, dashboard filter
+  -> ui/tabs, native selects -> ui/select, tooltips on icon buttons, DialogFooter);
+  (2) ConfirmDialog replacing brandConfirm + Button `loading` everywhere;
+  (3) type/color hygiene (headings, arbitrary px, transition-all, #00C2FF, rings);
+  (4) dashboard motion + skeletons.
+- Phase 3: /docs completeness audit (Rahul's 08-08 item), one-off sweep, guardrails
+  (conventions table + CLAUDE.md UI section), full visual regression + reduced-motion +
+  a11y pass.
+- PDF page numbers etc. per Rahul's decisions above.
+
 ## 2026-08-09 03:13 PT - Signing-surface Card wave + full e2e rehearsal (sign -> pay)
 
 Waves 3 + PDF/copy merged and deployed on Rahul's go. This wave (committed on

@@ -12,8 +12,10 @@ Wave 3 (all 12 hand-rolled `rounded-lg border p-3` recipes → Card outlined/sm 
 dashed future-items box; outcomeCard shell → raised) is committed, unmerged, pending
 checkpoint. The signing-surface wave (proposalView interiors + eyebrows → Card/CardLabel, action
 bar → floating; e2e rehearsal PASSED - see log 03:13, incl. Stripe test pay + executed
-PDF with matching content hash) is committed, unmerged, pending checkpoint. Two [TEST]
-rows sit in prod; e2eCleanup only after Rahul's phone walk.
+PDF with matching content hash) **MERGED + deployed 03:19 on Rahul's blanket go** -
+with that, the entire Card adoption chain is shipped. His pending action items + the
+full status snapshot: log 2026-08-09 03:19. Two [TEST] rows sit in prod; e2eCleanup
+only after Rahul's phone walk.
 **RESUME POINT — next steps in order:**
 (1) primitives adoption (proposals
 table → ui/table, dashboard filter → ui/tabs, native selects → ui/select, tooltips on
