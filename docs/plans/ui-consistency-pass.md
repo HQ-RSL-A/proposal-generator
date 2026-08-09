@@ -19,10 +19,10 @@ icon buttons, DialogFooter); (3) ConfirmDialog replacing brandConfirm + Button `
 prop everywhere (per-row busy, not panel-wide); (4) type/color hygiene per Phase 2 list
 (headings, arbitrary px, bg-white→bg-card, transition-all→named, #00C2FF→--chart-2,
 ring recipes); (5) dashboard motion + skeletons (Phase 2 items 6-7).
-**Added 2026-08-09 by Rahul (tracked in ROADMAP, order picked at a checkpoint):**
-(a) executed-PDF visual review (generated + downloadable output); (b) client-facing
-copy pass — the 14 emails, signing toasts/guidance, outcome/error pages (voice DNA
-applies; pdfSmoke + emailPreview are the harnesses). Workflow rhythm: work in
+**Added 2026-08-09 by Rahul — BOTH DONE 2026-08-09** (log 02:50): PDF reviewed (cert
+font-name leak fixed; page numbers / Notes-page flow / footnote anchors / footer naming
+are open decisions for Rahul), copy pass done (3 email tightenings + em dash fix;
+everything else verified on voice; ESIGN consent untouched). Workflow rhythm: work in
 waves on this branch, `npm test` (306) + `npm run build` (the type gate) per wave, visual
 checkpoint with Rahul, HE says "merge" (main auto-deploys). Signing-flow tests use the $1
 rehearsal: `e2eSeed` → re-price to 3×$1 tiers (temp script; see log 2026-08-08) →

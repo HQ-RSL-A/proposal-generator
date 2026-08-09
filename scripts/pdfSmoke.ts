@@ -83,7 +83,7 @@ const pdfProps = {
       name: "Dominique Norris",
       email: "dominique@brightline.example",
       role: "CLIENT_SIGNER",
-      method: "Typed electronic signature (Caveat)",
+      method: "Typed electronic signature",
       adoptedName: "Dominique Norris",
       signerTitle: "Owner",
       signerCompany: "Brightline Test Co",

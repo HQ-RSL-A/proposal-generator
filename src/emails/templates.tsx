@@ -63,7 +63,7 @@ export function SigningReminderEmail({
       </Heading>
       <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
       <Paragraph>
-        A gentle nudge from our side. <strong>{data.proposalTitle}</strong> is still waiting for
+        A gentle nudge. <strong>{data.proposalTitle}</strong> is still waiting for
         your signature, and the window closes on <strong>{data.validUntil}</strong>. Here is a
         fresh link that takes you right back to where you left off.
       </Paragraph>
@@ -128,10 +128,10 @@ export function FullySignedClientEmail({
         </>
       ) : paymentPending ? (
         <Paragraph>
-          If you just completed checkout, you are all set and a payment confirmation follows in a
-          separate email. If you stepped away before paying, no stress: finishing the checkout you
-          were taken to after signing is all that is left, and a fresh payment link arrives
-          automatically if that session closes.
+          Just completed checkout? Then you are all set, and a payment confirmation follows in a
+          separate email. If you stepped away before paying, no stress. The only step left is the
+          checkout you were taken to after signing, and a fresh link arrives automatically if that
+          session closes.
         </Paragraph>
       ) : null}
       <Divider />
@@ -215,8 +215,8 @@ export function PaymentReceivedEmail({
           <Paragraph>Hi {data.recipientName.split(" ")[0]},</Paragraph>
           <Paragraph>
             Your payment of <strong>{amountLine}</strong> for{" "}
-            <strong>{data.proposalTitle}</strong> just came through. A kickoff email with next
-            steps and scheduling is on its way to you, and work begins right away.
+            <strong>{data.proposalTitle}</strong> just came through. Work begins right away, and a
+            kickoff email with next steps and scheduling is on its way to you.
           </Paragraph>
           {depositNote ? <Paragraph>{depositNote}</Paragraph> : null}
           <FinePrint>

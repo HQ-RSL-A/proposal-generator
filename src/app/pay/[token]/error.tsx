@@ -20,7 +20,7 @@ export default function PayError({
     <OutcomeCard icon={TriangleAlert} tone="error" title="Checkout didn't open">
       <p>
         Something went wrong before checkout could open. If you already completed a
-        payment, you'll receive a receipt by email — nothing is charged twice.
+        payment, you'll receive a receipt by email. Nothing is charged twice.
       </p>
       <div className="pt-3">
         <Button onClick={reset}>Try again</Button>

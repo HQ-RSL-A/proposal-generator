@@ -185,17 +185,18 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       form fields) built 2026-08-08 on `ui/consistency-pass`** — pending visual review +
       merge. Phases 1 (client signing), 2 (admin), 3 (sweep + guardrails) follow.
 
-- [ ] **Executed-PDF review (added 2026-08-09, Rahul).** Full visual review of the
-      generated/downloadable PDF (proposal + MSA + signature certificate): layout,
-      typography, spacing, and whether it still mirrors the refreshed UI tokens after
-      the consistency pass. Any change runs `npx tsx scripts/pdfSmoke.ts` + a visual
-      Read of the output per CLAUDE.md.
+- [x] **Executed-PDF review (added 2026-08-09, Rahul).** DONE 2026-08-09 - all 20 pages
+      read visually; web parity healthy. Fixed: certificate leaked the signature font
+      name ("Typed electronic signature (Caveat)") - now "Typed electronic signature"
+      (`generatePdf.ts` + pdfSmoke fixture; smoke + visual read green). **Open
+      decisions for Rahul** (see log 2026-08-09 02:50): page numbers ("Page N of M" vs
+      the render-callback-in-fixed corruption rule), near-empty Notes page, footnote
+      anchors on headings, footer "Proposal & Service Agreement" vs MSA title.
 
-- [ ] **Client-facing copy pass (added 2026-08-09, Rahul).** Rework the copy of every
-      client-facing message: the 14 transactional emails (subjects + bodies via
-      `scripts/emailPreview.tsx`), signing-flow toasts/guidance text, outcome pages,
-      and error states. Voice DNA applies (external content); no emojis; SUPPORT_EMAIL
-      only on public surfaces.
+- [x] **Client-facing copy pass (added 2026-08-09, Rahul).** DONE 2026-08-09 - voice
+      DNA loaded; three email tightenings + the one em dash in client copy fixed.
+      Everything else verified already on voice (subjects conform, toasts/outcome
+      pages/404s unchanged); ESIGN consent untouched. See log 2026-08-09 02:50.
 
 ## Eventual / backlog
 

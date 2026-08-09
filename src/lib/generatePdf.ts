@@ -65,7 +65,7 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
           : signature?.type === "DRAWN"
             ? "Hand-drawn electronic signature"
             : signature?.type === "TYPED"
-              ? `Typed electronic signature (${signature.fontFamily ?? "handwriting font"})`
+              ? "Typed electronic signature"
               : "Not signed",
       adoptedName: signature?.adoptedName ?? party.name,
       signerTitle:

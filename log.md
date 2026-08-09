@@ -1,5 +1,42 @@
 # log.md - proposal-generator
 
+## 2026-08-09 02:50 PT - Executed-PDF review + client-facing copy pass (Rahul's 2 items)
+
+Order picked per Rahul's "your call": these two before the signing-surface Card wave, so
+copy + Card changes to the signing screens share one e2e rehearsal later.
+
+**PDF review (all 20 pages of `pdfSmoke.pdf` read visually).** Verdict: healthy - the
+proposal pages have full web parity (tier cards, Recommended badge, strikethrough promos,
+payment schedule callout), the MSA sets cleanly, and the certificate carries the SHA-256
+fingerprint + ESIGN/ESRA/UETA line. One real bug FIXED: the certificate's typed-signature
+method line leaked the signature FONT name into the legal artifact ("Typed electronic
+signature (Caveat)" - a client reads "caveat" as a warning). `generatePdf.ts` now emits
+"Typed electronic signature"; the pdfSmoke fixture carried the same hardcoded string and
+was aligned (that's why the first re-render still showed it). pdfSmoke re-run + visual
+Read of p20 green. **Open PDF decisions for Rahul (not done, his call):**
+(1) no page numbers anywhere - "Page N of M" is standard for a 20-page executed
+agreement, but react-pdf's page-number technique is exactly the render-callback-in-fixed
+pattern CLAUDE.md bans (it corrupted long documents before), so it needs its own careful
+investigation; (2) the Notes page sits ~85% empty on its own page - could flow after
+Acceptance instead; (3) footnote superscripts attach to section headings ("Our Track
+Record¹"); (4) footer reads "Proposal & Service Agreement" while the document titles
+itself "Master Services Agreement" - naming nit, legal-adjacent so untouched.
+
+**Copy pass (voice DNA loaded via /brand).** Honest verdict: the client-facing surfaces
+were already written in the target register (Phase 0/1 work) - short sentences, no
+corporate speak, human framing ("No hard feelings", "nothing you did was lost", "which
+was the hard part"). What changed: three email tightenings (reminder drops "from our
+side"; the fully-signed no-link payment paragraph un-hedged into short sentences; payment
+receipt leads with "Work begins right away"); the one em dash in client copy
+(`pay/[token]/error.tsx`) split into two sentences per the no-dash rule. Verified
+conforming, no changes needed: all 15 subjects follow the locked `[Status] ...`
+convention, signing toasts/ceremony labels (feel-tested with Rahul in Phase 1), outcome
+pages incl. the shared `outcomeCopy.ts`, root 404/error, email footer. ESIGN consent
+language deliberately untouched (legally load-bearing). Previews re-rendered (14).
+
+Verified: 306/306 vitest, clean build, pdfSmoke + certificate page visual read.
+Committed on `ui/consistency-pass` (waves 3 + this one pending a combined checkpoint).
+
 ## 2026-08-09 02:36 PT - Phase 2 wave 3: the 12 hand-rolled card recipes onto Card
 
 Wave 2 merged + deployed on Rahul's go (READY in 44s). Two new work items from him
