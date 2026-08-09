@@ -1,5 +1,19 @@
 # log.md - proposal-generator
 
+## 2026-08-09 - Wave 2 (mobile sheet + action-bar) feel-tested, merged, deployed
+
+Phase 1 wave 2, iterated live with Rahul on localhost (fresh $1 rehearsal, mobile
+emulation): the signature modal is a **bottom sheet below `sm`** via an opt-in
+`presentation="sheet"` mode on `DialogContent` (slide-up 320ms/200ms, grabber bar,
+safe-area padding, 85dvh cap; centered dialog unchanged from `sm` up and for all other
+dialogs). Two fixes from his walk: (1) the sheet itself no longer scrolls - content
+scrolls in an inner wrapper so the close X + grabber stay pinned; (2) the mobile bar line
+is an explicit `Step N of 3` readout (`mobileStatus`) - the desktop statusLine's "Valid
+until ..." opener truncated into a date note at phone widths and read as nothing. Also:
+the three action-bar CTA states fade in on swap. Rahul approved both on retest; merged to
+`main` on his go (this entry ships in that merge). Phase 2 (admin systematization) is next
+per `docs/plans/ui-consistency-pass.md`.
+
 ## 2026-08-09 - Phase 1 feel-tested with Rahul end-to-end; tuned, merged, deployed
 
 Rahul walked the full $1 rehearsal locally (sign -> Stripe test checkout -> /paid ->
