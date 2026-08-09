@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { Card, CardLabel } from "@/components/ui/card";
 import { discountDisplay, formatCents, formatPricedLine, hasDiscount } from "@/lib/currency";
 import type { DepositScheduleInfo, ProposalSections } from "@/lib/proposalContent";
 import type { AddOn, FutureItem, OneTimeItem, RecurringItem, TierConfig } from "@/lib/types";
@@ -85,14 +86,13 @@ export function FlatPricing({
   if (!lines.some((l) => hasDiscount(l.item))) return null;
   return (
     <div className="mt-6">
-      <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        Pricing
-      </p>
+      <CardLabel>Pricing</CardLabel>
       <div className="mt-3 space-y-2">
         {lines.map((l, i) => (
-          <div
+          <Card
             key={i}
-            className="flex items-start justify-between gap-3 rounded-xl border border-border bg-white p-3.5"
+            variant="outlined"
+            className="flex-row items-start justify-between gap-3 px-(--card-spacing)"
           >
             <span className="text-sm font-medium">{l.item.label}</span>
             <span className="whitespace-nowrap text-right">
@@ -101,7 +101,7 @@ export function FlatPricing({
               </span>
               <DiscountNote item={l.item} intervalMonths={l.intervalMonths} align="right" />
             </span>
-          </div>
+          </Card>
         ))}
       </div>
     </div>
@@ -208,9 +208,7 @@ export function AddOnPicker({
   if (addOns.length === 0) return null;
   return (
     <div className="mt-6">
-      <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        Optional add-ons
-      </p>
+      <CardLabel>Optional add-ons</CardLabel>
       <div className="mt-3 space-y-2">
         {addOns.map((addOn) => {
           const checked = selectedIds.includes(addOn.id);
@@ -258,17 +256,17 @@ export function FutureItems({ items }: { items: FutureItem[] }) {
   if (items.length === 0) return null;
   return (
     <div className="mt-6">
-      <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-        Later phases
-      </p>
+      <CardLabel>Later phases</CardLabel>
       <p className="mt-1 text-xs text-muted-foreground">
         Shown for planning. Billed separately when each begins, not collected today.
       </p>
       <div className="mt-3 space-y-2">
         {items.map((item) => (
-          <div
+          <Card
             key={item.id}
-            className="flex items-start justify-between gap-3 rounded-xl border border-dashed border-border bg-surface/60 p-3.5"
+            variant="outlined"
+            dashed
+            className="flex-row items-start justify-between gap-3 bg-surface/60 px-(--card-spacing)"
           >
             <span className="min-w-0">
               <span className="block text-sm font-medium">{item.label}</span>
@@ -282,7 +280,7 @@ export function FutureItems({ items }: { items: FutureItem[] }) {
               </span>
               <DiscountNote item={item} intervalMonths={item.intervalMonths} align="right" />
             </span>
-          </div>
+          </Card>
         ))}
       </div>
     </div>
@@ -310,16 +308,14 @@ export function DepositScheduleBanner({ schedule }: { schedule: DepositScheduleI
     );
   }
   return (
-    <div className="mt-6 rounded-xl border border-primary/30 bg-accent/50 p-4">
-      <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-primary">
-        Payment schedule
-      </p>
+    <Card variant="outlined" tone="accent" className="mt-6 gap-0 px-(--card-spacing)">
+      <CardLabel tone="primary">Payment schedule</CardLabel>
       <div className="mt-2 space-y-1 text-sm leading-relaxed">
         {lines.map((line, i) => (
           <p key={i}>{line}</p>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -358,11 +354,12 @@ function SignatureSlotBox({
   const isActive = interactive && !stampedHere && signing?.activePlace === place;
 
   return (
-    <div
+    <Card
+      variant="outlined"
       data-signature-slot={interactive ? place : undefined}
       className={cn(
-        "rounded-xl border p-4 transition-[border-color,background-color,box-shadow] duration-200",
-        interactive && !stampedHere ? "border-primary/60 bg-accent/40" : "border-border",
+        "gap-0 px-(--card-spacing) transition-[border-color,background-color,box-shadow] duration-200",
+        interactive && !stampedHere && "border-primary/60 bg-accent/40",
         isActive && "border-primary ring-2 ring-primary/70 ring-offset-2 ring-offset-surface"
       )}
     >
@@ -389,7 +386,7 @@ function SignatureSlotBox({
             onClick={() =>
               signing?.adoptedPngDataUrl ? signing.onStamp(place) : signing?.onRequestAdopt()
             }
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary/50 bg-white px-3 py-2.5 text-sm font-medium text-primary transition-[border-color,background-color,transform] duration-200 ease-out-strong outline-none hover:border-primary hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98]"
+            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-primary/50 bg-card px-3 py-2.5 text-sm font-medium text-primary transition-[border-color,background-color,transform] duration-200 ease-out-strong outline-none hover:border-primary hover:bg-accent focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:scale-[0.98]"
           >
             <PenLine className="h-4 w-4" />
             {signing?.adoptedPngDataUrl ? "Tap to place your signature" : "Sign here"}
@@ -409,7 +406,7 @@ function SignatureSlotBox({
             ? "Signed just now"
             : "Date: ____________"}
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -464,7 +461,7 @@ export function ProposalView({
       ? depositScheduleOverride
       : sections.investment.depositSchedule;
   return (
-    <article className="document-page mx-auto max-w-3xl rounded-2xl border border-border bg-white px-6 py-10 sm:px-12 sm:py-14">
+    <article className="document-page mx-auto max-w-3xl rounded-2xl border border-border bg-card px-6 py-10 sm:px-12 sm:py-14">
       {/* Cover */}
       <header className="border-b border-border pb-10">
         <Image src="/logomark.png" alt="RSL/A" width={40} height={40} className="rounded-lg" />
@@ -480,7 +477,7 @@ export function ProposalView({
         {/* At a Glance */}
         <SectionHeading>At a Glance</SectionHeading>
         <p>{sections.atGlance.intro}</p>
-        <div className="mt-4 overflow-hidden rounded-xl border border-border">
+        <Card variant="outlined" className="mt-4 gap-0 py-0">
           {sections.atGlance.rows.map((row, i) => (
             <div
               key={i}
@@ -493,7 +490,7 @@ export function ProposalView({
               <div className="px-4 py-3 text-sm">{row.value}</div>
             </div>
           ))}
-        </div>
+        </Card>
 
         {/* Problem */}
         <SectionHeading>{sections.problem.title}</SectionHeading>
@@ -635,9 +632,7 @@ export function ProposalView({
 
         {/* Notes: numbered fine print, anchored from the superscripts above */}
         <div className="mt-12 border-t border-border pt-6">
-          <p className="font-tag text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            Notes
-          </p>
+          <CardLabel>Notes</CardLabel>
           <ol className="mt-3 space-y-2">
             {sections.notes.map((note) => (
               <li

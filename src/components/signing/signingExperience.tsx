@@ -7,6 +7,7 @@ import { appScrollBehavior } from "@/lib/reducedMotion";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -323,7 +324,11 @@ export function SigningExperience({
 
       {/* Floating action bar, lifted off the document */}
       <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
-        <div className="mx-auto flex max-w-3xl flex-col gap-1.5 rounded-2xl border border-border bg-white px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(17,24,39,0.18),0_12px_34px_-6px_rgba(17,24,39,0.30)] ring-1 ring-black/5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <Card
+          variant="floating"
+          size="lg"
+          className="mx-auto max-w-3xl gap-1.5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+        >
           {/* Mobile: a one-line progress readout above the buttons (the name would crush
               the row; the chip + toasts still guide the details). */}
           <p
@@ -396,7 +401,7 @@ export function SigningExperience({
               </Button>
             )}
           </div>
-        </div>
+        </Card>
       </div>
 
       <SignatureModal

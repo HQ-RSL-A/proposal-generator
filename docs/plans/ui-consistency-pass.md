@@ -10,15 +10,17 @@ via PaymentChip reuse); sparkline on --chart-* tokens. Checkpoint note: danger/w
 timeline tones weren't exercisable locally (no bounced/declined/expired rows).
 Wave 3 (all 12 hand-rolled `rounded-lg border p-3` recipes → Card outlined/sm incl. the
 dashed future-items box; outcomeCard shell → raised) is committed, unmerged, pending
-checkpoint. **RESUME POINT — next steps in order:**
-(1) signing-surface Card adoption (`proposalView`
-interior blocks (tone/selected) + action bar floating) — **signing files, so the e2e
-rehearsal runs before that wave merges**; (2) primitives adoption (proposals
+checkpoint. The signing-surface wave (proposalView interiors + eyebrows → Card/CardLabel, action
+bar → floating; e2e rehearsal PASSED - see log 03:13, incl. Stripe test pay + executed
+PDF with matching content hash) is committed, unmerged, pending checkpoint. Two [TEST]
+rows sit in prod; e2eCleanup only after Rahul's phone walk.
+**RESUME POINT — next steps in order:**
+(1) primitives adoption (proposals
 table → ui/table, dashboard filter → ui/tabs, native selects → ui/select, tooltips on
-icon buttons, DialogFooter); (3) ConfirmDialog replacing brandConfirm + Button `loading`
-prop everywhere (per-row busy, not panel-wide); (4) type/color hygiene per Phase 2 list
+icon buttons, DialogFooter); (2) ConfirmDialog replacing brandConfirm + Button `loading`
+prop everywhere (per-row busy, not panel-wide); (3) type/color hygiene per Phase 2 list
 (headings, arbitrary px, bg-white→bg-card, transition-all→named, #00C2FF→--chart-2,
-ring recipes); (5) dashboard motion + skeletons (Phase 2 items 6-7).
+ring recipes); (4) dashboard motion + skeletons (Phase 2 items 6-7).
 **Added 2026-08-09 by Rahul — BOTH DONE 2026-08-09** (log 02:50): PDF reviewed (cert
 font-name leak fixed; page numbers / Notes-page flow / footnote anchors / footer naming
 are open decisions for Rahul), copy pass done (3 email tightenings + em dash fix;

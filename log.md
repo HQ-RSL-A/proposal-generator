@@ -1,5 +1,43 @@
 # log.md - proposal-generator
 
+## 2026-08-09 03:13 PT - Signing-surface Card wave + full e2e rehearsal (sign -> pay)
+
+Waves 3 + PDF/copy merged and deployed on Rahul's go. This wave (committed on
+`ui/consistency-pass`, **unmerged, pending his checkpoint**) finishes the Card adoption
+chain on the signing surface - presentation only, ceremony logic untouched:
+
+- **proposalView**: pricing rows + later-phase rows (dashed) + at-a-glance table wrapper
+  + deposit-schedule banner (tone=accent - the tone map IS the old recipe) + signature
+  slots (active ring preserved via className) → Card outlined; the five hand-rolled
+  eyebrows (Pricing / Optional add-ons / Later phases / Payment schedule / Notes) →
+  CardLabel; document shell + sign-here button `bg-white` → `bg-card`. Tier cards and
+  add-on rows stay real buttons/labels - they already carry the exact classes Card's
+  `selected` state was extracted from; swapping them for divs would trade a11y for API
+  purity.
+- **signingExperience**: the action bar div → `Card variant="floating" size="lg"` (the
+  floating variant was literally defined from this element's shadow recipe).
+
+**E2E rehearsal (the plan's gate for signing-file changes), fresh [TEST] seed:**
+e2eSeed → e2eSend → Chrome walk: adopt (typed, ESIGN consent) → stamp Acceptance →
+stamp MSA execution → Finish & continue to payment → Stripe TEST checkout (Sandbox
+badge, correct line items $997 + $497/mo) → paid via Link sandbox (code 000000, test
+card 4242) → `/paid?session_id=` safety net rendered "You're all set" on the new raised
+Card. e2eVerify: consent + both stamp timestamps recorded, ALL_SIGNED, executed PDF
+isFinal with **SHA-256 == send-time content hash**, fully_signed client+admin emails
+DELIVERED, GENERATE_PDF + NOTION_SYNC jobs DONE attempts=1. The real-pipeline
+certificate shows the fixed "Typed electronic signature" (no font-name leak). Notes:
+(1) `paymentStatus` stays AWAITING locally by design - Stripe CLI device auth was gone,
+so no valid webhook listener; the webhook leg is untouched by this wave and was
+live-verified 2026-06-19. (2) Chrome walk detour: a password-manager extension's popup
+poisoned the first checkout tab (every CDP action erred "Cannot access a
+chrome-extension:// URL"); recovered by closing the tab and reopening via
+`/pay/<token>`, which correctly REUSED the same open session (RSL-7 idempotency
+observed working).
+
+**Two [TEST] rows now sit in prod:** Rahul's earlier VIEWED one (his pending real-phone
+walk) + this wave's SIGNED/AWAITING one. e2eCleanup removes BOTH by title - run it only
+after his phone walk. Verified: 306/306 vitest + clean build before the walk.
+
 ## 2026-08-09 02:50 PT - Executed-PDF review + client-facing copy pass (Rahul's 2 items)
 
 Order picked per Rahul's "your call": these two before the signing-surface Card wave, so
