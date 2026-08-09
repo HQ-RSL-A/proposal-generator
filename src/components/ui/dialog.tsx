@@ -39,13 +39,23 @@ function DialogOverlay({
   )
 }
 
+const dialogContentCenter =
+  "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 ease-out-strong outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-open:duration-[240ms] data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-closed:duration-[160ms]"
+
+/* Bottom sheet below sm (slides up from the edge, safe-area padded, internal scroll),
+   identical centered dialog from sm up. */
+const dialogContentSheet =
+  "fixed inset-x-0 bottom-0 z-50 grid w-full max-h-[85dvh] gap-4 overflow-y-auto rounded-t-2xl bg-popover p-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-sm text-popover-foreground ring-1 ring-foreground/10 ease-out-strong outline-none data-open:animate-in data-open:slide-in-from-bottom-[100%] data-open:duration-[320ms] data-closed:animate-out data-closed:slide-out-to-bottom-[100%] data-closed:duration-[200ms] sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:max-h-none sm:w-full sm:max-w-sm sm:-translate-x-1/2 sm:-translate-y-1/2 sm:overflow-visible sm:rounded-xl sm:pb-4 sm:data-open:fade-in-0 sm:data-open:zoom-in-95 sm:data-open:duration-[240ms] sm:data-closed:fade-out-0 sm:data-closed:zoom-out-95 sm:data-closed:duration-[160ms]"
+
 function DialogContent({
   className,
   children,
   showCloseButton = true,
+  presentation = "center",
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  presentation?: "center" | "sheet"
 }) {
   return (
     <DialogPortal>
@@ -53,11 +63,17 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 ease-out-strong outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-open:duration-[240ms] data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95 data-closed:duration-[160ms]",
+          presentation === "sheet" ? dialogContentSheet : dialogContentCenter,
           className
         )}
         {...props}
       >
+        {presentation === "sheet" && (
+          <div
+            aria-hidden
+            className="mx-auto -mt-1 -mb-2 h-1 w-9 rounded-full bg-muted-foreground/25 sm:hidden"
+          />
+        )}
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close

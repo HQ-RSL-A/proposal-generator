@@ -168,7 +168,7 @@ export function SignatureModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent presentation="sheet" className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-heading">Adopt your signature</DialogTitle>
           <DialogDescription>

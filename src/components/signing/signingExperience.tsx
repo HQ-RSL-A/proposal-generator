@@ -316,9 +316,12 @@ export function SigningExperience({
 
       {/* Floating action bar, lifted off the document */}
       <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-border bg-white px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(17,24,39,0.18),0_12px_34px_-6px_rgba(17,24,39,0.30)] ring-1 ring-black/5">
-          {/* Signer + status: desktop only. On mobile the buttons crushed this text to
-              nothing, so the bar is buttons-only there (the floating chip + toasts guide). */}
+        <div className="mx-auto flex max-w-3xl flex-col gap-1.5 rounded-2xl border border-border bg-white px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(17,24,39,0.18),0_12px_34px_-6px_rgba(17,24,39,0.30)] ring-1 ring-black/5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          {/* Mobile: a one-line progress readout above the buttons (the name would crush
+              the row; the chip + toasts still guide the details). */}
+          <p className="truncate text-center text-[11px] text-muted-foreground sm:hidden">
+            {statusLine}
+          </p>
           <div className="hidden min-w-0 sm:block">
             <p className="truncate text-sm font-medium">{partyName}</p>
             <p aria-live="polite" className="truncate text-xs text-muted-foreground">
@@ -345,7 +348,7 @@ export function SigningExperience({
             {!adopted ? (
               <Button
                 size="lg"
-                className="flex-1 sm:flex-none"
+                className="flex-1 animate-in fade-in-0 duration-200 sm:flex-none"
                 onClick={openSignModal}
                 disabled={submitting}
               >
@@ -354,7 +357,7 @@ export function SigningExperience({
             ) : !allStamped ? (
               <Button
                 size="lg"
-                className="flex-1 sm:flex-none"
+                className="flex-1 animate-in fade-in-0 duration-200 sm:flex-none"
                 onClick={() => {
                   if (activePlace) scrollToSlot(activePlace);
                 }}
@@ -364,7 +367,7 @@ export function SigningExperience({
             ) : (
               <Button
                 size="lg"
-                className="flex-1 sm:flex-none"
+                className="flex-1 animate-in fade-in-0 duration-200 sm:flex-none"
                 onClick={handleSubmit}
                 disabled={submitting}
               >
