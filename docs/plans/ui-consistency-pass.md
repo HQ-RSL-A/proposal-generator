@@ -8,15 +8,21 @@ maps); auditTimeline/outcomeCard/systemHealth consume it (EXPIRED→warning,
 VIEWED→engaged violet, VOIDED→neutral, PROCESSING→info; SESSION_EXPIRED enum leak dead
 via PaymentChip reuse); sparkline on --chart-* tokens. Checkpoint note: danger/warning
 timeline tones weren't exercisable locally (no bounced/declined/expired rows).
-**RESUME POINT — next steps in order:**
-(1) remaining Card adoption in payoff order (the 11 copies of
-`rounded-lg border border-border p-3` → `proposalView` interior blocks (tone/selected) →
-`outcomeCard` raised + signing action bar floating); (2) primitives adoption (proposals
+Wave 3 (all 12 hand-rolled `rounded-lg border p-3` recipes → Card outlined/sm incl. the
+dashed future-items box; outcomeCard shell → raised) is committed, unmerged, pending
+checkpoint. **RESUME POINT — next steps in order:**
+(1) signing-surface Card adoption (`proposalView`
+interior blocks (tone/selected) + action bar floating) — **signing files, so the e2e
+rehearsal runs before that wave merges**; (2) primitives adoption (proposals
 table → ui/table, dashboard filter → ui/tabs, native selects → ui/select, tooltips on
 icon buttons, DialogFooter); (3) ConfirmDialog replacing brandConfirm + Button `loading`
 prop everywhere (per-row busy, not panel-wide); (4) type/color hygiene per Phase 2 list
 (headings, arbitrary px, bg-white→bg-card, transition-all→named, #00C2FF→--chart-2,
-ring recipes); (5) dashboard motion + skeletons (Phase 2 items 6-7). Workflow rhythm: work in
+ring recipes); (5) dashboard motion + skeletons (Phase 2 items 6-7).
+**Added 2026-08-09 by Rahul (tracked in ROADMAP, order picked at a checkpoint):**
+(a) executed-PDF visual review (generated + downloadable output); (b) client-facing
+copy pass — the 14 emails, signing toasts/guidance, outcome/error pages (voice DNA
+applies; pdfSmoke + emailPreview are the harnesses). Workflow rhythm: work in
 waves on this branch, `npm test` (306) + `npm run build` (the type gate) per wave, visual
 checkpoint with Rahul, HE says "merge" (main auto-deploys). Signing-flow tests use the $1
 rehearsal: `e2eSeed` → re-price to 3×$1 tiers (temp script; see log 2026-08-08) →

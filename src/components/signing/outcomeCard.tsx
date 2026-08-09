@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
 import { STATUS_TONES, type StatusTone } from "@/components/dashboard/statusChip";
 import { SUPPORT_EMAIL } from "@/lib/constants";
 
@@ -28,7 +29,11 @@ export function OutcomeCard({
 }) {
   return (
     <div className="dot-pattern flex min-h-screen items-center justify-center bg-surface px-4">
-      <div className="document-page w-full max-w-md animate-in rounded-2xl border border-border bg-card p-6 text-center duration-300 ease-out fade-in-0 zoom-in-95 motion-reduce:animate-none sm:p-8">
+      <Card
+        variant="raised"
+        size="lg"
+        className="w-full max-w-md animate-in gap-0 px-(--card-spacing) text-center duration-300 ease-out fade-in-0 zoom-in-95 motion-reduce:animate-none sm:p-8"
+      >
         <Image
           src="/logomark.png"
           alt="RSL/A"
@@ -54,7 +59,7 @@ export function OutcomeCard({
             {SUPPORT_EMAIL}
           </a>
         </p>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -85,9 +85,11 @@ export async function SystemHealthPanel() {
           ) : (
             <div className="space-y-2">
               {deadJobs.map((job) => (
-                <div
+                <Card
                   key={job.id}
-                  className="flex flex-col items-start gap-2 rounded-lg border border-border p-3 md:flex-row md:items-center md:justify-between md:gap-3 text-sm"
+                  variant="outlined"
+                  size="sm"
+                  className="items-start gap-2 px-(--card-spacing) md:flex-row md:items-center md:justify-between md:gap-3"
                 >
                   <div className="min-w-0">
                     <p className="font-medium">
@@ -99,7 +101,7 @@ export async function SystemHealthPanel() {
                     </p>
                   </div>
                   <RetryJobButton jobId={job.id} />
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -116,18 +118,20 @@ export async function SystemHealthPanel() {
           ) : (
             <div className="space-y-2">
               {stuckPayments.map((proposal) => (
-                <Link
-                  key={proposal.id}
-                  href={`/proposals/${proposal.id}`}
-                  className="flex flex-col items-start gap-2 rounded-lg border border-border p-3 md:flex-row md:items-center md:justify-between md:gap-3 text-sm hover:border-primary/50"
-                >
-                  <div>
-                    <p className="font-medium">{proposal.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Signed {proposal.completedAt ? formatDateTime(proposal.completedAt) : "—"}
-                    </p>
-                  </div>
-                  <PaymentChip paymentStatus={proposal.paymentStatus} status={proposal.status} />
+                <Link key={proposal.id} href={`/proposals/${proposal.id}`} className="block rounded-lg">
+                  <Card
+                    variant="outlined"
+                    size="sm"
+                    className="items-start gap-2 px-(--card-spacing) transition-colors hover:border-primary/50 md:flex-row md:items-center md:justify-between md:gap-3"
+                  >
+                    <div>
+                      <p className="font-medium">{proposal.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Signed {proposal.completedAt ? formatDateTime(proposal.completedAt) : "—"}
+                      </p>
+                    </div>
+                    <PaymentChip paymentStatus={proposal.paymentStatus} status={proposal.status} />
+                  </Card>
                 </Link>
               ))}
             </div>
@@ -145,7 +149,7 @@ export async function SystemHealthPanel() {
           ) : (
             <div className="space-y-2">
               {bounces.map((log) => (
-                <div key={log.id} className="rounded-lg border border-border p-3 text-sm">
+                <Card key={log.id} variant="outlined" size="sm" className="gap-1 px-(--card-spacing)">
                   <p className="font-medium wrap-break-word">
                     {log.templateId} → {log.recipient}
                   </p>
@@ -153,7 +157,7 @@ export async function SystemHealthPanel() {
                     {log.status} · {formatDateTime(log.sentAt)} · {log.proposal.title}
                     {log.error ? ` · ${log.error.slice(0, 80)}` : ""}
                   </p>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -172,7 +176,12 @@ export async function SystemHealthPanel() {
           ) : (
             <div className="space-y-2 text-sm">
               {[...lastCronByPath.values()].map((log) => (
-                <div key={log.id} className="flex flex-col items-start gap-2 rounded-lg border border-border p-3 md:flex-row md:items-center md:justify-between md:gap-3">
+                <Card
+                  key={log.id}
+                  variant="outlined"
+                  size="sm"
+                  className="items-start gap-2 px-(--card-spacing) md:flex-row md:items-center md:justify-between md:gap-3"
+                >
                   <div className="min-w-0">
                     <p className="truncate font-medium">{log.path}</p>
                     <p className="text-xs text-muted-foreground">
@@ -188,7 +197,7 @@ export async function SystemHealthPanel() {
                   >
                     {log.ok ? "ok" : "failed"}
                   </Badge>
-                </div>
+                </Card>
               ))}
             </div>
           )}

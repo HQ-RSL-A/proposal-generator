@@ -1141,7 +1141,7 @@ export function ProposalForm({
             />
           </div>
           {state.caseStudies.map((cs, index) => (
-            <div key={index} className="space-y-2 rounded-lg border border-border p-3">
+            <Card key={index} variant="outlined" size="sm" className="gap-2 px-(--card-spacing)">
               <div className="flex items-center justify-between gap-2">
                 <Label className="text-xs">Case study {index + 1}</Label>
                 <Button
@@ -1180,7 +1180,7 @@ export function ProposalForm({
                   placeholder="https://rsla.io/work/..."
                 />
               </div>
-            </div>
+            </Card>
           ))}
           <div className="flex flex-wrap gap-2">
             {state.caseStudies.length < MAX_CASE_STUDIES ? (
@@ -1229,7 +1229,7 @@ export function ProposalForm({
 
           {state.pricingMode === "flat" ? (
             <div className="space-y-4">
-              <div className="space-y-2 rounded-lg border border-border p-3">
+              <Card variant="outlined" size="sm" className="gap-2 px-(--card-spacing)">
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={state.oneTimeEnabled}
@@ -1240,8 +1240,8 @@ export function ProposalForm({
                 {state.oneTimeEnabled ? (
                   <MoneyFields value={state.oneTime} onChange={(v) => set("oneTime", v)} withDiscount />
                 ) : null}
-              </div>
-              <div className="space-y-2 rounded-lg border border-border p-3">
+              </Card>
+              <Card variant="outlined" size="sm" className="gap-2 px-(--card-spacing)">
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={state.recurringEnabled}
@@ -1257,14 +1257,14 @@ export function ProposalForm({
                     withDiscount
                   />
                 ) : null}
-              </div>
+              </Card>
             </div>
           ) : null}
 
           {state.pricingMode === "tiers" ? (
             <div className="space-y-4">
               {state.tiers.map((tier, index) => (
-                <div key={index} className="space-y-3 rounded-lg border border-border p-3">
+                <Card key={index} variant="outlined" size="sm" className="px-(--card-spacing)">
                   <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
                     <div className="col-span-2 sm:col-span-5">
                       <LabelRow label="Tier name">
@@ -1368,7 +1368,7 @@ export function ProposalForm({
                       />
                     ) : null}
                   </div>
-                </div>
+                </Card>
               ))}
               {state.tiers.length < 4 ? (
                 <Button
@@ -1390,7 +1390,7 @@ export function ProposalForm({
           ) : null}
 
           {state.pricingMode !== "signOnly" ? (
-            <div className="space-y-2 rounded-lg border border-border p-3">
+            <Card variant="outlined" size="sm" className="gap-2 px-(--card-spacing)">
               <label className="flex items-center gap-2">
                 <Checkbox
                   checked={state.manualInvoice}
@@ -1405,7 +1405,7 @@ export function ProposalForm({
                 but no online checkout runs. The deal counts toward your dashboard revenue right away;
                 mark it paid once you&apos;ve collected.
               </p>
-            </div>
+            </Card>
           ) : null}
 
           {state.pricingMode !== "signOnly" && !state.manualInvoice ? (
@@ -1450,7 +1450,7 @@ export function ProposalForm({
                 </p>
               </div>
               {state.addOns.map((addOn, index) => (
-                <div key={index} className="space-y-2 rounded-lg border border-border p-3">
+                <Card key={index} variant="outlined" size="sm" className="gap-2 px-(--card-spacing)">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Switch
@@ -1499,7 +1499,7 @@ export function ProposalForm({
                     withInterval={addOn.isRecurring}
                     withDiscount
                   />
-                </div>
+                </Card>
               ))}
               {state.addOns.length < 10 ? (
                 <Button
@@ -1521,9 +1521,12 @@ export function ProposalForm({
                 </p>
               </div>
               {state.futureItems.map((item, index) => (
-                <div
+                <Card
                   key={index}
-                  className="space-y-2 rounded-lg border border-dashed border-border p-3"
+                  variant="outlined"
+                  size="sm"
+                  dashed
+                  className="gap-2 px-(--card-spacing)"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
@@ -1583,7 +1586,7 @@ export function ProposalForm({
                       }}
                     />
                   </div>
-                </div>
+                </Card>
               ))}
               {state.futureItems.length < 6 ? (
                 <Button

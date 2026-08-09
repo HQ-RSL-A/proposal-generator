@@ -78,7 +78,12 @@ export function SendForm({
           checkout after the final signature.
         </p>
         {parties.map((party, index) => (
-          <div key={index} className="grid grid-cols-2 items-end gap-2 rounded-lg border border-border p-3 sm:grid-cols-12">
+          <Card
+            key={index}
+            variant="outlined"
+            size="sm"
+            className="grid grid-cols-2 items-end gap-2 px-(--card-spacing) sm:grid-cols-12"
+          >
             <div className="col-span-2 sm:col-span-4">
               <Label className="text-xs">Name</Label>
               <Input value={party.name} onChange={(e) => update(index, { name: e.target.value })} />
@@ -113,7 +118,7 @@ export function SendForm({
                 </Button>
               ) : null}
             </div>
-          </div>
+          </Card>
         ))}
         {parties.length < 5 ? (
           <Button

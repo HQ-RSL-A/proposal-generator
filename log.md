@@ -1,5 +1,35 @@
 # log.md - proposal-generator
 
+## 2026-08-09 02:36 PT - Phase 2 wave 3: the 12 hand-rolled card recipes onto Card
+
+Wave 2 merged + deployed on Rahul's go (READY in 44s). Two new work items from him
+tracked in ROADMAP + the plan: **executed-PDF review** and **client-facing copy pass**
+(14 emails, signing toasts/guidance, outcome/error pages - voice DNA applies).
+
+Wave 3 built on `ui/consistency-pass`, **unmerged, pending his checkpoint**: every
+`rounded-lg border border-border p-3` recipe is now `<Card variant="outlined" size="sm">`
+with padding driven by `px-(--card-spacing)` - the audit counted 11; a 12th surfaced
+(future-items box, same recipe with `border-dashed`, grep missed the word order) and
+uses the Card API's `dashed` prop:
+
+- `proposalForm.tsx` (7): case studies, flat one-time, flat recurring, tier boxes
+  (`space-y-3` → the sm Card's own gap-3), manual-invoice, add-ons, future items
+  (dashed).
+- `sendForm.tsx` (1): signer rows (grid layout preserved - `grid` overrides the Card's
+  flex via twMerge).
+- `systemHealth.tsx` (4): dead jobs, stuck payments (Link now wraps the Card;
+  hover:border-primary/50 kept with a real transition-colors), email bounces, cron runs.
+- `outcomeCard.tsx` shell: `document-page + rounded-2xl + border + bg-card + p-6` →
+  `<Card variant="raised" size="lg">` (the raised variant IS the document-page shadow;
+  `.document-page` class stays for the signing document itself).
+
+Deliberately deferred to the next wave: `proposalView` interiors + the signing action
+bar (floating) - those are signing files, so that wave runs the e2e rehearsal before
+merging per plan risk rules.
+
+Verified: 306/306 vitest, clean build, Chrome pass (new-proposal form pricing boxes,
+settings System rows, /sign/bad-token outcome shell - all render identically).
+
 ## 2026-08-09 02:26 PT - Phase 2 wave 2: status system unified (one tone scale)
 
 Wave 1 merged + auto-deployed on Rahul's go (deploy `j1aatx95v` READY in 37s - auto-deploy

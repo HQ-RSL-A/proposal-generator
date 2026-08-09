@@ -185,6 +185,18 @@ not just responsive breakpoints. Build-time decisions flagged inline.
       form fields) built 2026-08-08 on `ui/consistency-pass`** — pending visual review +
       merge. Phases 1 (client signing), 2 (admin), 3 (sweep + guardrails) follow.
 
+- [ ] **Executed-PDF review (added 2026-08-09, Rahul).** Full visual review of the
+      generated/downloadable PDF (proposal + MSA + signature certificate): layout,
+      typography, spacing, and whether it still mirrors the refreshed UI tokens after
+      the consistency pass. Any change runs `npx tsx scripts/pdfSmoke.ts` + a visual
+      Read of the output per CLAUDE.md.
+
+- [ ] **Client-facing copy pass (added 2026-08-09, Rahul).** Rework the copy of every
+      client-facing message: the 14 transactional emails (subjects + bodies via
+      `scripts/emailPreview.tsx`), signing-flow toasts/guidance text, outcome pages,
+      and error states. Voice DNA applies (external content); no emojis; SUPPORT_EMAIL
+      only on public surfaces.
+
 ## Eventual / backlog
 
 - [ ] **Attorney MSA review → v4.** When revised text lands, seed a new `MsaVersion`
