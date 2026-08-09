@@ -41,6 +41,7 @@
   --color-warning-subtle-foreground: var(--warning-subtle-foreground);
   --color-destructive-subtle: var(--destructive-subtle);
   --color-destructive-subtle-foreground: var(--destructive-subtle-foreground);
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

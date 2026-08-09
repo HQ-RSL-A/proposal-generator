@@ -4,6 +4,8 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { PenLine } from "lucide-react";
 import { appScrollBehavior } from "@/lib/reducedMotion";
+import { cn } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -129,7 +131,7 @@ export function SigningExperience({
 
   function openSignModal() {
     if (requiresTier && !selectedTierId) {
-      brandToast("error", "Select a plan before signing", "It's part of what you're agreeing to.", {
+      brandToast("warning", "Select a plan before signing", "It's part of what you're agreeing to.", {
         duration: 6000,
       });
       document
@@ -177,6 +179,12 @@ export function SigningExperience({
   const allStamped = stampedCount === PLACE_ORDER.length;
   const activePlace =
     adopted && !allStamped ? (PLACE_ORDER.find((p) => !stamped[p]) ?? null) : null;
+  // The chip keeps its last label while fading out (activePlace goes null on the final stamp).
+  const lastPlaceRef = React.useRef<SignaturePlace>("proposal");
+  React.useEffect(() => {
+    if (activePlace) lastPlaceRef.current = activePlace;
+  }, [activePlace]);
+  const chipPlace = activePlace ?? lastPlaceRef.current;
 
   async function handleSubmit() {
     if (!adopted || !allStamped || submitting) return;
@@ -261,7 +269,7 @@ export function SigningExperience({
       : `${stampedCount} of 2 places signed`;
 
   return (
-    <div className="min-h-screen bg-surface pb-28">
+    <main className="min-h-screen bg-surface pb-28">
       <div className="mx-auto max-w-3xl px-3 pt-8 sm:px-6">
         <ProposalView
           sections={sections}
@@ -282,26 +290,36 @@ export function SigningExperience({
         />
       </div>
 
-      {/* Floating guide to the next signature field */}
-      {activePlace ? (
+      {/* Floating guide to the next signature field. Stays mounted while adopted so it can
+          fade/slide in and out instead of popping; label keeps its last value during exit. */}
+      {adopted ? (
         <button
           type="button"
-          onClick={() => scrollToSlot(activePlace)}
-          className="fixed bottom-28 left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-transform active:scale-[0.97]"
+          tabIndex={activePlace ? 0 : -1}
+          aria-hidden={!activePlace}
+          onClick={() => activePlace && scrollToSlot(activePlace)}
+          className={cn(
+            "fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-[opacity,transform] duration-200 ease-out-strong animate-in fade-in-0 slide-in-from-bottom-2 motion-reduce:animate-none active:scale-[0.97]",
+            activePlace
+              ? "opacity-100"
+              : "pointer-events-none translate-y-2 scale-95 opacity-0"
+          )}
         >
           <PenLine className="h-4 w-4" />
-          {activePlace === "proposal" ? "Place your signature" : "One more signature left"}
+          {chipPlace === "proposal" ? "Place your signature" : "One more signature left"}
         </button>
       ) : null}
 
       {/* Floating action bar, lifted off the document */}
-      <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-3 pt-2">
+      <div className="fixed inset-x-0 bottom-0 z-50 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 rounded-2xl border border-border bg-white px-4 py-3 shadow-[0_-8px_24px_-12px_rgba(17,24,39,0.18),0_12px_34px_-6px_rgba(17,24,39,0.30)] ring-1 ring-black/5">
           {/* Signer + status: desktop only. On mobile the buttons crushed this text to
               nothing, so the bar is buttons-only there (the floating chip + toasts guide). */}
           <div className="hidden min-w-0 sm:block">
             <p className="truncate text-sm font-medium">{partyName}</p>
-            <p className="truncate text-xs text-muted-foreground">{statusLine}</p>
+            <p aria-live="polite" className="truncate text-xs text-muted-foreground">
+              {statusLine}
+            </p>
           </div>
           <div className="flex flex-1 items-center justify-end gap-2 sm:flex-none">
             {adopted ? (
@@ -347,7 +365,9 @@ export function SigningExperience({
                 disabled={submitting}
               >
                 {submitting ? (
-                  "Submitting…"
+                  <>
+                    <Spinner /> Submitting…
+                  </>
                 ) : willCheckout ? (
                   <>
                     <span className="sm:hidden">Finish &amp; pay</span>
@@ -428,6 +448,6 @@ export function SigningExperience({
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   );
 }

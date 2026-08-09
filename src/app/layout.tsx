@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Inter } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
@@ -24,6 +24,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Proposals | RSL/A",
   description: "RSL/A proposal generator and e-signing",
+};
+
+// viewport-fit=cover so env(safe-area-inset-*) works — the signing action bar and
+// floating chip pad themselves above the iOS home indicator.
+export const viewport: Viewport = {
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -42,14 +42,14 @@ export function SignatureSettings({
       let type: "DRAWN" | "TYPED";
       if (tab === "draw") {
         if (!padRef.current || padRef.current.isEmpty()) {
-          brandToast("error", "Draw your signature first.");
+          brandToast("warning", "Draw your signature first.");
           return;
         }
         pngDataUrl = padRef.current.toPngDataUrl();
         type = "DRAWN";
       } else {
         if (!name.trim()) {
-          brandToast("error", "Type your name first.");
+          brandToast("warning", "Type your name first.");
           return;
         }
         pngDataUrl = await typedNameToPng(name.trim(), font);

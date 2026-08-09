@@ -73,7 +73,10 @@ function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
   return (
     <TabsPrimitive.Panel
       data-slot="tabs-content"
-      className={cn("flex-1 text-sm outline-none", className)}
+      className={cn(
+        "flex-1 text-sm outline-none animate-in fade-in-0 duration-150 motion-reduce:animate-none",
+        className
+      )}
       {...props}
     />
   )

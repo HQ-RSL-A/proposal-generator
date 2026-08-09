@@ -35,6 +35,8 @@ export function brandToast(
   toast.custom(
     () => (
       <div
+        role="status"
+        aria-live="polite"
         className={cn(
           "flex w-full items-start gap-2.5 rounded-xl px-3.5 py-2.5 text-white shadow-lg ring-1 ring-black/10",
           bg

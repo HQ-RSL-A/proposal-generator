@@ -1,5 +1,40 @@
 # log.md - proposal-generator
 
+## 2026-08-08 23:15 PT - Phase 0 merged + deployed; Phase 1 wave 1 (signing-flow polish) built
+
+Phase 0 + the form follow-up ff-merged to `main` (`f4d2df1`) and auto-deployed; prod smoke
+green (landing 200, branded 404 where `notFound()` fires - unknown paths still 307 to
+sign-in via the auth middleware, pre-existing and correct). Note: cosmetic toast-severity
+and inline-feedback line numbers cited in the plan have shifted with these edits.
+
+**Phase 1 wave 1 (branch `ui/consistency-pass`, per `docs/plans/ui-consistency-pass.md`):**
+- Dialogs (all four consumers incl. the signature modal): enter 180ms / exit 120ms on
+  `--ease-out-strong` (was 100ms symmetric on CSS `ease` - read as flicker). The easing
+  token is now a real Tailwind utility (`ease-out-strong`, registered in `@theme`).
+- Press feedback + keyboard focus on every client-facing tappable that lacked both: tier
+  cards, add-on rows (focus via `has-[:focus-visible]`), the dashed signature slots, and
+  the modal font tiles - `active:scale`, named transition properties, `focus-visible`
+  rings.
+- Floating "next field" chip no longer pops: stays mounted through the adopted phase,
+  slides/fades in and out (200ms ease-out-strong), keeps its last label while exiting,
+  and sits above the iOS home indicator (`env(safe-area-inset-bottom)`; root layout now
+  exports `viewport-fit=cover`). Action bar got the same safe-area padding.
+- Submit buttons show a real Spinner ("Submitting…", "Applying signature…").
+- Signing page is a `<main>` (semantic + picks up the global entry fade admin always had).
+- Toast severity now means something: guidance ("Select a plan", "Draw your signature
+  first", invalid/failed import JSON, pricing-gate) moved error->warning (amber, the
+  previously-unused tone); genuine failures stay red. `brandToast` cards announce via
+  `role="status"` + `aria-live`.
+- Pricing-gate toast now also scrolls to the first `[data-pricing-issue]` advisory
+  (they could sit below the fold; matches the signing page's tier-scroll pattern).
+- Tab panels (all Tabs consumers, incl. Draw<->Type in the modal) fade in 150ms instead
+  of hard-cutting.
+
+Verified: 306/306 vitest + full `next build` type-check. STILL OPEN in Phase 1: mobile
+bottom-sheet presentation for the signature modal, action-bar label transitions between
+the three CTA states, a mobile-visible progress line, font-picker tile dedupe
+(signatureSettings = signatureModal), signing shell consolidation into `sign/layout.tsx`.
+
 ## 2026-08-08 22:45 PT - UI consistency audit + plan; Phase 0 built on `ui/consistency-pass`
 
 Rahul flagged inconsistent UI (toasts, cards, et al) + proposal-form fields clipping long

@@ -834,15 +834,15 @@ export function MoneyFields({
       ) : null}
 
       {mismatch ? (
-        <p className="text-xs text-destructive">
+        <p data-pricing-issue className="text-xs text-destructive">
           Display says {value.displayString} but {(value.amountCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" })} will be charged. Make them match before sending.
         </p>
       ) : null}
       {netTooLow ? (
-        <p className="text-xs text-destructive">The discount can&apos;t be the whole price.</p>
+        <p data-pricing-issue className="text-xs text-destructive">The discount can&apos;t be the whole price.</p>
       ) : null}
       {reasonMissing ? (
-        <p className="text-xs text-destructive">Add a reason for the discount. The client sees it.</p>
+        <p data-pricing-issue className="text-xs text-destructive">Add a reason for the discount. The client sees it.</p>
       ) : null}
     </div>
   );
@@ -901,12 +901,12 @@ export function ProposalForm({
     try {
       raw = JSON.parse(overrideText ?? importText);
     } catch {
-      brandToast("error", "That isn't valid JSON.");
+      brandToast("warning", "That isn't valid JSON.");
       return;
     }
     const { tokens, errors } = normalizeImportedTokens(raw);
     if (!tokens) {
-      brandToast("error", `Import failed: ${errors[0]}`);
+      brandToast("warning", `Import failed: ${errors[0]}`);
       return;
     }
     const rawObj = raw as Record<string, unknown>;
@@ -990,7 +990,13 @@ export function ProposalForm({
     ].filter((d): d is NonNullable<typeof d> => d !== null);
 
     if (discountDrafts.some((d) => hasMoneyDraftIssue(d, true))) {
-      brandToast("error", "Fix the highlighted pricing issues before saving.");
+      brandToast("warning", "Fix the highlighted pricing issues before saving.");
+      // The advisories can sit several cards below the fold — take the admin to the first one.
+      requestAnimationFrame(() => {
+        document
+          .querySelector("[data-pricing-issue]")
+          ?.scrollIntoView({ behavior: appScrollBehavior(), block: "center" });
+      });
       return;
     }
 
