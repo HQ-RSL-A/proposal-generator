@@ -140,13 +140,13 @@ export function TierCards({
             onClick={() => onSelect?.(tier.id)}
             className={cn(
               "relative flex flex-col rounded-xl border p-4 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out-strong outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-              highlighted ? "border-primary bg-accent shadow-sm" : "border-border bg-white",
+              highlighted ? "border-primary bg-accent shadow-sm" : "border-border bg-card",
               !readOnly && "cursor-pointer hover:border-primary/60 hover:shadow-sm active:scale-[0.99]",
               readOnly && "cursor-default"
             )}
           >
             {tier.recommended ? (
-              <span className="font-tag absolute -top-2.5 left-3 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+              <span className="font-tag absolute -top-2.5 left-3 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground">
                 Recommended
               </span>
             ) : null}
@@ -160,7 +160,7 @@ export function TierCards({
                 {tier.label}
               </span>
               {selected ? (
-                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-white">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Check className="h-3 w-3" />
                 </span>
               ) : null}
@@ -217,14 +217,14 @@ export function AddOnPicker({
               key={addOn.id}
               className={cn(
                 "flex items-center gap-3 rounded-xl border p-3.5 transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out-strong has-[:focus-visible]:border-ring has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50",
-                checked ? "border-primary bg-accent shadow-sm" : "border-border bg-white",
+                checked ? "border-primary bg-accent shadow-sm" : "border-border bg-card",
                 readOnly ? "cursor-default" : "cursor-pointer hover:border-primary/60 active:scale-[0.99]"
               )}
             >
               <span
                 className={cn(
                   "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors",
-                  checked ? "border-primary bg-primary text-white" : "border-border bg-white"
+                  checked ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card"
                 )}
               >
                 {checked ? <Check className="h-3.5 w-3.5" /> : null}

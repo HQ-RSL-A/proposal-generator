@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { PenLine } from "lucide-react";
 import { appScrollBehavior } from "@/lib/reducedMotion";
 import { cn } from "@/lib/utils";
-import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -311,7 +311,7 @@ export function SigningExperience({
           aria-hidden={!activePlace}
           onClick={() => activePlace && scrollToSlot(activePlace)}
           className={cn(
-            "fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-lg transition-[opacity,transform] duration-200 ease-out-strong animate-in fade-in-0 slide-in-from-bottom-2 motion-reduce:animate-none active:scale-[0.97]",
+            "fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] left-1/2 z-50 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg transition-[opacity,transform] duration-200 ease-out-strong animate-in fade-in-0 slide-in-from-bottom-2 motion-reduce:animate-none active:scale-[0.97]",
             activePlace
               ? "opacity-100"
               : "pointer-events-none translate-y-2 scale-95 opacity-0"
@@ -384,13 +384,9 @@ export function SigningExperience({
                 size="lg"
                 className="flex-1 animate-in fade-in-0 duration-200 sm:flex-none"
                 onClick={handleSubmit}
-                disabled={submitting}
+                loading={submitting}
               >
-                {submitting ? (
-                  <>
-                    <Spinner /> Submitting…
-                  </>
-                ) : willCheckout ? (
+                {willCheckout ? (
                   <>
                     <span className="sm:hidden">Finish &amp; pay</span>
                     <span className="hidden sm:inline">Finish &amp; continue to payment</span>
@@ -442,12 +438,12 @@ export function SigningExperience({
                 placeholder="Optional reason…"
                 className="min-h-24"
               />
-              <div className="flex justify-end gap-2">
+              <DialogFooter>
                 <Button variant="ghost" onClick={() => setDeclineOpen(false)}>
                   Cancel
                 </Button>
                 <Button onClick={() => setDeclineStage("confirm")}>Continue</Button>
-              </div>
+              </DialogFooter>
             </>
           ) : (
             <>
@@ -458,14 +454,14 @@ export function SigningExperience({
                   this.
                 </DialogDescription>
               </DialogHeader>
-              <div className="flex justify-end gap-2">
+              <DialogFooter>
                 <Button autoFocus onClick={() => setDeclineStage("reason")} disabled={submitting}>
                   Go back
                 </Button>
-                <Button variant="destructive" onClick={handleDecline} disabled={submitting}>
-                  {submitting ? "Declining…" : "Yes, decline"}
+                <Button variant="destructive" onClick={handleDecline} loading={submitting}>
+                  Yes, decline
                 </Button>
-              </div>
+              </DialogFooter>
             </>
           )}
         </DialogContent>

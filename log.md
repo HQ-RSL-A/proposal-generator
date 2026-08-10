@@ -1,5 +1,69 @@
 # log.md - proposal-generator
 
+## 2026-08-09 22:07 PT - Rehearsal-gated signing wave + FULL e2e rehearsal (incl. webhook leg)
+
+Built on `ui/consistency-pass`, **unmerged, pending Rahul's checkpoint** - the plan's
+resume-point item (1), the last signing-file UI work:
+
+- **ui/dialog sheet mode grew a pinned footer**: DialogContent (sheet presentation)
+  now partitions a `DialogFooter` child OUT of the scroll wrapper, so the band pins
+  below the scroll area - the form scrolls under its border and the primary action
+  never leaves the screen. signatureModal is the only sheet consumer. Design call
+  (emilDesignEng): in an 85dvh sheet the long ceremony form buried the CTA below the
+  fold; a pinned band is what a bottom sheet is assumed to do, it matches the Void/
+  Confirm banded footers AND the page's own floating action bar, and the Draw<->Type
+  AnimatedHeight glide now happens inside the scroll area so the CTA stops riding it.
+- **signatureModal -> DialogFooter + `loading`**: the adopt CTA moved into the band
+  (full-width lg kept - big target for the high-stakes action); "Applying signature…"
+  label-swap -> `loading={submitting}` with stable ctaLabel. Band classes absorb the
+  safe-area inset themselves (`-mb`/`pb` = max(1rem, env(safe-area-inset-bottom)),
+  square corners at mobile, sm reverts to the stock band); form's last block gets a
+  pb-4 cushion so the consent box never touches the band border in the fits case.
+- **signingExperience**: Finish button "Submitting…" swap -> `loading` (stable
+  Finish-&-pay / Finish-&-continue / Finish-&-Submit labels); decline dialog's two
+  hand-rolled action rows -> DialogFooter (the deferred half of wave 4's item);
+  "Declining…" -> `loading`; floating chip text-white -> text-primary-foreground.
+  Spinner imports dropped from both signing files (the prop renders it).
+- **proposalView hygiene**: tier/add-on cards + checkbox bg-white -> bg-card (x3),
+  Recommended badge / check circle / checked checkbox text-white ->
+  text-primary-foreground (x3). Pixel-identical (both tokens #FFFFFF).
+
+Verified: 306/306 vitest + clean build. Chrome walk desktop + 570px sheet with
+structural probes: footer outside the scroller, flush to the popup bottom (gap 0,
+radius 0 at mobile), edge-to-edge, zero horizontal overflow from the -mx band, content
+scrolls beneath (150px scrollable exercised); decline dialog walked through BOTH
+stages' bands and cancelled (never confirmed).
+
+**FULL e2e rehearsal - first one with the webhook leg live.** Stripe CLI is still
+logged out, but `stripe listen --api-key <test sk from .env>` needs no device auth;
+its ephemeral whsec + the aws-1 pooler DATABASE_URL were injected into a fresh dev
+server env (a stale port-1235 server from an earlier session was killed first - it
+held the port without tonight's secret). e2eSeed -> e2eSend -> sign (typed FLOWING,
+ESIGN consent, stamp Acceptance + MSA execution) -> Finish & continue to payment ->
+Stripe TEST checkout (Sandbox badge, $1,494.00 due = $997 + $497, then $497/mo) ->
+Link saved test card 4242 -> success_url landed on /paid with the PAID-state copy
+("your payment came through"), not just the session_id safety net. stripe listen
+forwarded every event [200] incl. checkout.session.completed. e2eVerify:
+status=SIGNED paymentStatus=PAID, integer-cents 149400, consent + BOTH stamp
+timestamps recorded, ALL_SIGNED -> CHECKOUT_CREATED -> PDF_GENERATED ->
+PAYMENT_PAID -> STRIPE_METADATA_ATTACHED audit chain, **all FOUR emails DELIVERED**
+(fully_signed pair + the payment_received pair 03:13 couldn't produce), all jobs
+DONE attempts=1, executed PDF (19pp) isFinal with the certificate printing
+**SHA-256 == send-time content hash** (b9460698…aa82) and the clean "Typed
+electronic signature" label.
+
+Ops notes: (1) e2eSend's raw token was lost to my own output redaction on the first
+run (the send succeeded; the sed pipe ate the only print) - recovered with a one-off
+id-scoped rotate via `rotatePartyToken`'s primitive (`generateSigningToken` + hash
+update), the exact thing every email embed does; party was unsigned so the payer
+in-flight guard didn't apply. (2) Cleanup was a **targeted id-scoped cascade** (3
+blobs + 10 webhook events + DB cascade), NOT e2eCleanup - both [TEST] rows share a
+title and e2eCleanup would have taken Rahul's phone-walk row too. Verified after:
+his VIEWED row is the sole remaining [TEST] row. Temp scripts deleted after use.
+
+Remaining per the plan: Phase 3 (docs completeness audit -> one-off sweep +
+docs/landing/sign-in alignment -> guardrails + full regression/a11y pass).
+
 ## 2026-08-09 17:55 PT - Wave 7 MERGED on Rahul's "Looks good" - PHASE 2 COMPLETE
 
 All of Phase 2 is now live: Card system, status tone scale, primitives (table/tabs/

@@ -57,6 +57,12 @@ function DialogContent({
   showCloseButton?: boolean
   presentation?: "center" | "sheet"
 }) {
+  // Sheet mode splits out a DialogFooter child so the action band pins below the
+  // scroll area (the form scrolls under its border; the primary action never leaves
+  // the screen). Center dialogs render children as-is.
+  const sheetKids = React.Children.toArray(children)
+  const isFooter = (k: React.ReactNode) =>
+    React.isValidElement(k) && k.type === DialogFooter
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -76,8 +82,9 @@ function DialogContent({
             />
             {/* The sheet itself never scrolls (keeps the close button pinned) — content does. */}
             <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto overscroll-contain">
-              {children}
+              {sheetKids.filter((k) => !isFooter(k))}
             </div>
+            {sheetKids.filter(isFooter)}
           </>
         ) : (
           children

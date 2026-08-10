@@ -5,6 +5,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -14,7 +15,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { Spinner } from "@/components/ui/spinner";
 
 /**
  * Animates its height to match the active child, so swapping Draw <-> Type glides the
@@ -177,7 +177,7 @@ export function SignatureModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 pb-4">
           {selectedTierSummary ? (
             <div className="rounded-lg border border-primary/30 bg-accent px-3 py-2 text-sm">
               <span className="text-muted-foreground">You&apos;re signing for: </span>
@@ -311,22 +311,20 @@ export function SignatureModal({
               <p className="mt-1 text-xs text-destructive">{errors.consent}</p>
             ) : null}
           </div>
+        </div>
 
+        {/* Pinned below the scroll area in sheet mode; the band absorbs the safe-area
+            inset itself so it reaches the physical bottom edge of the screen. */}
+        <DialogFooter className="-mb-[max(1rem,env(safe-area-inset-bottom))] rounded-b-none pb-[max(1rem,env(safe-area-inset-bottom))] sm:-mb-4 sm:rounded-b-xl sm:pb-4">
           <Button
             className={cn("w-full transition-opacity duration-200", !complete && "opacity-60")}
             size="lg"
-            disabled={submitting}
+            loading={submitting}
             onClick={handleAdopt}
           >
-            {submitting ? (
-              <>
-                <Spinner /> Applying signature…
-              </>
-            ) : (
-              ctaLabel
-            )}
+            {ctaLabel}
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
