@@ -1,5 +1,17 @@
 # log.md - proposal-generator
 
+## 2026-08-09 22:13 PT - Signing wave MERGED on Rahul's "Look good. Merge"
+
+`ef55393` fast-forwarded to `main` + pushed (auto-deploy). His checkpoint walk ran on
+a fresh [TEST] seed served from localhost; that row was deleted right after the merge
+(id-scoped cascade, 1 admin-signature blob) - his VIEWED phone-walk row is again the
+ONLY [TEST] row in prod. The signing surface is now fully on the system: banded
+DialogFooter everywhere (incl. the sheet-pinned modal band), one async pattern on
+every ceremony button, zero raw white on signing files. Remaining: Phase 3
+(docs completeness audit -> one-off sweep + docs/landing/sign-in alignment ->
+guardrails + full regression/a11y pass), plus Rahul's Notion-tracked manual items
+(phone walk, e2eCleanup after, stripe login, 4 PDF decisions, vercel CLI upgrade).
+
 ## 2026-08-09 22:07 PT - Rehearsal-gated signing wave + FULL e2e rehearsal (incl. webhook leg)
 
 Built on `ui/consistency-pass`, **unmerged, pending Rahul's checkpoint** - the plan's

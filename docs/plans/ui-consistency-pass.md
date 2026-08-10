@@ -41,19 +41,18 @@ buttons (send/save/signature/retry) → `loading`, sign-in Google button pending
 `useFormStatus` (Phase 3's sign-in item, done early). Signing files untouched —
 signingExperience's pending buttons + signatureModal's footer wait for a
 rehearsal-gated wave.
-**The rehearsal-gated signing wave is BUILT + FULLY REHEARSED (2026-08-09 22:07,
-unmerged, pending Rahul's checkpoint)**: ui/dialog sheet mode pins a DialogFooter
-child below the scroll area; signatureModal adopt CTA → banded DialogFooter +
-`loading` (safe-area-absorbing band); signingExperience Finish/decline → `loading`
-with stable labels, decline dialog rows → DialogFooter, chip text-white → token;
-proposalView bg-white/text-white → bg-card/text-primary-foreground. Full $-real e2e
-rehearsal PASSED **including the webhook leg** (stripe listen --api-key needs no CLI
-login): SIGNED/PAID, cert hash == content hash, all 4 emails DELIVERED, jobs DONE
-attempts=1. Rehearsal row deleted by id-scoped cascade (his phone-walk row is the
-sole [TEST] row). Details: log 2026-08-09 22:07.
-**RESUME POINT — next steps in order:**
-(1) Rahul's visual checkpoint of the signing wave → his "merge" go (main
-auto-deploys); (2) Phase 3 (docs completeness audit → one-off sweep +
+**The rehearsal-gated signing wave is MERGED + deployed (2026-08-09 22:13 on
+Rahul's "Look good. Merge"; built + fully rehearsed 22:07)**: ui/dialog sheet mode
+pins a DialogFooter child below the scroll area; signatureModal adopt CTA → banded
+DialogFooter + `loading` (safe-area-absorbing band); signingExperience
+Finish/decline → `loading` with stable labels, decline dialog rows → DialogFooter,
+chip text-white → token; proposalView bg-white/text-white →
+bg-card/text-primary-foreground. Full e2e rehearsal PASSED **including the webhook
+leg** (stripe listen --api-key needs no CLI login — recipe in the
+chrome-testing-quirks memory): SIGNED/PAID, cert hash == content hash, all 4 emails
+DELIVERED, jobs DONE attempts=1. Both temp rows deleted by id-scoped cascade (his
+phone-walk row is the sole [TEST] row). Details: log 2026-08-09 22:07 + 22:13.
+**RESUME POINT — next: Phase 3** (docs completeness audit → one-off sweep +
 docs/landing/sign-in alignment → guardrails + full regression/a11y pass).
 **Added 2026-08-09 by Rahul — BOTH DONE 2026-08-09** (log 02:50): PDF reviewed (cert
 font-name leak fixed; page numbers / Notes-page flow / footnote anchors / footer naming
