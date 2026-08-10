@@ -140,6 +140,21 @@ main {
   }
 }
 
+/* Dashboard metric cards: one-time entrance stagger. Decorative and tiny (4px rise,
+   40ms steps) — rides on top of main's fadeIn, gone entirely under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .stagger-children > * {
+    animation: staggerRise 240ms var(--ease-out-strong) backwards;
+  }
+  .stagger-children > *:nth-child(2) { animation-delay: 40ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 80ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 120ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 160ms; }
+}
+@keyframes staggerRise {
+  from { opacity: 0; transform: translateY(4px); }
+}
+
 /* Attention: when the client hits "Ready to sign" without picking a plan, every tier
    card itself lights amber — exact card shape, no frame to collide with the layout —
    and stays lit until a selection is made (cleared in handleTierSelect). The cards'

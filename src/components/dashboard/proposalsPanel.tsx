@@ -104,6 +104,11 @@ export function ProposalsPanel({
         </p>
       </div>
 
+      {/* Keyed by filter: the swap gets a 150ms fade instead of a hard cut. */}
+      <div
+        key={filter}
+        className="space-y-4 animate-in fade-in-0 duration-150 ease-out-strong motion-reduce:animate-none"
+      >
       {visible.length === 0 ? (
         <Card size="lg" className="py-12 text-center text-muted-foreground">
           Nothing in this filter right now.
@@ -208,6 +213,7 @@ export function ProposalsPanel({
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }

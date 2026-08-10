@@ -1,5 +1,39 @@
 # log.md - proposal-generator
 
+## 2026-08-09 17:40 PT - Phase 2 wave 7: dashboard motion + skeletons (Phase 2 COMPLETE pending this merge)
+
+Wave 6 merged + deployed on Rahul's go right before this. Wave 7 built on
+`ui/consistency-pass`, **unmerged, pending his checkpoint** - Phase 2 items 6-7, the
+last Phase 2 wave:
+
+- **Filter-change crossfade**: the proposals results region (table/mobile
+  list/empty state) remounts keyed by filter with a 150ms fade-in on
+  --ease-out-strong instead of a hard cut. motion-reduce: none.
+- **Metric-card entrance stagger**: new `.stagger-children` utility in globals
+  (240ms rise+fade per card, 40ms steps, `backwards` fill, wrapped in
+  prefers-reduced-motion: no-preference) applied to the dashboard metrics grid.
+  Deliberately tiny - it rides on top of main's existing fadeIn.
+- **Sticky header**: backdrop-blur dropped, bg-white/80 -> bg-card/95 (the blur
+  repainted every scroll frame for a near-invisible effect; plan item 6).
+- **Skeletons**: new `ui/skeleton` primitive (pulse = opacity-only, reduced-motion
+  safe) + route-level loading.tsx for dashboard (header, hero + 4 KPI cards in the
+  real grid, pill bar, 6-row table ghost) and proposals/[id] (title/chips/meta,
+  actions, tab bar, raised document-card ghost). The group-level spinner stays for
+  settings/docs/new/edit/send.
+
+Verification note for future sessions (now also in the chrome-testing-quirks
+memory): the occluded automation window FREEZES CSS animation clocks, so
+screenshots catch animations mid-flight forever. Verified end-states via the Web
+Animations API instead (getAnimations().finish() -> all 5 cards at opacity 1,
+transform none; filter swap correct after finish). Skeletons verified two ways:
+the streamed HTML carries the loading shells (62 skeleton nodes on /dashboard, 17
+on detail, aria-labels present), and both shells were extracted from the stream
+and mounted in-page for visual screenshots - proportions mirror the real layouts,
+no reflow jump. 306/306 vitest + clean build.
+
+With this merged, Phase 2 is DONE. Remaining: the rehearsal-gated signing wave,
+then Phase 3.
+
 ## 2026-08-09 17:05 PT - Phase 2 wave 6: type/color hygiene sweep
 
 Scroll fix merged + deployed on Rahul's "Go ahead" right before this. Wave 6 built on

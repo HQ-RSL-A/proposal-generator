@@ -185,7 +185,7 @@ export default async function DashboardPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:grid-rows-2">
+      <div className="stagger-children grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 lg:grid-rows-2">
         <HeroMetric
           valueLabel={formatCents(metrics.mrrCents)}
           deltaLabel={mrrDeltaLabel}

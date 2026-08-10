@@ -51,7 +51,9 @@ export function AppShell({
   return (
     <TooltipProvider>
       <div className="min-h-screen bg-surface">
-        <header className="sticky top-0 z-40 border-b border-border bg-white/80 backdrop-blur">
+        {/* bg-card/95, no backdrop-blur: the blur repainted every scroll frame for a
+            near-invisible effect at this opacity. */}
+        <header className="sticky top-0 z-40 border-b border-border bg-card/95">
           <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
             <div className="flex items-center gap-6">
               <Link href="/dashboard" className="flex items-center">

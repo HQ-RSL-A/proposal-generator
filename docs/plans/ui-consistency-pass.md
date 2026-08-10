@@ -14,14 +14,18 @@ review surfaced (header actions hidden on proposal-page load →
 `data-scroll-behavior="smooth"` on `<html>`) **MERGED + deployed ~16:50 on his "Go
 ahead"**. Only ONE [TEST] row remains in prod (his VIEWED phone-walk row); the
 rehearsal row was deleted on his ask.
-**Wave 6 (type/color hygiene — Phase 2 item 5) is committed on `ui/consistency-pass`,
-unmerged, PENDING HIS CHECKPOINT** (log 17:05): transition-all retired from the 4 ui
-primitives (named lists; box-shadow excluded so focus rings snap), ring-black/* →
-ring-foreground/10 everywhere, bg-white → bg-card (6 non-signing sites; appShell /80
-waits for the motion wave), text-white on primary → token, #00C2FF → --chart-2, the
-14 redundant CardTitle text-base overrides dropped, signatureSettings eyebrows onto
-CardLabel. Admin h1s / arbitrary px / arbitrary radii were already clean from earlier
-waves; landing's two text-[15px] wait for Phase 3's landing pass.
+**Wave 6 (type/color hygiene — Phase 2 item 5) MERGED + deployed on his go** (log
+17:05): transition-all retired from the 4 ui primitives (box-shadow excluded so focus
+rings snap), ring unification on ring-foreground/10, bg-white → bg-card, text-white
+on primary → token, #00C2FF → --chart-2, CardTitle overrides dropped,
+signatureSettings eyebrows onto the CardLabel standard. Landing's two text-[15px]
+wait for Phase 3's landing pass.
+**Wave 7 (dashboard motion + skeletons — Phase 2 items 6-7) is committed on
+`ui/consistency-pass`, unmerged, PENDING HIS CHECKPOINT** (log 17:40): filter-change
+150ms crossfade, `.stagger-children` metric-card entrance stagger, sticky-header
+backdrop-blur dropped (bg-card/95), new `ui/skeleton` + route-level loading
+skeletons for dashboard and proposal detail (group spinner stays elsewhere).
+**Phase 2 is COMPLETE once wave 7 merges.**
 Wave 4 (primitives adoption — Phase 2 item 3): proposals list → real ui/table
 (semantics; row-overlay link verified clickable), dashboard filter → ui/tabs
 (arrow-key + Enter activation, Badge counts, wave-1 pill look kept), both native
@@ -38,9 +42,10 @@ buttons (send/save/signature/retry) → `loading`, sign-in Google button pending
 signingExperience's pending buttons + signatureModal's footer wait for a
 rehearsal-gated wave.
 **RESUME POINT — next steps in order:**
-(1) dashboard motion + skeletons (Phase 2 items 6-7: filter-change crossfade, optional
-metric-card stagger, appShell backdrop-blur → bg-white/95, loading.tsx skeleton
-upgrade); (2) Phase 3.
+(1) the rehearsal-gated signing wave (signatureModal → DialogFooter, the two ceremony
+pending buttons → Button `loading`, proposalView bg-white/text-white hygiene; full
+e2e rehearsal before merge); (2) Phase 3 (docs completeness audit → one-off sweep +
+docs/landing/sign-in alignment → guardrails + full regression/a11y pass).
 **Added 2026-08-09 by Rahul — BOTH DONE 2026-08-09** (log 02:50): PDF reviewed (cert
 font-name leak fixed; page numbers / Notes-page flow / footnote anchors / footer naming
 are open decisions for Rahul), copy pass done (3 email tightenings + em dash fix;
