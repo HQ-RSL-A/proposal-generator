@@ -52,8 +52,20 @@ leg** (stripe listen --api-key needs no CLI login — recipe in the
 chrome-testing-quirks memory): SIGNED/PAID, cert hash == content hash, all 4 emails
 DELIVERED, jobs DONE attempts=1. Both temp rows deleted by id-scoped cascade (his
 phone-walk row is the sole [TEST] row). Details: log 2026-08-09 22:07 + 22:13.
-**RESUME POINT — next: Phase 3** (docs completeness audit → one-off sweep +
-docs/landing/sign-in alignment → guardrails + full regression/a11y pass).
+**Phase 3 is BUILT in one wave (2026-08-09 22:48, unmerged, pending Rahul's
+checkpoint)** — /docs completeness (Fifteen→Fourteen fix, IMPORT_KEYS drift guard +
+"What the import box reads" table, paste-dialect discount example, cadence caveats),
+sweep (copy chip recipe, emerald→success, public 15px→text-base), guardrails (the
+table below + CLAUDE.md UI Conventions + AGENTS.md mirror), and the full a11y pass:
+Lighthouse landing/sign-in 100 (sign-in gained its `<main>`), signing 98 (noindex by
+design; heading-order deferred — signing file), axe 0 on /docs, /dashboard, and
+/proposals/new across all form states after: `--accent-foreground` → #0062D6,
+`--success` → #047857 (both AA now; toasts moved onto the tokens), tab/chip text →
+foreground/70, 18 label associations + 11 toggle names + counter contrast in the form.
+Open items for later: proposalView heading-order tag swap (next rehearsal-gated wave),
+white-on-amber warning toast (~2.1:1 — Rahul's design call). Details: log 22:48.
+**RESUME POINT — next: Rahul's checkpoint of the Phase 3 wave → his "merge" go.
+After that the plan is COMPLETE** (only the two open items above remain).
 **Added 2026-08-09 by Rahul — BOTH DONE 2026-08-09** (log 02:50): PDF reviewed (cert
 font-name leak fixed; page numbers / Notes-page flow / footnote anchors / footer naming
 are open decisions for Rahul), copy pass done (3 email tightenings + em dash fix;
@@ -287,6 +299,40 @@ keyboard-only walk (tabs, table, menus, dialogs).
    (axe on dashboard, form, signing).
 
 ---
+
+## Which primitive for what (the standing system — Phase 3 guardrail)
+
+| Need | Use | Never |
+| --- | --- | --- |
+| Container / panel | `Card` (`variant` flat/outlined/raised/floating · `tone` · `size` · `selected`) | hand-rolled `rounded-* border p-*` divs |
+| Eyebrow / section label | `CardLabel` | bespoke uppercase/tracking spans |
+| Status color | the `StatusTone` scale exported by `statusChip.tsx` | raw palette classes (`rose-*`, `emerald-*`, `sky-*`, …) |
+| Confirmation | `confirmDialog()` for simple; `Dialog` + `DialogFooter` for richer flows (Void, Decline) | toast confirms, hand-rolled action rows |
+| Async pending | `Button loading` (spinner + preserved label) with per-action/per-row pending keys | label swaps, panel-wide `busy` |
+| Dialog actions | `DialogFooter` (banded; pins below the scroll area in sheet mode) | `flex justify-end` rows |
+| Tabular data | `ui/table` | div grids |
+| Filter / tab bars | `ui/tabs` (+ `Badge` counts) | hand-rolled pill rows |
+| Selects | `ui/select` | native `<select>` |
+| Icon-only buttons | `aria-label` + `ui/tooltip` (600ms first-open, instant subsequent) | unlabeled icon buttons |
+| Toasts | `brandToast` with severity semantics (error = failed · warning = you must act · brand/info = guidance) | raw sonner, guidance in error chrome |
+| Programmatic scroll | `appScrollBehavior()` | raw `behavior: "smooth"` |
+| Motion | `--ease-out-strong`, named transition properties, `motion-reduce`/`prefers-reduced-motion` guards | `transition-all`, unguarded animations |
+| Text size | the type scale (CardLabel/CardTitle defaults; admin h1 = `font-heading text-2xl font-bold`) | new `text-[Npx]` |
+| Color | tokens only (`bg-card`, `text-primary-foreground`, `--chart-*`) | `bg-white`, `text-white`, hex literals |
+
+### Sanctioned exceptions (grep hits that are correct — do not "fix")
+
+- `statusChip.tsx` solid PAID chip: `bg-success text-white` (no `--success-foreground` token; the one deliberate white-on-color chip).
+- `lib/toast.tsx`: `text-white` + `bg-white/20` (alpha overlays on colored toast surfaces).
+- Landing hero `text-[clamp(…)]` + `font-black` (the hero scale; `font-black` is hero + proposal document title only).
+- Primitive-internal micro details: checkbox `rounded-[4px]`, tooltip arrow `rounded-[2px]`, button sm `rounded-[min(var(--radius-md),12px)]` + `text-[0.8rem]`, CardLabel `text-[11px]`, font-tag `text-[10px]`.
+- Document prose `text-[15px]` in `proposalView` (the paper reading size; the PDF mirrors it).
+
+### Import-docs drift guard
+
+The /docs page is compile-time-typed against BOTH `TokensJson` (`FIELD_META`) and
+`IMPORT_KEYS` from `src/lib/importPricing.ts` (`IMPORT_META`). Teaching the import box a
+new top-level key means adding it to `IMPORT_KEYS` and documenting it, or the build fails.
 
 ## Risks / watchpoints
 

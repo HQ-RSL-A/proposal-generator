@@ -86,12 +86,12 @@ export function ProposalsPanel({
               <TabsTrigger
                 key={t.key}
                 value={t.key}
-                className="group/trigger h-auto flex-none rounded-lg px-3.5 py-1.5 text-sm font-medium text-muted-foreground transition-[color,background-color,box-shadow] duration-150 ease-out-strong hover:text-foreground data-active:bg-card data-active:font-semibold data-active:text-foreground data-active:shadow-sm"
+                className="group/trigger h-auto flex-none rounded-lg px-3.5 py-1.5 text-sm font-medium text-foreground/70 transition-[color,background-color,box-shadow] duration-150 ease-out-strong hover:text-foreground data-active:bg-card data-active:font-semibold data-active:text-foreground data-active:shadow-sm"
               >
                 {t.label}
                 <Badge
                   variant="secondary"
-                  className="h-4.5 min-w-4.5 border-0 bg-foreground/5 px-1 text-xs tabular-nums text-muted-foreground group-data-active/trigger:bg-accent group-data-active/trigger:text-primary"
+                  className="h-4.5 min-w-4.5 border-0 bg-foreground/5 px-1 text-xs tabular-nums text-foreground/70 group-data-active/trigger:bg-accent group-data-active/trigger:text-accent-foreground"
                 >
                   {counts[t.key]}
                 </Badge>

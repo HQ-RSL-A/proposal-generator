@@ -1,6 +1,29 @@
 import { formatCents, originalCents, parseCentsFromDisplayString } from "@/lib/currency";
 import type { AddOn, OneTimeItem, PaymentConfig, RecurringItem } from "@/lib/types";
 
+/**
+ * Every non-token top-level key the import box recognizes (token keys live in TOKEN_KEYS).
+ * THE source of truth for the /docs "What the import box reads" table, which is typed
+ * Record<ImportKey, …> — recognize a new key in handleImport (proposalForm.tsx) or here
+ * without adding it to this list and the docs page, and the build fails until documented.
+ * Everything else in a paste (including a stored PaymentConfig's tiers/addOns/deposit/
+ * futureItems arrays) is ignored by the import.
+ */
+export const IMPORT_KEYS = [
+  "Investment.Structure",
+  "Investment.AddOns",
+  "Investment.FutureItems",
+  "Investment.DepositPercent",
+  "Content.TrackRecord",
+  "oneTime",
+  "recurring",
+  "paymentMethods",
+  "preferAch",
+  "manualInvoice",
+] as const;
+
+export type ImportKey = (typeof IMPORT_KEYS)[number];
+
 /** Normalized flat pricing pulled out of a pasted tokens JSON, ready to merge into the form. */
 export interface FlatPricingImport {
   oneTime: OneTimeItem | null;

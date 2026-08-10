@@ -14,8 +14,8 @@ type BrandToastTone = "brand" | "success" | "error" | "warning" | "info";
 
 const TONE: Record<BrandToastTone, { bg: string; Icon: LucideIcon }> = {
   brand: { bg: "bg-primary", Icon: Check },
-  success: { bg: "bg-emerald-600", Icon: Check },
-  error: { bg: "bg-red-600", Icon: OctagonX },
+  success: { bg: "bg-success", Icon: Check },
+  error: { bg: "bg-destructive", Icon: OctagonX },
   warning: { bg: "bg-amber-500", Icon: TriangleAlert },
   info: { bg: "bg-foreground", Icon: Info },
 };

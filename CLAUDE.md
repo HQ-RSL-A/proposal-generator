@@ -53,6 +53,26 @@ for open and planned work.
   only to ship a non-`main` state. Never manually deploy a branch that's behind `main` - it
   supersedes the live deploy and reverts whatever `main` last shipped.
 
+## UI Conventions
+
+- **Tokens only.** No raw palette classes (`bg-white`, `text-white`, hex literals,
+  `emerald-*`/`rose-*`/...) outside `statusChip.tsx`'s tone maps and brandToast's alpha
+  overlays. Status colors come only from the `StatusTone` scale `statusChip.tsx` exports.
+- **Primitives are mandatory:** Card/CardLabel for containers and eyebrows;
+  `confirmDialog()` for simple confirms and `DialogFooter` for dialog action rows;
+  `Button loading` (stable label, per-action pending keys) for async - never label swaps
+  or panel-wide `busy`; ui/table, ui/tabs, ui/select over hand-rolled equivalents;
+  `aria-label` + ui/tooltip on icon-only buttons.
+- **Motion:** `--ease-out-strong`, named transition properties (never `transition-all`),
+  everything `prefers-reduced-motion`-safe, programmatic scrolls via `appScrollBehavior()`.
+- **New routes ship `loading.tsx` + `error.tsx`** (branded, no emojis; client-facing errors
+  show only SUPPORT_EMAIL).
+- **The import box's recognized keys live in `IMPORT_KEYS`** (`src/lib/importPricing.ts`);
+  /docs is compile-time-typed against them and `TokensJson` - teaching the import a new key
+  without documenting it breaks the build.
+- Sanctioned exceptions + the full which-primitive-for-what table:
+  `docs/plans/ui-consistency-pass.md`.
+
 ## Commands
 
 ```bash

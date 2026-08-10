@@ -608,7 +608,7 @@ function FieldCounter({ value, max, words }: { value: string; max?: number; word
           ? "font-medium text-destructive"
           : near
             ? "text-warning-subtle-foreground"
-            : "text-muted-foreground/70"
+            : "text-muted-foreground"
       )}
     >
       {wordCount !== null ? `${wordCount} words · ` : ""}
@@ -618,10 +618,20 @@ function FieldCounter({ value, max, words }: { value: string; max?: number; word
   );
 }
 
-function LabelRow({ label, children }: { label: React.ReactNode; children?: React.ReactNode }) {
+function LabelRow({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: React.ReactNode;
+  htmlFor?: string;
+  children?: React.ReactNode;
+}) {
   return (
     <div className="flex items-baseline justify-between gap-2">
-      <Label className="text-xs">{label}</Label>
+      <Label className="text-xs" htmlFor={htmlFor}>
+        {label}
+      </Label>
       {children}
     </div>
   );
@@ -693,6 +703,8 @@ export function MoneyFields({
   withInterval?: boolean;
   withDiscount?: boolean;
 }) {
+  // Instance-scoped ids: MoneyFields mounts several times per form (flat, per tier).
+  const uid = React.useId();
   const discountOn = Boolean(withDiscount && value.discountEnabled);
   const discountCents = value.discountCents ?? 0;
   // amountCents is the NET; the list price is what the client would pay without the discount.
@@ -717,10 +729,11 @@ export function MoneyFields({
     <div className="space-y-2">
       <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
         <div className="col-span-2 sm:col-span-4">
-          <LabelRow label={`Label${withDiscount ? " (name on Stripe)" : ""}`}>
+          <LabelRow label={`Label${withDiscount ? " (name on Stripe)" : ""}`} htmlFor={`${uid}-label`}>
             <FieldCounter value={value.label} max={MAX_LINE_LABEL_CHARS} />
           </LabelRow>
           <GrowingInput
+            id={`${uid}-label`}
             value={value.label}
             maxLength={MAX_LINE_LABEL_CHARS}
             onChange={(e) => onChange({ ...value, label: e.target.value })}
@@ -730,8 +743,9 @@ export function MoneyFields({
         {discountOn ? (
           <>
             <div className="col-span-1 sm:col-span-3">
-              <Label className="text-xs">List price ($)</Label>
+              <Label className="text-xs" htmlFor={`${uid}-list`}>List price ($)</Label>
               <Input
+                id={`${uid}-list`}
                 type="number"
                 min={0}
                 step="0.01"
@@ -740,8 +754,9 @@ export function MoneyFields({
               />
             </div>
             <div className="col-span-1 sm:col-span-3">
-              <Label className="text-xs">Discount ($)</Label>
+              <Label className="text-xs" htmlFor={`${uid}-discount`}>Discount ($)</Label>
               <Input
+                id={`${uid}-discount`}
                 type="number"
                 min={0}
                 step="0.01"
@@ -753,8 +768,9 @@ export function MoneyFields({
         ) : (
           <>
             <div className="col-span-2 sm:col-span-4">
-              <Label className="text-xs">Shown to client</Label>
+              <Label className="text-xs" htmlFor={`${uid}-display`}>Shown to client</Label>
               <GrowingInput
+                id={`${uid}-display`}
                 value={value.displayString}
                 onChange={(e) => {
                   const displayString = e.target.value;
@@ -765,8 +781,9 @@ export function MoneyFields({
               />
             </div>
             <div className="col-span-1 sm:col-span-2">
-              <Label className="text-xs">Charged ($)</Label>
+              <Label className="text-xs" htmlFor={`${uid}-charged`}>Charged ($)</Label>
               <Input
+                id={`${uid}-charged`}
                 type="number"
                 min={0}
                 step="0.01"
@@ -780,7 +797,7 @@ export function MoneyFields({
         )}
         {withInterval ? (
           <div className="col-span-1 sm:col-span-2">
-            <Label className="text-xs">Every</Label>
+            <Label className="text-xs" htmlFor={`${uid}-interval`}>Every</Label>
             <Select
               items={INTERVAL_ITEMS}
               value={value.intervalMonths ?? 1}
@@ -788,7 +805,7 @@ export function MoneyFields({
                 onChange({ ...value, intervalMonths: interval as 1 | 3 | 12 })
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger id={`${uid}-interval`} aria-label="Billing interval" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -806,8 +823,9 @@ export function MoneyFields({
       {discountOn ? (
         <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
           <div className="sm:col-span-8">
-            <Label className="text-xs">Discount reason (shown to client)</Label>
+            <Label className="text-xs" htmlFor={`${uid}-reason`}>Discount reason (shown to client)</Label>
             <GrowingInput
+              id={`${uid}-reason`}
               value={value.discountReason ?? ""}
               onChange={(e) => onChange({ ...value, discountReason: e.target.value })}
               placeholder="Loyalty discount"
@@ -827,6 +845,7 @@ export function MoneyFields({
       {withDiscount ? (
         <div className="flex items-center gap-2">
           <Switch
+            aria-label="Apply a discount"
             checked={discountOn}
             onCheckedChange={(v) => {
               if (v) {
@@ -929,6 +948,9 @@ export function ProposalForm({
       brandToast("warning", `Import failed: ${errors[0]}`);
       return;
     }
+    // Recognized non-token keys are enumerated in IMPORT_KEYS (lib/importPricing).
+    // Teach the import a new key → add it there and document it in /docs, or the
+    // docs page stops compiling.
     const rawObj = raw as Record<string, unknown>;
     const inferredTiers = inferTiersFromImport(rawObj);
     // Flat pricing only when the deal isn't tiered; tiers always win.
@@ -1073,6 +1095,7 @@ export function ProposalForm({
                 handleImport(text);
               }}
               placeholder='Paste the tokens JSON ({"Client.ProposalTitle": ...}) — it fills the form on paste'
+              aria-label="Tokens JSON to import"
               className="min-h-24 font-mono text-xs"
             />
             <Button
@@ -1103,7 +1126,7 @@ export function ProposalForm({
                   field.multiline || field.grow ? "col-span-2 space-y-1.5" : "space-y-1.5"
                 }
               >
-                <LabelRow label={field.label}>
+                <LabelRow label={field.label} htmlFor={`tf-${field.key}`}>
                   {field.multiline || field.grow ? (
                     <FieldCounter
                       value={state.tokens[field.key] ?? ""}
@@ -1114,6 +1137,7 @@ export function ProposalForm({
                 </LabelRow>
                 {field.multiline ? (
                   <Textarea
+                    id={`tf-${field.key}`}
                     value={state.tokens[field.key] ?? ""}
                     onChange={(e) =>
                       set("tokens", { ...state.tokens, [field.key]: e.target.value })
@@ -1122,6 +1146,7 @@ export function ProposalForm({
                   />
                 ) : field.grow ? (
                   <GrowingInput
+                    id={`tf-${field.key}`}
                     value={state.tokens[field.key] ?? ""}
                     maxLength={field.max}
                     onChange={(e) =>
@@ -1130,6 +1155,7 @@ export function ProposalForm({
                   />
                 ) : (
                   <Input
+                    id={`tf-${field.key}`}
                     value={state.tokens[field.key] ?? ""}
                     onChange={(e) =>
                       set("tokens", { ...state.tokens, [field.key]: e.target.value })
@@ -1152,8 +1178,9 @@ export function ProposalForm({
             heading and the results-vary disclaimer are added for you.
           </p>
           <div className="space-y-1.5">
-            <Label className="text-xs">Intro (optional lead-in above the case studies)</Label>
+            <Label className="text-xs" htmlFor="tr-intro">Intro (optional lead-in above the case studies)</Label>
             <Textarea
+              id="tr-intro"
               value={state.trackRecordIntro}
               onChange={(e) => set("trackRecordIntro", e.target.value)}
               className="min-h-20"
@@ -1176,8 +1203,9 @@ export function ProposalForm({
                 </Button>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Result</Label>
+                <Label className="text-xs" htmlFor={`cs-${index}-text`}>Result</Label>
                 <Textarea
+                  id={`cs-${index}-text`}
                   value={cs.text}
                   onChange={(e) => {
                     const caseStudies = [...state.caseStudies];
@@ -1189,8 +1217,9 @@ export function ProposalForm({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs">Link URL (optional)</Label>
+                <Label className="text-xs" htmlFor={`cs-${index}-url`}>Link URL (optional)</Label>
                 <GrowingInput
+                  id={`cs-${index}-url`}
                   value={cs.href}
                   onChange={(e) => {
                     const caseStudies = [...state.caseStudies];
@@ -1252,6 +1281,7 @@ export function ProposalForm({
               <Card variant="outlined" size="sm" className="gap-2 px-(--card-spacing)">
                 <div className="flex items-center gap-2">
                   <Switch
+                    aria-label="One-time amount due at checkout"
                     checked={state.oneTimeEnabled}
                     onCheckedChange={(v) => set("oneTimeEnabled", Boolean(v))}
                   />
@@ -1264,6 +1294,7 @@ export function ProposalForm({
               <Card variant="outlined" size="sm" className="gap-2 px-(--card-spacing)">
                 <div className="flex items-center gap-2">
                   <Switch
+                    aria-label="Recurring subscription starting at checkout"
                     checked={state.recurringEnabled}
                     onCheckedChange={(v) => set("recurringEnabled", Boolean(v))}
                   />
@@ -1287,10 +1318,11 @@ export function ProposalForm({
                 <Card key={index} variant="outlined" size="sm" className="px-(--card-spacing)">
                   <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-12">
                     <div className="col-span-2 sm:col-span-5">
-                      <LabelRow label="Tier name">
+                      <LabelRow label="Tier name" htmlFor={`tier-${index}-name`}>
                         <FieldCounter value={tier.label} />
                       </LabelRow>
                       <GrowingInput
+                        id={`tier-${index}-name`}
                         value={tier.label}
                         onChange={(e) => {
                           const tiers = [...state.tiers];
@@ -1306,6 +1338,7 @@ export function ProposalForm({
                     </div>
                     <div className="col-span-1 flex items-center gap-2 pb-1.5 sm:col-span-4">
                       <Checkbox
+                        aria-label="Most popular tier"
                         checked={tier.recommended}
                         onCheckedChange={(v) => {
                           const tiers = state.tiers.map((t, i) => ({
@@ -1330,8 +1363,9 @@ export function ProposalForm({
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs">Includes (one per line)</Label>
+                    <Label className="text-xs" htmlFor={`tier-${index}-includes`}>Includes (one per line)</Label>
                     <Textarea
+                      id={`tier-${index}-includes`}
                       value={tier.includesText}
                       onChange={(e) => {
                         const tiers = [...state.tiers];
@@ -1344,6 +1378,7 @@ export function ProposalForm({
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Switch
+                        aria-label="Tier one-time price"
                         checked={tier.oneTimeEnabled}
                         onCheckedChange={(v) => {
                           const tiers = [...state.tiers];
@@ -1366,6 +1401,7 @@ export function ProposalForm({
                     ) : null}
                     <div className="flex items-center gap-2">
                       <Switch
+                        aria-label="Tier recurring price"
                         checked={tier.recurringEnabled}
                         onCheckedChange={(v) => {
                           const tiers = [...state.tiers];
@@ -1432,6 +1468,7 @@ export function ProposalForm({
             <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4 md:gap-6">
               <div className="flex items-center gap-2">
                 <Checkbox
+                  aria-label="Accept card payments"
                   checked={state.methods.card}
                   onCheckedChange={(v) => set("methods", { ...state.methods, card: Boolean(v) })}
                 />
@@ -1439,6 +1476,7 @@ export function ProposalForm({
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox
+                  aria-label="Accept ACH bank transfer"
                   checked={state.methods.ach}
                   onCheckedChange={(v) => set("methods", { ...state.methods, ach: Boolean(v) })}
                 />
@@ -1446,7 +1484,7 @@ export function ProposalForm({
               </div>
               {state.methods.ach ? (
                 <div className="flex items-center gap-2">
-                  <Switch checked={state.preferAch} onCheckedChange={(v) => set("preferAch", Boolean(v))} />
+                  <Switch aria-label="Prefer ACH" checked={state.preferAch} onCheckedChange={(v) => set("preferAch", Boolean(v))} />
                   <Label className="text-sm">Prefer ACH (6+ month contracts)</Label>
                 </div>
               ) : null}
@@ -1474,6 +1512,7 @@ export function ProposalForm({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Switch
+                        aria-label="Recurring add-on"
                         checked={addOn.isRecurring}
                         onCheckedChange={(v) => {
                           const addOns = [...state.addOns];
@@ -1551,6 +1590,7 @@ export function ProposalForm({
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Switch
+                        aria-label="Recurring later-phase line"
                         checked={item.isRecurring}
                         onCheckedChange={(v) => {
                           const futureItems = [...state.futureItems];
@@ -1595,8 +1635,9 @@ export function ProposalForm({
                     withInterval={item.isRecurring}
                   />
                   <div className="space-y-1">
-                    <Label className="text-xs">Starts</Label>
+                    <Label className="text-xs" htmlFor={`future-${index}-starts`}>Starts</Label>
                     <GrowingInput
+                      id={`future-${index}-starts`}
                       value={item.startsNote}
                       placeholder="After launch"
                       onChange={(e) => {
@@ -1623,6 +1664,7 @@ export function ProposalForm({
             <div className="space-y-2 border-t border-border pt-4">
               <div className="flex items-center gap-2">
                 <Switch
+                  aria-label="Charge a deposit only at signing"
                   checked={state.depositEnabled}
                   disabled={!hasOneTime}
                   onCheckedChange={(v) => set("depositEnabled", Boolean(v))}

@@ -137,7 +137,7 @@ export default async function LandingPage() {
                   <h3 className="font-heading mt-5 text-lg font-bold text-foreground">
                     {step.title}
                   </h3>
-                  <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+                  <p className="mt-2 text-base leading-relaxed text-muted-foreground">
                     {step.text}
                   </p>
                 </div>

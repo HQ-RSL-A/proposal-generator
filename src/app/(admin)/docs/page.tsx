@@ -1,4 +1,5 @@
 import { TOKEN_KEYS, type TokensJson } from "@/lib/types";
+import { IMPORT_KEYS, type ImportKey } from "@/lib/importPricing";
 import { CopyableCode } from "@/components/docs/copyableCode";
 import { Card } from "@/components/ui/card";
 import {
@@ -103,6 +104,25 @@ const FIELD_META: Record<keyof TokensJson, FieldMeta> = {
     description: "Offer expiry. Defaults to today plus 30 days if you leave it out.",
     example: "July 13, 2026",
   },
+};
+
+type ImportKeyMeta = { prefills: string };
+
+// Typed against ImportKey (lib/importPricing) so this table cannot drift from what the
+// import box actually reads: recognize a new key without documenting it and the build fails.
+const IMPORT_META: Record<ImportKey, ImportKeyMeta> = {
+  "Investment.Structure": {
+    prefills: "The tier pricing UI (2 to 4 tiers). The only way tiers import.",
+  },
+  "Investment.AddOns": { prefills: "The optional add-ons editor (up to 10)." },
+  "Investment.FutureItems": { prefills: "The Later phases editor (display-only lines, up to 6)." },
+  "Investment.DepositPercent": { prefills: "Turns the deposit on (integer 1 to 99)." },
+  "Content.TrackRecord": { prefills: "The Our Track Record editor (intro + case studies)." },
+  oneTime: { prefills: "Flat one-time pricing (internal shape). Skipped when the paste has tiers." },
+  recurring: { prefills: "Flat recurring pricing (internal shape). Skipped when the paste has tiers." },
+  paymentMethods: { prefills: "The card / ACH toggles." },
+  preferAch: { prefills: "The prefer-ACH flag." },
+  manualInvoice: { prefills: "The manual-invoice checkbox (flat or tiered alike)." },
 };
 
 const TOKENS_EXAMPLE = `{
@@ -252,6 +272,19 @@ const PAYMENT_FUTURE = `{
   ]
 }`;
 
+const IMPORT_DISCOUNTS = `{
+  "Investment.Structure": {
+    "type": "tiers",
+    "tiers": [
+      { "name": "Growth", "price": "$3,000/month", "includes": ["Paid ads management"], "recommended": true,
+        "discount": { "amount": "$500", "reason": "Founding client rate" } }
+    ]
+  },
+  "Investment.AddOns": [
+    { "name": "Monthly SEO", "price": "$500/month", "discount": { "amount": "$100", "reason": "Bundle discount" } }
+  ]
+}`;
+
 const INVESTMENT_ADDONS = `{
   "Investment.AddOns": [
     { "name": "Rush delivery (two-week build)", "price": "$800" },
@@ -277,8 +310,8 @@ const CONTENT_TRACK_RECORD = `{
   }
 }`;
 
-function CodeBlock({ children }: { children: string }) {
-  return <CopyableCode code={children} />;
+function CodeBlock({ children, label }: { children: string; label: string }) {
+  return <CopyableCode code={children} label={label} />;
 }
 
 export default function DocsPage() {
@@ -326,16 +359,47 @@ export default function DocsPage() {
         <ol className="ml-4 list-decimal space-y-1 text-sm text-muted-foreground">
           <li>Paste a tokens JSON into the import box on New Proposal.</li>
           <li>The token fields pre-fill the form.</li>
-          <li>An optional Investment.Structure block pre-fills the pricing tiers.</li>
+          <li>
+            Optional Investment.* and Content.TrackRecord blocks pre-fill pricing, add-ons,
+            deposit, later phases, and track record.
+          </li>
           <li>Set or adjust anything in the form, then send.</li>
         </ol>
       </section>
 
       <section className="space-y-3">
+        <h2 className="font-heading text-lg font-semibold">What the import box reads</h2>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Besides the token fields, exactly these top-level keys are read on paste. Any other key
+          is accepted and ignored — including a stored PaymentConfig&apos;s tiers, addOns, deposit,
+          and futureItems arrays. Tiers import only via Investment.Structure, and a tiers array in
+          the paste also blocks flat import (tiers win).
+        </p>
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Key</TableHead>
+                <TableHead>What it pre-fills</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {IMPORT_KEYS.map((key) => (
+                <TableRow key={key}>
+                  <TableCell className="align-top font-mono text-xs">{key}</TableCell>
+                  <TableCell className="align-top text-sm">{IMPORT_META[key].prefills}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      </section>
+
+      <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold">Token fields</h2>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Seventeen string keys. Fifteen are required. The two date fields fill themselves if you
-          leave them out.
+          Seventeen string keys. Fourteen are required: Client.LastName may be left blank, and the
+          two date fields fill themselves if you leave them out.
         </p>
         <Card>
           <Table>
@@ -381,7 +445,7 @@ export default function DocsPage() {
 
       <section className="space-y-3">
         <h2 className="font-heading text-lg font-semibold">Full token example</h2>
-        <CodeBlock>{TOKENS_EXAMPLE}</CodeBlock>
+        <CodeBlock label="Full token example">{TOKENS_EXAMPLE}</CodeBlock>
       </section>
 
       <section className="space-y-4">
@@ -390,7 +454,9 @@ export default function DocsPage() {
           Pricing is set in the form, or imported from the pasted JSON: flat pricing from top-level
           oneTime / recurring (plus paymentMethods and preferAch), tiers from an Investment.Structure
           block (below). It is stored as a PaymentConfig in one of three shapes (flat, tiered,
-          sign-only). Money is
+          sign-only). The blocks in this section show the stored shapes — on paste, only the keys in
+          What the import box reads are read, so pre-fill tiers, add-ons, deposit, and later phases
+          with the Investment.* blocks further down. Money is
           always an integer amountCents plus a matching displayString. At send time the two must
           agree to the cent. Optional fields stack on top of any shape: addOns (extras the client
           toggles), a discount on any charged line, deposit (charge only a percentage up front),
@@ -399,26 +465,26 @@ export default function DocsPage() {
         </p>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Flat, one time</h3>
-          <CodeBlock>{PAYMENT_ONETIME}</CodeBlock>
+          <CodeBlock label="Flat one-time pricing">{PAYMENT_ONETIME}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Flat, recurring</h3>
-          <CodeBlock>{PAYMENT_RECURRING}</CodeBlock>
+          <CodeBlock label="Flat recurring pricing">{PAYMENT_RECURRING}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Flat, setup fee plus recurring</h3>
-          <CodeBlock>{PAYMENT_COMBO}</CodeBlock>
+          <CodeBlock label="Setup fee plus recurring pricing">{PAYMENT_COMBO}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Tiered (client picks one)</h3>
-          <CodeBlock>{PAYMENT_TIERED}</CodeBlock>
+          <CodeBlock label="Tiered pricing">{PAYMENT_TIERED}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Sign only (no payment)</h3>
           <p className="max-w-2xl text-sm text-muted-foreground">
             Nothing is priced and nothing is charged. The signing flow ends on a confirmation page.
           </p>
-          <CodeBlock>{PAYMENT_SIGNONLY}</CodeBlock>
+          <CodeBlock label="Sign-only pricing">{PAYMENT_SIGNONLY}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Manual invoice (priced, but no online checkout)</h3>
@@ -431,7 +497,7 @@ export default function DocsPage() {
             the flag is ignored and it stays sign-only.) In the form it is the checkbox
             &quot;Don&apos;t collect payment, I&apos;ll invoice manually.&quot;
           </p>
-          <CodeBlock>{PAYMENT_MANUAL_INVOICE}</CodeBlock>
+          <CodeBlock label="Manual invoice pricing">{PAYMENT_MANUAL_INVOICE}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Optional add-ons (any shape)</h3>
@@ -440,7 +506,7 @@ export default function DocsPage() {
             flat price they pick. Each add-on is one time (intervalMonths null) or recurring (1, 3,
             or 12). Up to ten, each with a unique id.
           </p>
-          <CodeBlock>{PAYMENT_ADDONS}</CodeBlock>
+          <CodeBlock label="Add-ons example">{PAYMENT_ADDONS}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Discounts (any charged line)</h3>
@@ -457,12 +523,17 @@ export default function DocsPage() {
           <p className="max-w-2xl text-sm text-muted-foreground">
             Two discount shapes, one per block. Tiered and add-on discounts use{" "}
             {"{ amount, reason }"} where the line price is the list and the app subtracts the
-            discount. Flat oneTime and recurring discounts use {"{ amountCents, reason }"} where
-            amountCents is already the net and the discount is recorded for display only. The import
-            toast lists each resolved &quot;was X, now Y&quot; so you can confirm the net before
-            sending.
+            discount — amount is a display string like &quot;$500&quot; (an integer amountCents is
+            also accepted). Flat oneTime and recurring discounts use {"{ amountCents, reason }"}{" "}
+            where amountCents is already the net and the discount is recorded for display only. The
+            import toast lists each resolved &quot;was X, now Y&quot; so you can confirm the net
+            before sending.
           </p>
-          <CodeBlock>{PAYMENT_DISCOUNT}</CodeBlock>
+          <CodeBlock label="Flat discount example">{PAYMENT_DISCOUNT}</CodeBlock>
+          <p className="max-w-2xl text-sm text-muted-foreground">
+            The same discounts in the paste dialect, on a Structure tier and an add-on:
+          </p>
+          <CodeBlock label="Paste-dialect discount example">{IMPORT_DISCOUNTS}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Deposit (charge a percentage up front)</h3>
@@ -472,7 +543,7 @@ export default function DocsPage() {
             started at signing, so the signing charge is a single one-time deposit. It needs a
             one-time amount to apply.
           </p>
-          <CodeBlock>{PAYMENT_DEPOSIT}</CodeBlock>
+          <CodeBlock label="Deposit example">{PAYMENT_DEPOSIT}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Later phases, display-only (any shape)</h3>
@@ -482,7 +553,7 @@ export default function DocsPage() {
             and is one time (intervalMonths null) or recurring (1, 3, or 12). Up to six, each with a
             unique id. It lives outside the checkout, so it can never be billed at signing.
           </p>
-          <CodeBlock>{PAYMENT_FUTURE}</CodeBlock>
+          <CodeBlock label="Later phases example">{PAYMENT_FUTURE}</CodeBlock>
         </div>
         <div className="space-y-2">
           <h3 className="text-sm font-semibold">Product names on Stripe</h3>
@@ -500,7 +571,7 @@ export default function DocsPage() {
           A top level block in the pasted JSON that pre-fills the tier pricing UI. It is not one of
           the token fields and is dropped after import.
         </p>
-        <CodeBlock>{INVESTMENT_STRUCTURE}</CodeBlock>
+        <CodeBlock label="Investment.Structure example">{INVESTMENT_STRUCTURE}</CodeBlock>
         <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
           <li>type must be the string tiers, with two to four tiers.</li>
           <li>A price counts as recurring when it contains /mo, /month, /quarter, /yr, or /year.</li>
@@ -516,15 +587,18 @@ export default function DocsPage() {
           More top level blocks the import reads and then drops. Investment.AddOns pre-fills the
           add-on editor (a price with a /mo, /month, /quarter, /yr, or /year suffix becomes a
           recurring add-on; otherwise one time). Investment.DepositPercent (1 to 99) turns the
-          deposit on.
+          deposit on. Like inferred tiers, imported recurring add-ons come in monthly — a /quarter
+          or /yr suffix marks the line recurring but does not set the cadence; pick quarterly or
+          annual billing in the form.
         </p>
-        <CodeBlock>{INVESTMENT_ADDONS}</CodeBlock>
+        <CodeBlock label="Investment.AddOns example">{INVESTMENT_ADDONS}</CodeBlock>
         <p className="max-w-2xl text-sm text-muted-foreground">
           Investment.FutureItems pre-fills the Later phases editor — display-only priced lines that
           are never billed. Each takes a name, a price (recurring when it carries a /mo, /month,
-          /quarter, /yr, or /year suffix), and a starts note. Up to six.
+          /quarter, /yr, or /year suffix — imported as monthly, same caveat as add-ons), and a
+          starts note. Up to six.
         </p>
-        <CodeBlock>{INVESTMENT_FUTURE}</CodeBlock>
+        <CodeBlock label="Investment.FutureItems example">{INVESTMENT_FUTURE}</CodeBlock>
       </section>
 
       <section className="space-y-3">
@@ -535,11 +609,11 @@ export default function DocsPage() {
           results-vary disclaimer are added for you. Drop the block (or send no case studies) to
           hide the whole section.
         </p>
-        <CodeBlock>{CONTENT_TRACK_RECORD}</CodeBlock>
+        <CodeBlock label="Content.TrackRecord example">{CONTENT_TRACK_RECORD}</CodeBlock>
         <ul className="ml-4 list-disc space-y-1 text-sm text-muted-foreground">
           <li>
-            Each case study needs text. url is optional: with a url it renders as a link, without
-            one it is plain text.
+            Each case study needs text. url is optional (href is accepted as an alias): with a url
+            it renders as a link, without one it is plain text.
           </li>
           <li>Up to six case studies. Extra ones are dropped on import.</li>
           <li>Leave it out to hide Our Track Record on this proposal.</li>

@@ -69,14 +69,17 @@
   --muted: #F4F4F5;
   --muted-foreground: #6B7280;
   --accent: #F0F4FF;
-  --accent-foreground: #0070F3;
+  /* One step darker than --primary so small text passes AA on --accent (5.1:1) and white (5.7:1). */
+  --accent-foreground: #0062D6;
   /* Status colors: base values pass WCAG AA as text on white; -subtle pairs are for
      chips/banners (tinted bg + darker text). Warning base is fill/icon-only — warning
      text always uses --warning-subtle-foreground. */
   --destructive: #DC2626;
   --destructive-subtle: #FEE2E2;
   --destructive-subtle-foreground: #B91C1C;
-  --success: #059669;
+  /* emerald-700: AA both ways (5.5:1 as text on white AND for white text on it as a fill);
+     emerald-600 passed neither as small text. The subtle pair below is unchanged. */
+  --success: #047857;
   --success-subtle: #D1FAE5;
   --success-subtle-foreground: #047857;
   --warning: #F59E0B;

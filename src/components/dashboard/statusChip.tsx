@@ -18,7 +18,7 @@ export type StatusTone =
 
 export const STATUS_TONES: Record<StatusTone, { chip: string; icon: string }> = {
   neutral: {
-    chip: "bg-muted text-muted-foreground",
+    chip: "bg-muted text-foreground/70",
     icon: "bg-muted text-muted-foreground ring-border",
   },
   brand: {

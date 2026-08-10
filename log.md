@@ -1,5 +1,71 @@
 # log.md - proposal-generator
 
+## 2026-08-09 22:48 PT - Phase 3 wave: docs completeness + sweep + guardrails + a11y pass
+
+Built on `ui/consistency-pass`, **unmerged, pending Rahul's checkpoint** - all of Phase 3
+in one wave (items 0-4):
+
+**Item 0, /docs completeness audit** (cross-checked against types.ts + every infer* helper
++ handleImport): the page was thorough but had real gaps, all fixed:
+- "Fifteen are required" was WRONG - it's fourteen (Client.LastName is schema-optional;
+  the two dates self-fill pre-validation). Corrected with the why.
+- **New `IMPORT_KEYS` const in lib/importPricing.ts** - THE list of non-token top-level
+  keys the import box reads - and a new /docs section "What the import box reads" rendered
+  from a `Record<ImportKey, …>` meta map: the FIELD_META compile-time drift-guard pattern,
+  now covering the import dialect too. Recognize a new key without documenting it and the
+  build fails. Pointer comments at handleImport + the const.
+- The PAYMENT_* examples are STORED PaymentConfig shapes - a paste of internal
+  tiers/addOns/deposit/futureItems arrays is silently ignored (and a pasted tiers array
+  blocks flat import). Now stated explicitly, in the new section AND the pricing intro.
+- Discount paste dialect ({ amount: "$500", reason } - display-string amount, integer
+  amountCents also accepted) had no example; added one (Structure tier + AddOn).
+- Monthly-cadence caveat (a /quarter or /yr suffix marks recurring but does NOT set the
+  cadence) extended from tiers to add-ons + future items. href-alias note on TrackRecord.
+
+**Item 1 sweep** (re-grep found waves 1-7 killed nearly everything): copyableCode focus
+ring -> the system recipe (was ring-2/ring-ring), text-emerald-600 -> text-success. All
+other grep hits are sanctioned exceptions, now cataloged in the plan.
+
+**Item 2 alignment**: landing + sign-in text-[15px] -> text-base (document keeps 15px as
+its paper prose size); sign-in pending was done in wave 5; docs headings already conformed.
+
+**Item 3 guardrails**: the plan grew the "Which primitive for what" table + sanctioned-
+exceptions catalog + the import-docs drift-guard note; CLAUDE.md grew a lean "UI
+Conventions" section; AGENTS.md regenerated as the H1-only mirror.
+
+**Item 4 verification**: 306/306 vitest + clean build (the IMPORT_META guard compiles).
+Reduced-motion audit: zero transition-all, zero raw smooth scrolls; the 3 unguarded
+animate-ins are opacity-only signing action-bar fades (sanctioned - opacity aids
+comprehension under reduced motion). Lighthouse: landing 100/100/100, sign-in 100 after
+adding the missing `<main>` landmark, signing page 98 (noindex is BY DESIGN on tokenized
+links; heading-order is a proposalView h3-after-h1 tag-swap DEFERRED to the next
+rehearsal-gated wave - signing file). axe-core (served same-origin from public/, deleted
+after; external hosts are CSP-blocked) on the authed pages:
+- **/docs -> 0** after: `--accent-foreground` #0070F3 -> #0062D6 (brand blue one step
+  darker; small text on --accent was 4.14, now 5.13, and 5.65 on white - repaints the
+  active nav pill, brand chips, VIEWED badges everywhere), and the code `<pre>`s got
+  tabIndex/role/unique aria-labels (keyboard-scrollable, landmark-unique).
+- **/dashboard -> 0** after: `--success` #059669 -> #047857 (emerald-700; #059669 was
+  3.77 as text on white and 3.76 under white text - BOTH fails; now 5.48 both ways -
+  repaints the solid PAID chip, every text-success, and the success toast which also
+  moved bg-emerald-600 -> bg-success; error toast -> bg-destructive, same value),
+  inactive tab text foreground/60 -> /70 (primitive + dashboard pills + count badges),
+  neutral chip text -> foreground/70, count-badge active state -> accent-foreground.
+- **/proposals/new -> 0 across default/money/discount/tiers/editors states** after the
+  real haul: 18 unassociated labels wired up (LabelRow grew htmlFor; token loop uses
+  tf-<key> ids; MoneyFields mounts per-instance React.useId ids for its 7 fields;
+  tier/case-study/future fields got explicit ids), 11 unnamed toggles got aria-labels,
+  the interval SelectTrigger got a name, FieldCounter idle text-muted-foreground/70 ->
+  full (was 2.9:1). Switches are now findable by accessible name.
+Known follow-ups logged, not fixed: proposalView heading-order tag swap (rehearsal-gated);
+warning toast is white-on-amber-500 (~2.1:1) - a design decision for Rahul since dark-text
+amber changes a reviewed look.
+Occluded-window color: React's streaming reveal (the hidden S:0 div) stalls like rAF does
+- axe sees an "empty" page. A screenshot capture nudges the reveal; heading-one flags in
+that state are artifacts, verified clearing on the revealed page.
+The a11y seed row was deleted right after (id-scoped cascade); his phone-walk row remains
+the sole [TEST] row.
+
 ## 2026-08-09 22:13 PT - Signing wave MERGED on Rahul's "Look good. Merge"
 
 `ef55393` fast-forwarded to `main` + pushed (auto-deploy). His checkpoint walk ran on
