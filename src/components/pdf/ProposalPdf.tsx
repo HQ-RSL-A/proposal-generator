@@ -343,8 +343,10 @@ function Bullets({ items }: { items: readonly string[] }) {
 }
 
 // Static content only: react-pdf corrupts layout boxes ("unsupported number")
-// when a fixed element contains a dynamic render-callback Text and the page's
-// content flows across many sheets. No page numbers, by hard-won design.
+// on this document for ANY dynamic render-callback Text marked fixed — nested in
+// this View or standalone (both reproduced, 2026-08-09: -2.07e21). Page numbers
+// are therefore stamped POST-render by src/lib/stampPageNumbers.ts (pdf-lib),
+// centered on this footer's baseline. Never reintroduce render callbacks here.
 function PageFooter({ left }: { left: string }) {
   return (
     <View style={s.footer} fixed>
@@ -711,7 +713,8 @@ export function ProposalPdf({
   const clientSigners = signers.filter((p) => p.role === "CLIENT_SIGNER");
   const firstClient = clientSigners[0];
   const extraClients = clientSigners.slice(1);
-  const footerLeft = `${sections.acceptance.clientCompany} · Proposal & Service Agreement`;
+  // Footer names the document by the MSA's actual title (it calls itself that inside).
+  const footerLeft = `${sections.acceptance.clientCompany} · ${sections.msa.heading}`;
 
   const investmentDetailLines = sections.investment.details
     .split("\n")
@@ -768,23 +771,26 @@ export function ProposalPdf({
         {/* Track record */}
         {sections.trackRecord ? (
           <>
-            <H2>
-              {sections.trackRecord.heading}
-              <NoteMark n={sections.trackRecord.noteNumber} />
-            </H2>
+            <H2>{sections.trackRecord.heading}</H2>
             {sections.trackRecord.intro ? (
               <Text style={s.para}>{sections.trackRecord.intro}</Text>
             ) : null}
-            {sections.trackRecord.caseStudies.map((cs, i) => (
+            {/* The results-vary note anchors on the last claim, not the heading (web parity). */}
+            {sections.trackRecord.caseStudies.map((cs, i, arr) => (
               <View key={i} style={s.bulletRow} wrap={false}>
                 <Text style={s.bulletDot}>•</Text>
-                {cs.href ? (
-                  <Link src={cs.href} style={[s.link, { flex: 1 }]}>
-                    {cs.text}
-                  </Link>
-                ) : (
-                  <Text style={{ flex: 1 }}>{cs.text}</Text>
-                )}
+                <Text style={{ flex: 1 }}>
+                  {cs.href ? (
+                    <Link src={cs.href} style={s.link}>
+                      {cs.text}
+                    </Link>
+                  ) : (
+                    cs.text
+                  )}
+                  {i === arr.length - 1 ? (
+                    <NoteMark n={sections.trackRecord!.noteNumber} />
+                  ) : null}
+                </Text>
               </View>
             ))}
           </>
@@ -862,16 +868,29 @@ export function ProposalPdf({
           />
         </View>
 
-        {/* Notes: numbered fine print, destinations for the superscript markers */}
-        <View style={s.notesBlock} wrap={false}>
-          <Text style={[s.microLabel, { marginBottom: 6 }]}>Notes</Text>
-          {sections.notes.map((note) => (
-            <View key={note.id} id={note.id} style={s.noteRow}>
-              <Text style={s.noteNum}>{note.number}.</Text>
-              <Text style={s.noteText}>{note.text}</Text>
+        {/* Notes: numbered fine print, destinations for the superscript markers.
+            They flow after Acceptance instead of demanding a page of their own:
+            the divider + label + FIRST note travel as one non-wrapping atom (so the
+            label can never strand at a page bottom — minPresenceAhead proved
+            unreliable inside the bordered container), and the remaining rows
+            relocate individually. */}
+        {sections.notes.length > 0 ? (
+          <>
+            <View style={s.notesBlock} wrap={false}>
+              <Text style={[s.microLabel, { marginBottom: 6 }]}>Notes</Text>
+              <View id={sections.notes[0].id} style={s.noteRow}>
+                <Text style={s.noteNum}>{sections.notes[0].number}.</Text>
+                <Text style={s.noteText}>{sections.notes[0].text}</Text>
+              </View>
             </View>
-          ))}
-        </View>
+            {sections.notes.slice(1).map((note) => (
+              <View key={note.id} id={note.id} style={s.noteRow} wrap={false}>
+                <Text style={s.noteNum}>{note.number}.</Text>
+                <Text style={s.noteText}>{note.text}</Text>
+              </View>
+            ))}
+          </>
+        ) : null}
         <PageFooter left={footerLeft} />
       </Page>
 

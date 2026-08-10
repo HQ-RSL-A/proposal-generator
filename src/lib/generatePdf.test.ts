@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/prisma");
 vi.mock("@react-pdf/renderer", () => ({ renderToBuffer: vi.fn(async () => Buffer.from("PDF")) }));
+// Identity passthrough: the fixture buffer above is not a real PDF, and stamping is
+// exercised for real by pdfSmoke + the e2e rehearsal.
+vi.mock("@/lib/stampPageNumbers", () => ({ stampPageNumbers: vi.fn(async (b: Buffer) => b) }));
 vi.mock("@/components/pdf/ProposalPdf", () => ({ ProposalPdf: () => null }));
 vi.mock("@/lib/proposalContent", () => ({ sectionsFromFrozen: vi.fn(() => ({})) }));
 vi.mock("@/lib/blob", () => ({

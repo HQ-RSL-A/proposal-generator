@@ -516,27 +516,30 @@ export function ProposalView({
         {/* Track record */}
         {sections.trackRecord ? (
           <>
-            <SectionHeading>
-              {sections.trackRecord.heading}
-              <NoteMark n={sections.trackRecord.noteNumber} />
-            </SectionHeading>
+            <SectionHeading>{sections.trackRecord.heading}</SectionHeading>
             {sections.trackRecord.intro ? <p>{sections.trackRecord.intro}</p> : null}
             <ul className="mt-3 space-y-2.5">
-              {sections.trackRecord.caseStudies.map((cs, i) => (
+              {/* The results-vary note anchors on the last claim, not the heading. */}
+              {sections.trackRecord.caseStudies.map((cs, i, arr) => (
                 <li key={i} className="flex gap-2.5">
                   <span className="mt-0.5 text-primary">•</span>
-                  {cs.href ? (
-                    <a
-                      href={cs.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline decoration-border underline-offset-4 hover:text-primary hover:decoration-primary"
-                    >
-                      {cs.text}
-                    </a>
-                  ) : (
-                    <span>{cs.text}</span>
-                  )}
+                  <span>
+                    {cs.href ? (
+                      <a
+                        href={cs.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline decoration-border underline-offset-4 hover:text-primary hover:decoration-primary"
+                      >
+                        {cs.text}
+                      </a>
+                    ) : (
+                      cs.text
+                    )}
+                    {i === arr.length - 1 ? (
+                      <NoteMark n={sections.trackRecord!.noteNumber} />
+                    ) : null}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -649,7 +652,8 @@ export function ProposalView({
 
         {/* MSA */}
         <div className="mt-14 border-t-2 border-foreground pt-10">
-          <h1 className="font-heading text-2xl font-black">{sections.msa.heading}</h1>
+          {/* h2, not a second h1: keeps the heading outline sequential (a11y); same classes. */}
+          <h2 className="font-heading text-2xl font-black">{sections.msa.heading}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Prepared for <span className="font-semibold text-foreground">{sections.msa.preparedFor}</span>
           </p>

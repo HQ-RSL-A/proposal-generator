@@ -237,9 +237,12 @@ resolves the proposal by session id whenever the path token is dead.
 
 ## PDF engine constraints (hard-won)
 
-- **Never put a dynamic render-callback Text (page numbers) inside a `fixed` element.**
-  react-pdf corrupts layout boxes ("unsupported number: -9.6e21") when page content flows
-  across many sheets. Footers are static-only; there are no page numbers by design.
+- **Never use a dynamic render-callback Text marked `fixed` AT ALL — nested in a fixed
+  element OR standalone.** react-pdf corrupts layout boxes ("unsupported number:
+  -9.6e21"; standalone reproduced 2026-08-09 at -2.07e21) when page content flows across
+  many sheets. Footers are static-only. Page numbers exist anyway: `stampPageNumbers`
+  (`src/lib/stampPageNumbers.ts`, pdf-lib) draws "Page N of M" on the finished bytes
+  post-render — generatePdf and pdfSmoke both apply it.
 - Flowing text blocks (MSA paragraphs/bullets, narrative paragraphs) render `wrap={false}`
   so elements relocate whole instead of splitting mid-element.
 - Satoshi registers from the original OTFs (they were never the crash cause; a TTF

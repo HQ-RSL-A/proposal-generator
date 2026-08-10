@@ -1,5 +1,50 @@
 # log.md - proposal-generator
 
+## 2026-08-09 23:24 PT - Leftovers wave: PDF decisions + heading order + housekeeping (Rahul's batch go)
+
+All six leftover items from the pass, on his instructions ("Go ahead with 1, 2 and 6…
+Yes for page numbers. Address all points… Match footer to MSA's actual title"):
+
+**PDF wave (his 4 decisions):**
+- **Page numbers, the hard-won way.** The canonical react-pdf pattern (standalone
+  `<Text fixed render>`) REPRODUCED the documented corruption on this document
+  (-2.07e21 - so the ban is broader than the nested-in-fixed case; PageFooter's
+  comment + brain.md updated). Shipped instead: **post-render stamping** - new
+  `src/lib/stampPageNumbers.ts` (pdf-lib, new dep) draws "Page N of M" centered on
+  the footer baseline (7.5pt Helvetica FAINT - indistinguishable from the Inter
+  footer at that size) on the finished bytes, where layout can no longer corrupt.
+  Wired into generatePdf AND pdfSmoke so the smoke tests what ships.
+- **Notes flow**: the block no longer demands its own page - divider + label + first
+  note travel as one non-wrapping atom (minPresenceAhead proved unreliable inside the
+  bordered container; an orphaned NOTES label at a page bottom was the failure mode),
+  remaining rows relocate individually. Long documents may still end with a notes
+  page when Acceptance fills its page - that's content, not layout.
+- **Footnote anchor off the heading**: "Our Track Record¹" → the ¹ now sits at the end
+  of the LAST case-study claim, web AND PDF (parity maintained).
+- **Footer**: "Proposal & Service Agreement" → `sections.msa.heading` ("Master
+  Services Agreement") - tracks future MSA titles automatically.
+
+**Heading order (web)**: the MSA heading was a SECOND h1, making its h3 subsections a
+skip - now h2 (classes identical, visual unchanged). Lighthouse's heading-order
+finding dies with it.
+
+**Housekeeping**: Vercel CLI 54.14.0 → 58.9.0; stripe login VERIFIED (config.toml
+present, his device auth); both moot Notion tasks closed with explanatory notes
+(e2eCleanup marked done, phone-walk marked obsolete).
+
+**Verified**: 306/306 (generatePdf.test mocks the stamp - the fixture buffer isn't a
+real PDF; stamping is covered by pdfSmoke + the rehearsal) + clean build + pdfSmoke
+visual read (pages 1-5, 20: numbers on the baseline incl. below the cert frame, new
+footer, clean notes flow, anchor moved) + **full e2e rehearsal** (signing-file gate):
+sign → Stripe test pay → SIGNED/PAID, 12 webhook forwards [200], 4 emails DELIVERED,
+jobs DONE attempts=1, and the REAL pipeline's executed PDF carries "Page 1 of 19" +
+the MSA footer. Chrome-extension checkout poisoning hit again mid-walk; the memory's
+recovery (close tab → /pay/<token>) worked, session reused (RSL-7). Rehearsal row
+deleted (id-scoped cascade); 0 [TEST] rows remain.
+
+Remaining open item: the warning toast's white-on-amber (~2.1:1) - Rahul's design
+call, to be done together next.
+
 ## 2026-08-09 22:53 PT - Phase 3 MERGED - THE UI CONSISTENCY PASS IS COMPLETE
 
 `37a9eee` fast-forwarded to `main` + pushed on Rahul's "Merge if all is green" (all

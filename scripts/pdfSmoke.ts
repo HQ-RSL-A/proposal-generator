@@ -5,6 +5,7 @@ import path from "path";
 import React from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { buildProposalSections } from "../src/lib/proposalContent";
+import { stampPageNumbers } from "../src/lib/stampPageNumbers";
 import { ProposalPdf } from "../src/components/pdf/ProposalPdf";
 import type { PaymentConfig, TokensJson, TrackRecordConfig } from "../src/lib/types";
 
@@ -130,8 +131,11 @@ async function renderVariant(
     msaBodyMarkdown: msa,
     selectedTierId: "tier-growth",
   });
-  const buffer = await renderToBuffer(
-    React.createElement(ProposalPdf, { sections, ...pdfProps }) as Parameters<typeof renderToBuffer>[0]
+  // Same post-render page-number stamp the production pipeline applies (generatePdf).
+  const buffer = await stampPageNumbers(
+    await renderToBuffer(
+      React.createElement(ProposalPdf, { sections, ...pdfProps }) as Parameters<typeof renderToBuffer>[0]
+    )
   );
   const out = path.join(__dirname, `../docs/${outName}`);
   fs.writeFileSync(out, buffer);

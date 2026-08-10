@@ -1,5 +1,6 @@
 import React from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
+import { stampPageNumbers } from "@/lib/stampPageNumbers";
 import { prisma } from "@/lib/prisma";
 import { blobPaths, fetchPrivateBlob, putPrivate } from "@/lib/blob";
 import { sha256Hex } from "@/lib/contentHash";
@@ -93,14 +94,16 @@ export async function generateAndStorePdf(proposalId: string): Promise<{ blobUrl
     completedAt: proposal.completedAt ? formatDateTime(proposal.completedAt) : formatDateTime(new Date()),
   };
 
-  const pdfBuffer = await renderToBuffer(
-    React.createElement(ProposalPdf, {
-      sections,
-      signers,
-      certificate,
-      selectedTierId: proposal.selectedTierId,
-      selectedAddOnIds,
-    }) as Parameters<typeof renderToBuffer>[0]
+  const pdfBuffer = await stampPageNumbers(
+    await renderToBuffer(
+      React.createElement(ProposalPdf, {
+        sections,
+        signers,
+        certificate,
+        selectedTierId: proposal.selectedTierId,
+        selectedAddOnIds,
+      }) as Parameters<typeof renderToBuffer>[0]
+    )
   );
 
   const blobPath = blobPaths.signedPdf(proposal.id, proposal.versionNumber);
