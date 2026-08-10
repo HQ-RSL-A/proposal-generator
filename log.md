@@ -1,5 +1,25 @@
 # log.md - proposal-generator
 
+## 2026-08-09 22:53 PT - Phase 3 MERGED - THE UI CONSISTENCY PASS IS COMPLETE
+
+`37a9eee` fast-forwarded to `main` + pushed on Rahul's "Merge if all is green" (all
+gates were green: 306/306, clean build, axe 0 on the audited pages). Every phase of
+`docs/plans/ui-consistency-pass.md` has now shipped: Phase 0 correctness, Phase 1
+signing flow, Phase 2 admin systematization (7 waves), the rehearsal-gated signing
+wave, and Phase 3 docs/sweep/guardrails/a11y.
+
+Also on his ask: **the last '[TEST] Full Rehearsal: Brightline Test Co' row is GONE**
+(his planned phone-walk row; he called it not needed). Stock `e2eCleanup` ran now that
+only one row matched the title - cascade + signature blob + the blobSmoke scratch
+object. DB verified: 0 [TEST] rows, 7 real proposals. His Notion tracker items "phone
+walk of the remaining [TEST] row" and "e2eCleanup after" are now moot (not edited -
+flagged to him). Housekeeping: react-bits MCP had auto-added its registry to
+components.json; committed with this entry (wave-4 precedent).
+
+Open items that survive the plan: proposalView heading-order tag swap (next
+rehearsal-gated wave), white-on-amber warning toast (Rahul's design call), his 4 PDF
+decisions, stripe login, vercel CLI upgrade.
+
 ## 2026-08-09 22:48 PT - Phase 3 wave: docs completeness + sweep + guardrails + a11y pass
 
 Built on `ui/consistency-pass`, **unmerged, pending Rahul's checkpoint** - all of Phase 3

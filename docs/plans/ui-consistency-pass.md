@@ -64,8 +64,12 @@ design; heading-order deferred — signing file), axe 0 on /docs, /dashboard, an
 foreground/70, 18 label associations + 11 toggle names + counter contrast in the form.
 Open items for later: proposalView heading-order tag swap (next rehearsal-gated wave),
 white-on-amber warning toast (~2.1:1 — Rahul's design call). Details: log 22:48.
-**RESUME POINT — next: Rahul's checkpoint of the Phase 3 wave → his "merge" go.
-After that the plan is COMPLETE** (only the two open items above remain).
+**THE PLAN IS COMPLETE — Phase 3 MERGED + deployed 2026-08-09 22:53 on Rahul's go.**
+All phases shipped. The last [TEST] row was deleted on his ask (DB: 0 [TEST] rows).
+Only the two open items above survive (proposalView heading-order → next
+rehearsal-gated wave; amber warning toast → his design call). This document stays as
+the standing reference: the design decisions, the which-primitive-for-what table, and
+the sanctioned exceptions.
 **Added 2026-08-09 by Rahul — BOTH DONE 2026-08-09** (log 02:50): PDF reviewed (cert
 font-name leak fixed; page numbers / Notes-page flow / footnote anchors / footer naming
 are open decisions for Rahul), copy pass done (3 email tightenings + em dash fix;
