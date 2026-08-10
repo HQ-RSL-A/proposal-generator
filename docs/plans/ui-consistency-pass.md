@@ -327,7 +327,9 @@ keyboard-only walk (tabs, table, menus, dialogs).
 ### Sanctioned exceptions (grep hits that are correct — do not "fix")
 
 - `statusChip.tsx` solid PAID chip: `bg-success text-white` (no `--success-foreground` token; the one deliberate white-on-color chip).
-- `lib/toast.tsx`: `text-white` + `bg-white/20` (alpha overlays on colored toast surfaces).
+- `lib/toast.tsx`: white text + `bg-white/20` overlays on the four DARK toast fills;
+  the warning tone is amber-950-on-amber-500 (6.4:1 — white failed AA; Rahul picked
+  dark-on-amber 2026-08-09). The raw amber classes live only in this tone map.
 - Landing hero `text-[clamp(…)]` + `font-black` (the hero scale; `font-black` is hero + proposal document title only).
 - Primitive-internal micro details: checkbox `rounded-[4px]`, tooltip arrow `rounded-[2px]`, button sm `rounded-[min(var(--radius-md),12px)]` + `text-[0.8rem]`, CardLabel `text-[11px]`, font-tag `text-[10px]`.
 - Document prose `text-[15px]` in `proposalView` (the paper reading size; the PDF mirrors it).

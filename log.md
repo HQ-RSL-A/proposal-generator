@@ -1,5 +1,15 @@
 # log.md - proposal-generator
 
+## 2026-08-09 23:52 PT - Warning toast onto dark-on-amber (Rahul picked B) - the LAST open AA item
+
+Side-by-side rendered (white-on-amber 2.1:1 vs amber-950-on-amber 6.4:1); Rahul chose
+B. `lib/toast.tsx` TONE map now carries per-tone fg/chip/desc: white stays on the four
+dark fills, warning gets amber-950 text + amber-950/10 icon chip + /80 description.
+Verified live via the import box's "That isn't valid JSON." toast (computed colors
+confirmed + screenshot). Plan's sanctioned-exceptions entry updated. 306/306 + clean
+build. With this, every surface axe/Lighthouse audited this pass is AA - no known
+contrast failures remain.
+
 ## 2026-08-09 23:34 PT - Toast centering fix (Rahul's report) - MERGED + deployed
 
 His report: the "Draft deleted" confirmation toast sat left of center. Reproduced:
