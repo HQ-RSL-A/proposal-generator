@@ -1,5 +1,20 @@
 # log.md - proposal-generator
 
+## 2026-08-09 23:34 PT - Toast centering fix (Rahul's report) - MERGED + deployed
+
+His report: the "Draft deleted" confirmation toast sat left of center. Reproduced:
+`toast.custom()` sizes cards to CONTENT, so the shortest title-only toast shrank and
+left-hugged sonner's centered slot - wordier toasts (near full width) masked the same
+behavior. Fix in `lib/toast.tsx`: the card pins to sonner's own `--width`
+(`w-(--width) max-w-full`), so every brandToast has the identical standard footprint
+and is truly centered. Verified with a fresh seed -> delete walk (toast dead-center);
+306/306 + clean build (the width utility compiles - `px-(--card-spacing)` precedent).
+`cdccb7d` ff-merged to main + deployed; `ui/consistency-pass` branch itself pushed to
+origin (was local-only) and tracking.
+
+Next: #3 (amber warning toast) - side-by-side A/B rendered for Rahul's pick
+(white-on-amber 2.1:1 vs dark-amber-950-on-amber 6.4:1 AA).
+
 ## 2026-08-09 23:24 PT - Leftovers wave: PDF decisions + heading order + housekeeping (Rahul's batch go)
 
 All six leftover items from the pass, on his instructions ("Go ahead with 1, 2 and 6…
