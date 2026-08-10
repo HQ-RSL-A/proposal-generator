@@ -32,7 +32,7 @@ export function PartyList({
 
   if (parties.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-white p-6 text-center">
+      <div className="rounded-xl border border-border bg-card p-6 text-center">
         <p className="text-sm text-muted-foreground">
           No recipients yet. Parties appear here once the proposal is sent.
         </p>
@@ -41,7 +41,7 @@ export function PartyList({
   }
 
   return (
-    <div className="divide-y divide-border rounded-xl border border-border bg-white">
+    <div className="divide-y divide-border rounded-xl border border-border bg-card">
       {parties.map((party) => (
         <div key={party.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">

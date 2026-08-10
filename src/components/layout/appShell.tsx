@@ -110,7 +110,7 @@ export function AppShell({
                       className="h-8 w-8 rounded-full border border-border object-cover"
                     />
                   ) : (
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                       {user.name.slice(0, 1).toUpperCase()}
                     </span>
                   )}

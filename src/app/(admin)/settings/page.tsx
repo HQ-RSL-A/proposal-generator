@@ -46,7 +46,7 @@ export default async function SettingsPage({
         <TabsContent value="general" className="space-y-5 pt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Your profile</CardTitle>
+              <CardTitle>Your profile</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center gap-4">
               {me.avatarUrl ? (
@@ -58,7 +58,7 @@ export default async function SettingsPage({
                   className="h-14 w-14 rounded-full border border-border object-cover"
                 />
               ) : (
-                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-lg font-bold text-white">
+                <span className="flex h-14 w-14 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
                   {me.name.slice(0, 1).toUpperCase()}
                 </span>
               )}

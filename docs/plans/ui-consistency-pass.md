@@ -9,11 +9,19 @@ weren't exercisable locally (no bounced/declined/expired rows). Rahul's pending 
 items + the full status snapshot: log 2026-08-09 03:19. Two [TEST] rows sit in prod;
 e2eCleanup only after his phone walk.
 **Waves 4+5 MERGED + deployed 2026-08-09 ~16:40 after Rahul's local review** ("yes and
-yes"; logs 15:52 + 16:15 + 16:45). His review also surfaced the smooth-scroll
-route-transition bug (header actions hidden on proposal-page load) — fixed via
-`data-scroll-behavior="smooth"` on `<html>`, committed on the branch pending his go
-(log 16:45). Only ONE [TEST] row remains in prod (his VIEWED phone-walk row); the
+yes"; logs 15:52 + 16:15 + 16:45), and the smooth-scroll route-transition fix his
+review surfaced (header actions hidden on proposal-page load →
+`data-scroll-behavior="smooth"` on `<html>`) **MERGED + deployed ~16:50 on his "Go
+ahead"**. Only ONE [TEST] row remains in prod (his VIEWED phone-walk row); the
 rehearsal row was deleted on his ask.
+**Wave 6 (type/color hygiene — Phase 2 item 5) is committed on `ui/consistency-pass`,
+unmerged, PENDING HIS CHECKPOINT** (log 17:05): transition-all retired from the 4 ui
+primitives (named lists; box-shadow excluded so focus rings snap), ring-black/* →
+ring-foreground/10 everywhere, bg-white → bg-card (6 non-signing sites; appShell /80
+waits for the motion wave), text-white on primary → token, #00C2FF → --chart-2, the
+14 redundant CardTitle text-base overrides dropped, signatureSettings eyebrows onto
+CardLabel. Admin h1s / arbitrary px / arbitrary radii were already clean from earlier
+waves; landing's two text-[15px] wait for Phase 3's landing pass.
 Wave 4 (primitives adoption — Phase 2 item 3): proposals list → real ui/table
 (semantics; row-overlay link verified clickable), dashboard filter → ui/tabs
 (arrow-key + Enter activation, Badge counts, wave-1 pill look kept), both native
@@ -30,10 +38,9 @@ buttons (send/save/signature/retry) → `loading`, sign-in Google button pending
 signingExperience's pending buttons + signatureModal's footer wait for a
 rehearsal-gated wave.
 **RESUME POINT — next steps in order:**
-(1) type/color hygiene per Phase 2 list
-(headings, arbitrary px, bg-white→bg-card, transition-all→named incl. the ui/tabs
-trigger, #00C2FF→--chart-2, ring recipes); (2) dashboard motion + skeletons (Phase 2
-items 6-7).
+(1) dashboard motion + skeletons (Phase 2 items 6-7: filter-change crossfade, optional
+metric-card stagger, appShell backdrop-blur → bg-white/95, loading.tsx skeleton
+upgrade); (2) Phase 3.
 **Added 2026-08-09 by Rahul — BOTH DONE 2026-08-09** (log 02:50): PDF reviewed (cert
 font-name leak fixed; page numbers / Notes-page flow / footnote anchors / footer naming
 are open decisions for Rahul), copy pass done (3 email tightenings + em dash fix;

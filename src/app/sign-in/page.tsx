@@ -42,7 +42,7 @@ export default async function SignInPage() {
       </div>
 
       {/* Right: abstract art panel (desktop only) */}
-      <div className="relative hidden w-[42%] overflow-hidden rounded-3xl ring-1 ring-black/5 lg:block">
+      <div className="relative hidden w-[42%] overflow-hidden rounded-3xl ring-1 ring-foreground/10 lg:block">
         <Image src="/signinArt.png" alt="" fill priority sizes="42vw" className="object-cover" />
       </div>
     </div>

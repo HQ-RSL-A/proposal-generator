@@ -43,7 +43,7 @@ export default async function LandingPage() {
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="dot-pattern absolute inset-0 opacity-60 mask-[radial-gradient(ellipse_60%_45%_at_50%_0%,black,transparent)]" />
         <div className="absolute top-[-12%] left-1/2 h-150 w-225 -translate-x-1/2 rounded-full bg-primary/15 blur-[130px]" />
-        <div className="absolute right-[4%] top-[8%] h-100 w-100 rounded-full bg-[#00C2FF]/12 blur-[110px]" />
+        <div className="absolute right-[4%] top-[8%] h-100 w-100 rounded-full bg-(--chart-2)/12 blur-[110px]" />
       </div>
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5">
@@ -84,7 +84,7 @@ export default async function LandingPage() {
                 variant="outline"
                 nativeButton={false}
                 render={<Link href="/sign-in" />}
-                className="cta-lift h-12 gap-2.5 rounded-xl border-border bg-white px-6 text-base font-semibold text-foreground shadow-md hover:bg-white hover:shadow-lg"
+                className="cta-lift h-12 gap-2.5 rounded-xl border-border bg-card px-6 text-base font-semibold text-foreground shadow-md hover:bg-card hover:shadow-lg"
               >
                 <GoogleG className="size-4.5" />
                 Sign in with Google

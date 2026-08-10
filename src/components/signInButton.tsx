@@ -15,7 +15,7 @@ export function SignInButton() {
       size="lg"
       variant="outline"
       loading={pending}
-      className="cta-lift h-12 w-full gap-2.5 rounded-xl border-border bg-white text-base font-semibold text-foreground shadow-md hover:bg-white hover:shadow-lg"
+      className="cta-lift h-12 w-full gap-2.5 rounded-xl border-border bg-card text-base font-semibold text-foreground shadow-md hover:bg-card hover:shadow-lg"
     >
       <GoogleG className="size-4.5" />
       Continue with Google

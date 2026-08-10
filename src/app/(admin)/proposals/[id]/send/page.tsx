@@ -63,7 +63,7 @@ export default async function SendPage({ params }: { params: Promise<{ id: strin
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">What happens on send</CardTitle>
+          <CardTitle>What happens on send</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>• Content is frozen and SHA-256 hashed. The legal record locks here.</p>

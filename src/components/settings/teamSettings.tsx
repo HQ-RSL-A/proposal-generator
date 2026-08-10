@@ -65,7 +65,7 @@ export function TeamSettings({ users }: { users: TeamUserRow[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Team</CardTitle>
+        <CardTitle>Team</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">

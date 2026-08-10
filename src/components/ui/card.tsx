@@ -12,7 +12,7 @@ const cardVariants = {
   raised:
     "border border-border shadow-[0_1px_3px_rgba(17,24,39,0.06),0_12px_40px_-12px_rgba(17,24,39,0.12)]",
   floating:
-    "border border-border ring-1 ring-black/5 shadow-[0_-8px_24px_-12px_rgba(17,24,39,0.18),0_12px_34px_-6px_rgba(17,24,39,0.30)]",
+    "border border-border ring-1 ring-foreground/10 shadow-[0_-8px_24px_-12px_rgba(17,24,39,0.18),0_12px_34px_-6px_rgba(17,24,39,0.30)]",
 } as const
 
 const cardTones = {

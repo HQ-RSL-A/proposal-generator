@@ -212,7 +212,7 @@ export default async function ProposalDetailPage({
               The executed PDF appears here once all parties have signed.
             </p>
           ) : (
-            <div className="divide-y divide-border rounded-xl border border-border bg-white">
+            <div className="divide-y divide-border rounded-xl border border-border bg-card">
               {proposal.documents.map((doc) => (
                 <div key={doc.id} className="flex flex-col items-start gap-2 p-4 md:flex-row md:items-center md:justify-between md:gap-3">
                   <div className="min-w-0">

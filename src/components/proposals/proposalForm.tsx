@@ -603,7 +603,7 @@ function FieldCounter({ value, max, words }: { value: string; max?: number; word
   return (
     <span
       className={cn(
-        "shrink-0 text-[11px] tabular-nums",
+        "shrink-0 text-xs tabular-nums",
         over
           ? "font-medium text-destructive"
           : near
@@ -1053,7 +1053,7 @@ export function ProposalForm({
       {mode === "create" ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Import from generate-proposal skill</CardTitle>
+            <CardTitle>Import from generate-proposal skill</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Textarea
@@ -1093,7 +1093,7 @@ export function ProposalForm({
           {...(groupIndex === 0 ? { "data-import-scroll-target": "", className: "scroll-mt-20" } : {})}
         >
           <CardHeader>
-            <CardTitle className="text-base">{group.heading}</CardTitle>
+            <CardTitle>{group.heading}</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {group.fields.map((field) => (
@@ -1144,7 +1144,7 @@ export function ProposalForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Our Track Record</CardTitle>
+          <CardTitle>Our Track Record</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-xs text-muted-foreground">
@@ -1236,7 +1236,7 @@ export function ProposalForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Checkout: what the client pays after signing</CardTitle>
+          <CardTitle>Checkout: what the client pays after signing</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           <Tabs value={state.pricingMode} onValueChange={(v) => set("pricingMode", v as PricingMode)}>
@@ -1458,7 +1458,7 @@ export function ProposalForm({
       {state.pricingMode !== "signOnly" ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Add-ons and deposit</CardTitle>
+            <CardTitle>Add-ons and deposit</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="space-y-3">

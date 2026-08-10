@@ -77,7 +77,7 @@ export async function SystemHealthPanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Failed background tasks</CardTitle>
+          <CardTitle>Failed background tasks</CardTitle>
         </CardHeader>
         <CardContent>
           {deadJobs.length === 0 ? (
@@ -110,7 +110,7 @@ export async function SystemHealthPanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Signed but unpaid</CardTitle>
+          <CardTitle>Signed but unpaid</CardTitle>
         </CardHeader>
         <CardContent>
           {stuckPayments.length === 0 ? (
@@ -141,7 +141,7 @@ export async function SystemHealthPanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Email issues (7 days)</CardTitle>
+          <CardTitle>Email issues (7 days)</CardTitle>
         </CardHeader>
         <CardContent>
           {bounces.length === 0 ? (
@@ -166,7 +166,7 @@ export async function SystemHealthPanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Cron runs</CardTitle>
+          <CardTitle>Cron runs</CardTitle>
         </CardHeader>
         <CardContent>
           {lastCronByPath.size === 0 ? (

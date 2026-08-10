@@ -4,7 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { brandToast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardLabel, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -71,7 +71,7 @@ export function SignatureSettings({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Your signature</CardTitle>
+        <CardTitle>Your signature</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
@@ -81,9 +81,7 @@ export function SignatureSettings({
         </p>
         {hasSignature ? (
           <div className="rounded-lg border border-border bg-surface p-4">
-            <p className="font-tag mb-2 text-[10px] uppercase tracking-wide text-muted-foreground">
-              Current signature
-            </p>
+            <CardLabel className="mb-2">Current signature</CardLabel>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`/api/settings/signature${cacheBust ? `?v=${cacheBust}` : ""}`}
@@ -131,7 +129,8 @@ export function SignatureSettings({
                   <span className={cn(option.className, "max-w-full truncate text-2xl")}>
                     {name.trim() || "Rahul Lalia"}
                   </span>
-                  <span className="font-tag mt-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {/* CardLabel's classes inline — a <p> isn't valid inside <button> */}
+                  <span className="font-tag mt-1 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
                     {option.label}
                   </span>
                 </button>

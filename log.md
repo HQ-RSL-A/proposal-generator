@@ -1,5 +1,45 @@
 # log.md - proposal-generator
 
+## 2026-08-09 17:05 PT - Phase 2 wave 6: type/color hygiene sweep
+
+Scroll fix merged + deployed on Rahul's "Go ahead" right before this. Wave 6 built on
+`ui/consistency-pass`, **unmerged, pending his checkpoint** - the Phase 2 item 5 list,
+re-grepped against today's tree (much of the audit's inventory was already killed by
+earlier waves: admin h1s all normalized, metrics/proposalsPanel arbitrary px gone,
+page-level arbitrary radii gone):
+
+- **transition-all retired (4 ui primitives)**: button, tabs trigger, switch, badge ->
+  named property lists. Deliberate detail: box-shadow is EXCLUDED so focus rings snap
+  instantly (the audit's complaint was transition-all animating the ring on every
+  focus); the dashboard filter pills keep their reviewed shadow crossfade via their
+  own className.
+- **Ring unification**: ring-black/5 (Card floating variant, sign-in art panel) +
+  ring-black/10 (brandToast) -> ring-foreground/10. Zero ring-black left.
+- **bg-white -> bg-card (6 sites)**: landing CTA, SignInButton, proposal-detail
+  documents list, partyList x2 (+ hover pairs). Pixel-identical (--card is #FFFFFF).
+  Kept on purpose: appShell bg-white/80 (changes with the motion wave's backdrop-blur
+  drop) and toast bg-white/20 (alpha overlay on colored surfaces).
+- **text-white on bg-primary -> text-primary-foreground** (settings + appShell avatar
+  fallbacks). statusChip's solid bg-success text-white stays (no --success-foreground
+  token exists). Signing files untouched as always.
+- **#00C2FF literals -> bg-(--chart-2)** (landing glow x2; same hex, now tokened).
+- **14 redundant `CardTitle className="text-base"` dropped** across 7 files (it IS the
+  default).
+- **signatureSettings eyebrows onto the standard**: "Current signature" -> CardLabel;
+  the font-picker tile label gets CardLabel's exact classes inline (a <p> inside
+  <button> is invalid HTML, so the span stays a span). proposalForm's char counter
+  text-[11px] -> text-xs.
+- Left for Phase 3's landing/docs pass: the two public text-[15px] body sizes.
+
+Verified: 306/306 vitest, clean build, visual pass of settings (eyebrow change is the
+only intended visible diff) + dashboard. Landing/sign-in redirect while authed; their
+swaps are same-value token substitutions covered by the build.
+
+Also this hour, logged for completeness: waves 4+5 merged after Rahul's local review;
+rehearsal [TEST] row deleted on his ask (phone-walk row kept); scroll-to-top fix
+shipped. Memory (chrome-testing-quirks) gained the occluded-window rAF/smooth-scroll
+gotcha.
+
 ## 2026-08-09 16:45 PT - Waves 4+5 MERGED + deployed; scroll-to-top fix; rehearsal row deleted
 
 Rahul reviewed waves 4+5 locally ("yes and yes") -> merged to `main` (fast-forward,

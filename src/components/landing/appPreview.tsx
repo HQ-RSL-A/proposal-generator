@@ -52,7 +52,7 @@ export function AppPreview() {
       />
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute -top-10 right-10 -z-10 h-64 w-64 rounded-full bg-[#00C2FF]/20 blur-[90px]"
+        className="pointer-events-none absolute -top-10 right-10 -z-10 h-64 w-64 rounded-full bg-(--chart-2)/20 blur-[90px]"
       />
       <motion.div
         initial={reduce ? { opacity: 0 } : { opacity: 0, y: 26, scale: 0.97 }}
