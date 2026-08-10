@@ -1,5 +1,30 @@
 # log.md - proposal-generator
 
+## 2026-08-09 16:45 PT - Waves 4+5 MERGED + deployed; scroll-to-top fix; rehearsal row deleted
+
+Rahul reviewed waves 4+5 locally ("yes and yes") -> merged to `main` (fast-forward,
+auto-deploy). Two follow-ups from his review, both done:
+
+**1. Deleted last night's rehearsal row on his ask.** Targeted cascade delete of the
+SIGNED/AWAITING [TEST] row only (executed PDF + 2 signature blobs + 4 webhook events +
+DB cascade). His VIEWED phone-walk row is UNTOUCHED and is now the only [TEST] row in
+prod; dashboard metrics cleaned up with it (fake $497/mo left MRR). His Notion
+e2eCleanup task description updated to match.
+
+**2. His bug report: proposal-page header actions (Send/Edit/Delete/Revise) sometimes
+hidden on load, must scroll up.** Root cause is the documented workspace gotcha
+(reference_nextjsGotchas, hit on Sunrise 2026-06): `html { scroll-behavior: smooth }`
+turns the App Router's route-transition scroll-to-top into an animation that gets
+interrupted, landing the new page scrolled down. Extra color from this session: in an
+occluded window, smooth scrolls never progress AT ALL (scrollTo sat at 0 for 900ms
+while behavior:instant worked) - which is also why it was intermittent for him. Fix:
+Next 16's official remedy, `data-scroll-behavior="smooth"` on `<html>` (layout.tsx) -
+Next suspends smooth scrolling during route transitions so the reset is instant.
+In-page smooth scrolling (signing flow's scrollIntoView etc.) is unaffected. Verified
+in the harshest case: occluded window, dashboard scrolled to 215px, click a row ->
+new page lands at scrollY 0, action buttons visible. 306/306 vitest + clean build.
+Committed on `ui/consistency-pass`, pending his go.
+
 ## 2026-08-09 16:15 PT - Phase 2 wave 5: ConfirmDialog + Button `loading` (one confirm, one async pattern)
 
 Built on `ui/consistency-pass` on top of wave 4, **unmerged, pending Rahul's checkpoint**

@@ -37,8 +37,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // data-scroll-behavior lets Next suspend the global smooth scroll during route
+  // transitions — without it, scroll-to-top animates from the old position and gets
+  // interrupted, landing pages scrolled down (header actions hidden).
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body
         className={`${satoshi.variable} ${inter.variable} font-sans antialiased bg-background`}
       >

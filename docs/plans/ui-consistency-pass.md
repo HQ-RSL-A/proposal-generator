@@ -8,8 +8,12 @@ content hash). Checkpoint note that survives the merge: danger/warning timeline 
 weren't exercisable locally (no bounced/declined/expired rows). Rahul's pending action
 items + the full status snapshot: log 2026-08-09 03:19. Two [TEST] rows sit in prod;
 e2eCleanup only after his phone walk.
-**Waves 4+5 are committed on `ui/consistency-pass`, unmerged, PENDING HIS CHECKPOINT**
-(they checkpoint together; logs 15:52 + 16:15).
+**Waves 4+5 MERGED + deployed 2026-08-09 ~16:40 after Rahul's local review** ("yes and
+yes"; logs 15:52 + 16:15 + 16:45). His review also surfaced the smooth-scroll
+route-transition bug (header actions hidden on proposal-page load) — fixed via
+`data-scroll-behavior="smooth"` on `<html>`, committed on the branch pending his go
+(log 16:45). Only ONE [TEST] row remains in prod (his VIEWED phone-walk row); the
+rehearsal row was deleted on his ask.
 Wave 4 (primitives adoption — Phase 2 item 3): proposals list → real ui/table
 (semantics; row-overlay link verified clickable), dashboard filter → ui/tabs
 (arrow-key + Enter activation, Badge counts, wave-1 pill look kept), both native
