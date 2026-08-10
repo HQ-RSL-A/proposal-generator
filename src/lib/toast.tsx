@@ -38,7 +38,10 @@ export function brandToast(
         role="status"
         aria-live="polite"
         className={cn(
-          "flex w-full items-start gap-2.5 rounded-xl px-3.5 py-2.5 text-white shadow-lg ring-1 ring-foreground/10",
+          // Sonner sizes custom toasts to their content, which left-hugs short
+          // title-only cards ("Draft deleted") inside the centered slot. Pinning to
+          // sonner's own --width keeps every card identical and truly centered.
+          "flex w-(--width) max-w-full items-start gap-2.5 rounded-xl px-3.5 py-2.5 text-white shadow-lg ring-1 ring-foreground/10",
           bg
         )}
       >
