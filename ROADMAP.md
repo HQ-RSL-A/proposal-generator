@@ -174,16 +174,16 @@ not just responsive breakpoints. Build-time decisions flagged inline.
 
 ## UI consistency pass (added 2026-08-08)
 
-- [ ] **Full UI systematization** — six-dimension audit (toasts, cards, buttons/forms,
-      overlays/async states, tokens/typography, motion) found three drift engines:
-      unadopted primitives (32 card recipes, hand-rolled table/tabs), broken status tokens
-      (WCAG-failing `--destructive`/`--success` → four greens/three reds shipping), and
-      unsystematized async states (zero loading/error/not-found routes, zero spinners).
-      Plan + phase tracking: [`docs/plans/ui-consistency-pass.md`](docs/plans/ui-consistency-pass.md).
-      Decisions locked: client signing flow first, full systematization, light-only,
-      phased merges gated by Rahul. **Phase 0 (bugs + tokens + route states + growing
-      form fields) built 2026-08-08 on `ui/consistency-pass`** — pending visual review +
-      merge. Phases 1 (client signing), 2 (admin), 3 (sweep + guardrails) follow.
+- [x] **Full UI systematization — COMPLETE, all phases merged + deployed 2026-08-09.**
+      The six-dimension audit's three drift engines are dead: primitives adopted
+      everywhere (Card/CardLabel, table/tabs/select/tooltip, DialogFooter incl. the
+      sheet-pinned signature modal, ConfirmDialog + Button `loading`), one AA
+      token-backed status tone scale, async states systematized (route loading/error
+      files, skeletons, per-action pending). Follow-ups shipped the same day: PDF page
+      numbers (post-render stamp) + Notes flow + footnote anchor + MSA-titled footer,
+      heading-order fix, toast centering, dark-on-amber warning toast (the last AA
+      failure). Standing reference (primitive table, sanctioned exceptions, drift
+      guards): [`docs/plans/ui-consistency-pass.md`](docs/plans/ui-consistency-pass.md).
 
 - [x] **Executed-PDF review (added 2026-08-09, Rahul).** DONE 2026-08-09 - all 20 pages
       read visually; web parity healthy. Fixed: certificate leaked the signature font

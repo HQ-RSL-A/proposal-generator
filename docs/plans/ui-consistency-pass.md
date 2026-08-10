@@ -52,8 +52,8 @@ leg** (stripe listen --api-key needs no CLI login — recipe in the
 chrome-testing-quirks memory): SIGNED/PAID, cert hash == content hash, all 4 emails
 DELIVERED, jobs DONE attempts=1. Both temp rows deleted by id-scoped cascade (his
 phone-walk row is the sole [TEST] row). Details: log 2026-08-09 22:07 + 22:13.
-**Phase 3 is BUILT in one wave (2026-08-09 22:48, unmerged, pending Rahul's
-checkpoint)** — /docs completeness (Fifteen→Fourteen fix, IMPORT_KEYS drift guard +
+**Phase 3 was BUILT in one wave (2026-08-09 22:48; merged 22:53, see below)** —
+/docs completeness (Fifteen→Fourteen fix, IMPORT_KEYS drift guard +
 "What the import box reads" table, paste-dialect discount example, cadence caveats),
 sweep (copy chip recipe, emerald→success, public 15px→text-base), guardrails (the
 table below + CLAUDE.md UI Conventions + AGENTS.md mirror), and the full a11y pass:
