@@ -1,5 +1,18 @@
 # log.md - proposal-generator
 
+## 2026-08-09 17:55 PT - Wave 7 MERGED on Rahul's "Looks good" - PHASE 2 COMPLETE
+
+All of Phase 2 is now live: Card system, status tone scale, primitives (table/tabs/
+select/tooltip/DialogFooter), ConfirmDialog + Button `loading`, type/color hygiene,
+dashboard motion + skeletons. Branch `ui/consistency-pass` is even with `main`.
+Remaining per the plan's RESUME POINT: (1) the rehearsal-gated signing wave
+(signatureModal DialogFooter, ceremony pending buttons -> `loading`, proposalView
+bg-white/text-white; full e2e rehearsal before merge), then (2) Phase 3 (docs
+completeness audit -> one-off sweep + docs/landing/sign-in alignment -> guardrails +
+full regression/a11y pass). Rahul's manual items live in his Notion tracker (phone
+walk of the one remaining [TEST] row, e2eCleanup after, stripe login, 4 PDF
+decisions, vercel CLI upgrade).
+
 ## 2026-08-09 17:40 PT - Phase 2 wave 7: dashboard motion + skeletons (Phase 2 COMPLETE pending this merge)
 
 Wave 6 merged + deployed on Rahul's go right before this. Wave 7 built on

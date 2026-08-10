@@ -20,12 +20,12 @@ rings snap), ring unification on ring-foreground/10, bg-white → bg-card, text-
 on primary → token, #00C2FF → --chart-2, CardTitle overrides dropped,
 signatureSettings eyebrows onto the CardLabel standard. Landing's two text-[15px]
 wait for Phase 3's landing pass.
-**Wave 7 (dashboard motion + skeletons — Phase 2 items 6-7) is committed on
-`ui/consistency-pass`, unmerged, PENDING HIS CHECKPOINT** (log 17:40): filter-change
-150ms crossfade, `.stagger-children` metric-card entrance stagger, sticky-header
+**Wave 7 (dashboard motion + skeletons — Phase 2 items 6-7) MERGED + deployed
+2026-08-09 ~17:55 on Rahul's "Looks good"** (log 17:40): filter-change 150ms
+crossfade, `.stagger-children` metric-card entrance stagger, sticky-header
 backdrop-blur dropped (bg-card/95), new `ui/skeleton` + route-level loading
 skeletons for dashboard and proposal detail (group spinner stays elsewhere).
-**Phase 2 is COMPLETE once wave 7 merges.**
+**PHASE 2 IS COMPLETE.** Branch is even with `main`.
 Wave 4 (primitives adoption — Phase 2 item 3): proposals list → real ui/table
 (semantics; row-overlay link verified clickable), dashboard filter → ui/tabs
 (arrow-key + Enter activation, Badge counts, wave-1 pill look kept), both native
