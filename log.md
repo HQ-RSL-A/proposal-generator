@@ -1,5 +1,46 @@
 # log.md - proposal-generator
 
+## 2026-08-14 00:32 PT - e2eCleanup now sweeps test-mode subs (the "bite it" call, small version)
+
+Decision on the candidate follow-up: yes, but as ~15 lines in the EXISTING
+`scripts/e2eCleanup.ts` - NOT wired into the app's delete flow (prod path + live key,
+zero payoff there). The script now cancels every non-cancelled test-mode subscription
+after the DB/blob cleanup, hard-guarded to `sk_test_` keys so a live key can never
+reach the sweep (list default excludes cancelled; auto-pagination via `for await`).
+Verified live: created a throwaway trialing sub on the demo customer + an existing
+price, ran the script - [TEST] no-op, smoke blob deleted, sub cancelled, 0 remain.
+Clean `npm run build` (tsconfig type-checks scripts/). Committed on `main` with the
+webhook-triage doc edits.
+
+## 2026-08-14 00:19 PT - Test-mode renewal subs cancelled (Rahul's call)
+
+All 11 active test-mode subscriptions cancelled via API (verified 0 remain), no
+schedules existed. 8 were the June key-swap/renewal-testing set ($497-$5997/mo against
+rahul's gmail, demo-client@example.com, sid@fieldshare.io); 3 were orphans from the
+Aug 9 rehearsals themselves. Pattern worth knowing: **every e2e rehearsal that pays a
+recurring line leaves an active test-mode sub behind** after the [TEST] row is deleted
+(the DB cascade doesn't touch Stripe) - it then renews monthly as invoice.* noise.
+Candidate follow-up: cancel the rehearsal's sub as part of e2e cleanup.
+
+## 2026-08-13 23:59 PT - Stripe "failing webhook" email triaged - old test-mode endpoint disabled
+
+Stripe warned that proposals.rsla.io/api/webhooks/stripe was failing **in test mode**.
+Root cause: the Aug 9 e2e rehearsals' test payments (4x `checkout.session.completed`;
+the 23:23 PT one matches the email's first-failure timestamp to the second) were ALSO
+delivered to the leftover test-mode dashboard endpoint `we_1ThbkhE1rrZiCLVQEdLERe0Y`
+(created on swap day as the rollback target) - and prod verifies the LIVE whsec, so
+test-mode deliveries can never pass. Rehearsals never needed it: `stripe listen`
+forwards to :1235 (all 12 forwards were [200] that night).
+
+Fix: endpoint **disabled** via API (`status: disabled` verified) - deliveries and nag
+emails stop, and the runbook's rollback path keeps its dashboard-retrievable signing
+secret (deleting would lose it). Live endpoint `we_1TiVM6E1rrZiCLVQdkEhGYuu` (all 6
+events) confirmed enabled and separate - live payments were never affected; the prod
+route itself answers correctly (probe: 400 in 0.8s). No code change. Annotated
+`docs/stripeKeySwapGuide.md` (rollback note) + brain.md env table. Aside: test-mode
+subs from the June renewal tests still auto-bill monthly (invoice.* noise on the 13th);
+harmless - no enabled endpoint subscribes to them.
+
 ## 2026-08-09 23:52 PT - Warning toast onto dark-on-amber (Rahul picked B) - the LAST open AA item
 
 Side-by-side rendered (white-on-amber 2.1:1 vs amber-950-on-amber 6.4:1); Rahul chose

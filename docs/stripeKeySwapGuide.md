@@ -115,7 +115,12 @@ gets a `[Payment received]` email.
 - **Checkout fails with a Stripe API/permission error** → add the missing scope to
   `proposalGenerator-live` (no new key needed) and redeploy, or temporarily swap back
   to the test key/secret (test webhook id `we_1ThbkhE1rrZiCLVQEdLERe0Y`; grab its
-  signing secret from the test-mode dashboard) and redeploy.
+  signing secret from the test-mode dashboard) and redeploy. **Note (2026-08-13):** that
+  test endpoint is now **disabled** — local rehearsal test events were being delivered to
+  prod, which verifies the live `whsec_` and can never accept them, so Stripe sent
+  failing-webhook warnings. Re-enable it in the test-mode dashboard as part of any
+  swap-back (its signing secret stays retrievable there; that's why it was disabled, not
+  deleted).
 - **Proposals stuck in AWAITING** → the reconcile-payments cron (every 4h) heals missed
   webhooks, or trigger it now:
   `curl -H "Authorization: Bearer $CRON_SECRET" https://proposals.rsla.io/api/cron/reconcile-payments`
