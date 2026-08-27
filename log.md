@@ -1,5 +1,43 @@
 # log.md - proposal-generator
 
+## 2026-08-27 15:20 PT - Proposal tab bar grew a vertical scrollbar - fixed in the tabs primitive
+
+Root cause, measured on prod: the detail page's `TabsList` is `overflow-x-auto` (Jun 20 mobile
+pass), which makes it `overflow-y: auto` too, and every `TabsTrigger` carries the line-variant
+`::after` indicator at `bottom: -5px` - an invisible (opacity 0) box whose bottom edge lands at
+33.5px inside a 32px list, so `scrollHeight` 33 > `clientHeight` 32. Latent since June; it
+became visible once macOS scrollbars turned non-overlay on Rahul's machine (15px gutter =
+mouse attached / "always show"). Fix in `ui/tabs.tsx`: `after:content-none` by default, the
+box only exists under `group-data-[variant=line]/tabs-list:after:content-['']`. Verified with
+the compiled stylesheet on a mock bar: default 32/32 + no gutter, line variant keeps its
+indicator. Not deployed yet - main is git-linked, so the push is Rahul's call.
+
+## 2026-08-27 14:52 PT - Select Landscape: declined v1 deleted, v2 hand-marked SIGNED+PAID (Rahul's ask)
+
+v1 `cmr6qsv5a000004kz5duwe12n` (DECLINED by Julio Gomez Jul 5; valid-until was Aug 4) hard-deleted:
+v2's `parentId` nulled first, 1 admin-signature blob + 4 WebhookEvents deleted, row cascade
+(2 parties, 1 signature, 10 audit events, 2 email logs). v2 keeps `versionNumber: 2` and its
+PROPOSAL_REVISED audit metadata still names the old id.
+
+v2 `cmrg2o4mz000004ld0hi8r698` was an unsent DRAFT (no parties, no frozen content); the deal
+closed offline on Aug 13, so it was recorded by hand to the platform's own shapes: content
+frozen + hashed as at send (`c11fb719…`), `sentAt`/`frozenAt`/`completedAt`/`paidAt` all
+2026-08-13 12:00 PT, status SIGNED, paymentStatus PAID, two Party rows (Rahul ADMIN_SIGNER,
+Julio CLIENT_SIGNER payer) with `signedAt` set, and 4 audit events at that time
+(PARTY_SIGNED x2, ALL_SIGNED, PAYMENT_PAID) all carrying `kind: "manual"` + a note that no
+platform send / e-sign / checkout happened. Deliberately NOT created: Signature rows (no e-sign
+artifacts to fabricate), Payment row (Stripe-shaped), emails, and the Notion "paid" sync -
+`updateCrmOnPaid` stamps Contract Start and its note with *today's* date, so running it would
+write Aug 27 into the CRM. Dashboard MRR/signed metrics pick it up via status + completedAt.
+
+## 2026-08-27 14:34 PT - Voided "Testing" proposal hard-deleted (Rahul's ask)
+
+Removed `cmt0fwgju000004lbdi1drvs0` ("Testing", VOIDED Aug 27, sent Aug 19, no Notion
+page / Stripe / payment / PDF) with a one-off script mirroring `scripts/e2eCleanup.ts`:
+1 signature blob deleted, 2 WebhookEvents deleted, row deleted (cascade took 2 parties,
+1 signature, 7 audit events, 1 email log). Verified: row gone, 0 orphan rows, 0 blobs
+under `proposals/{id}/`. No Stripe leg needed (paymentStatus NOT_REQUIRED).
+
 ## 2026-08-14 00:32 PT - e2eCleanup now sweeps test-mode subs (the "bite it" call, small version)
 
 Decision on the candidate follow-up: yes, but as ~15 lines in the EXISTING
