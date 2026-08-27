@@ -10,7 +10,7 @@ became visible once macOS scrollbars turned non-overlay on Rahul's machine (15px
 mouse attached / "always show"). Fix in `ui/tabs.tsx`: `after:content-none` by default, the
 box only exists under `group-data-[variant=line]/tabs-list:after:content-['']`. Verified with
 the compiled stylesheet on a mock bar: default 32/32 + no gutter, line variant keeps its
-indicator. Not deployed yet - main is git-linked, so the push is Rahul's call.
+indicator. Pushed 15:15 PT; Vercel prod build Ready in 50s; live tab bar re-measured 32/32, no gutter.
 
 ## 2026-08-27 14:52 PT - Select Landscape: declined v1 deleted, v2 hand-marked SIGNED+PAID (Rahul's ask)
 
